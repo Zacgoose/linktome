@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "PowerShell: Execute current file",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${file}",
+      "cwd": "${file}"
+    },
+    {
+      "command": "npm run start-swa",
+      "name": "Run Emulator",
+      "request": "launch",
+      "type": "node-terminal"
+    },
+    {
+      "command": "yarn run dev",
+      "name": "Run Frontend",
+      "request": "launch",
+      "type": "node-terminal",
+      "preLaunchTask": "Run All Tasks",
+      "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"]
+    },
+    {
+      "type": "PowerShell",
+      "name": "Launch in Windows Terminal",
+      "request": "launch",
+      "cwd": "${cwd}",
+      "script": ". '${cwd}\\Tools\\Start-DevEmulators.ps1'"
+    },
+  ]
+}
