@@ -15,17 +15,19 @@ import {
 import { useApiPost } from '@/hooks/useApiQuery';
 
 interface LoginResponse {
-  token: string;
+  accessToken: string;
   user: {
-    id: string;
+    userId: string;
     username: string;
+    email: string;
   };
 }
 
 interface SignupResponse {
   user: {
-    id: string;
+    userId: string;
     username: string;
+    email: string;
   };
 }
 
@@ -45,8 +47,8 @@ export default function Login() {
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data) => {
-      if (data.token) {
-        localStorage.setItem('accessToken', data.token);
+      if (data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
         router.push('/admin/dashboard');
       }
     },

@@ -82,7 +82,7 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     queryKey: [queryKey, params],
     enabled,
     queryFn: async ({ signal }) => {
-      const response = await axios.get<ApiResponse<TData>>(`${API_BASE}/${url}`, {
+      const response = await axios.get<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, {
         signal,
         params,
         headers: buildHeaders(),
@@ -90,22 +90,34 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
       
       const data = response.data;
       
-      // Handle backend error responses
-      if (!data.success && data.error) {
-        if (onError) {
-          onError(data.error);
+      // Check if response has the { success, error, data } format
+      if (typeof data === 'object' && data !== null && 'success' in data) {
+        const apiResponse = data as ApiResponse<TData>;
+        
+        // Handle backend error responses
+        if (!apiResponse.success && apiResponse.error) {
+          if (onError) {
+            onError(apiResponse.error);
+          }
+          throw new Error(apiResponse.error);
         }
-        throw new Error(data.error);
+        
+        // Return the actual data from the backend response
+        const result = apiResponse.data ?? apiResponse;
+        
+        if (onSuccess) {
+          onSuccess(result);
+        }
+        
+        return result as TData;
       }
       
-      // Return the actual data from the backend response
-      const result = data.data ?? data;
-      
+      // Response is already in the expected format
       if (onSuccess) {
-        onSuccess(result);
+        onSuccess(data);
       }
       
-      return result as TData;
+      return data as TData;
     },
     staleTime,
     refetchOnWindowFocus,
@@ -142,19 +154,27 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
-      const response = await axios.post<ApiResponse<TData>>(`${API_BASE}/${url}`, data, {
+      const response = await axios.post<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, data, {
         headers: buildHeaders(),
       });
       
       const responseData = response.data;
       
-      // Handle backend error responses
-      if (!responseData.success && responseData.error) {
-        throw new Error(responseData.error);
+      // Check if response has the { success, error, data } format
+      if (typeof responseData === 'object' && responseData !== null && 'success' in responseData) {
+        const apiResponse = responseData as ApiResponse<TData>;
+        
+        // Handle backend error responses
+        if (!apiResponse.success && apiResponse.error) {
+          throw new Error(apiResponse.error);
+        }
+        
+        // Return the actual data from the backend response
+        return (apiResponse.data ?? apiResponse) as TData;
       }
       
-      // Return the actual data from the backend response
-      return (responseData.data ?? responseData) as TData;
+      // Response is already in the expected format (e.g., Login returns { accessToken, user })
+      return responseData as TData;
     },
     onSuccess: (data) => {
       if (relatedQueryKeys) {
@@ -190,19 +210,27 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
-      const response = await axios.put<ApiResponse<TData>>(`${API_BASE}/${url}`, data, {
+      const response = await axios.put<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, data, {
         headers: buildHeaders(),
       });
       
       const responseData = response.data;
       
-      // Handle backend error responses
-      if (!responseData.success && responseData.error) {
-        throw new Error(responseData.error);
+      // Check if response has the { success, error, data } format
+      if (typeof responseData === 'object' && responseData !== null && 'success' in responseData) {
+        const apiResponse = responseData as ApiResponse<TData>;
+        
+        // Handle backend error responses
+        if (!apiResponse.success && apiResponse.error) {
+          throw new Error(apiResponse.error);
+        }
+        
+        // Return the actual data from the backend response
+        return (apiResponse.data ?? apiResponse) as TData;
       }
       
-      // Return the actual data from the backend response
-      return (responseData.data ?? responseData) as TData;
+      // Response is already in the expected format
+      return responseData as TData;
     },
     onSuccess: (data) => {
       if (relatedQueryKeys) {
@@ -238,19 +266,27 @@ export function useApiDelete<TData = unknown>(
 
   const mutation = useMutation<TData, Error, { url: string }>({
     mutationFn: async ({ url }) => {
-      const response = await axios.delete<ApiResponse<TData>>(`${API_BASE}/${url}`, {
+      const response = await axios.delete<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, {
         headers: buildHeaders(),
       });
       
       const responseData = response.data;
       
-      // Handle backend error responses
-      if (!responseData.success && responseData.error) {
-        throw new Error(responseData.error);
+      // Check if response has the { success, error, data } format
+      if (typeof responseData === 'object' && responseData !== null && 'success' in responseData) {
+        const apiResponse = responseData as ApiResponse<TData>;
+        
+        // Handle backend error responses
+        if (!apiResponse.success && apiResponse.error) {
+          throw new Error(apiResponse.error);
+        }
+        
+        // Return the actual data from the backend response
+        return (apiResponse.data ?? apiResponse) as TData;
       }
       
-      // Return the actual data from the backend response
-      return (responseData.data ?? responseData) as TData;
+      // Response is already in the expected format
+      return responseData as TData;
     },
     onSuccess: (data) => {
       if (relatedQueryKeys) {
