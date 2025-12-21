@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
   Container,
@@ -18,7 +16,8 @@ import {
   TrendingUp as TrendingIcon,
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
-import { apiGet } from '@/utils/api';
+import { useApiGet } from '@/hooks/useApiQuery';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 interface AnalyticsData {
   totalViews: number;
@@ -36,40 +35,26 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  useRequireAuth();
 
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+  const { data, isLoading } = useApiGet<AnalyticsData>({
+    url: 'admin/GetAnalytics',
+    queryKey: 'admin-analytics',
+    retry: 0, // Don't retry if endpoint doesn't exist yet
+    onError: () => {
+      // Silently fail if analytics endpoint doesn't exist
+    },
+  });
 
-    fetchAnalytics();
-  }, [router]);
-
-  const fetchAnalytics = async () => {
-    try {
-      const data = await apiGet('admin/GetAnalytics');
-      setAnalytics(data);
-    } catch {
-      // If analytics endpoint doesn't exist yet, show placeholder data
-      setAnalytics({
-        totalViews: 0,
-        totalClicks: 0,
-        clickThroughRate: 0,
-        topLinks: [],
-        recentViews: [],
-      });
-    } finally {
-      setLoading(false);
-    }
+  const analytics = data || {
+    totalViews: 0,
+    totalClicks: 0,
+    clickThroughRate: 0,
+    topLinks: [],
+    recentViews: [],
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AdminLayout>
         <Box display="flex" justifyContent="center" p={5}>
@@ -94,11 +79,6 @@ export default function AnalyticsPage() {
             Track your profile performance and link engagement
           </Typography>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-              {error}
-            </Alert>
-          )}
 
           {!analytics?.totalViews && !analytics?.totalClicks && (
             <Alert severity="info" sx={{ mb: 3 }}>

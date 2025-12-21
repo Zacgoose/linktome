@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
@@ -20,7 +20,8 @@ import {
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
-import { apiGet, apiPut } from '@/utils/api';
+import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 const themes = [
   { value: 'light', label: 'Light', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
@@ -39,66 +40,73 @@ const fonts = [
   { value: 'mono', label: 'Monospace', fontFamily: 'monospace' },
 ];
 
+interface AppearanceData {
+  theme: 'light' | 'dark';
+  buttonStyle: 'rounded' | 'square' | 'pill';
+  fontFamily: 'default' | 'serif' | 'mono';
+}
+
 export default function AppearancePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  useRequireAuth();
+  
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [buttonStyle, setButtonStyle] = useState<'rounded' | 'square' | 'pill'>('rounded');
-  const [fontFamily, setFontFamily] = useState<'default' | 'serif' | 'mono'>('default');
+  const { data, isLoading } = useApiGet<AppearanceData>({
+    url: 'admin/GetAppearance',
+    queryKey: 'admin-appearance',
+    retry: 0, // Don't retry if endpoint doesn't exist yet
+    onError: () => {
+      // Silently use defaults if endpoint doesn't exist
+    },
+  });
 
+  const [formData, setFormData] = useState({
+    theme: (data?.theme || 'light') as 'light' | 'dark',
+    buttonStyle: (data?.buttonStyle || 'rounded') as 'rounded' | 'square' | 'pill',
+    fontFamily: (data?.fontFamily || 'default') as 'default' | 'serif' | 'mono',
+  });
+
+  // Only update form when data initially loads
+  const dataLoadedRef = useRef(false);
+  
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
+    if (data && !dataLoadedRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData({
+        theme: data.theme || 'light',
+        buttonStyle: data.buttonStyle || 'rounded',
+        fontFamily: data.fontFamily || 'default',
+      });
+      dataLoadedRef.current = true;
     }
+  }, [data]);
 
-    fetchAppearance();
-  }, [router]);
+  const updateAppearance = useApiPut({
+    relatedQueryKeys: ['admin-appearance'],
+    onSuccess: () => {
+      setSuccess('Appearance updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    },
+    onError: (err) => {
+      setError((err.response?.data as { error?: string })?.error || 'Failed to update appearance');
+      setTimeout(() => setError(''), 3000);
+    },
+  });
 
-  const fetchAppearance = async () => {
-    try {
-      const data = await apiGet('admin/GetAppearance');
-      if (data) {
-        setTheme(data.theme || 'light');
-        setButtonStyle(data.buttonStyle || 'rounded');
-        setFontFamily(data.fontFamily || 'default');
-      }
-    } catch {
-      // If no settings exist, use defaults
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError('');
     setSuccess('');
 
-    try {
-      await apiPut('admin/UpdateAppearance', {
-        theme,
-        buttonStyle,
-        fontFamily,
-      });
-      setSuccess('Appearance updated successfully');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to update appearance');
-      setTimeout(() => setError(''), 3000);
-    } finally {
-      setSaving(false);
-    }
+    updateAppearance.mutate({
+      url: 'admin/UpdateAppearance',
+      data: formData,
+    });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AdminLayout>
         <Box display="flex" justifyContent="center" p={5}>
@@ -148,12 +156,12 @@ export default function AppearancePage() {
                       {themes.map((t) => (
                         <Grid item xs={6} key={t.value}>
                           <Paper
-                            onClick={() => setTheme(t.value as 'light' | 'dark')}
+                            onClick={() => setFormData({ ...formData, theme: t.value as 'light' | 'dark' })}
                             sx={{
                               p: 3,
                               cursor: 'pointer',
                               border: 2,
-                              borderColor: theme === t.value ? 'primary.main' : 'transparent',
+                              borderColor: formData.theme === t.value ? 'primary.main' : 'transparent',
                               '&:hover': { borderColor: 'primary.light' },
                             }}
                           >
@@ -180,8 +188,8 @@ export default function AppearancePage() {
                       Button Style
                     </FormLabel>
                     <RadioGroup
-                      value={buttonStyle}
-                      onChange={(e) => setButtonStyle(e.target.value as 'rounded' | 'square' | 'pill')}
+                      value={formData.buttonStyle}
+                      onChange={(e) => setFormData({ ...formData, buttonStyle: e.target.value as 'rounded' | 'square' | 'pill' })}
                     >
                       <Stack spacing={1}>
                         {buttonStyles.map((style) => (
@@ -216,8 +224,8 @@ export default function AppearancePage() {
                       Font Style
                     </FormLabel>
                     <RadioGroup
-                      value={fontFamily}
-                      onChange={(e) => setFontFamily(e.target.value as 'default' | 'serif' | 'mono')}
+                      value={formData.fontFamily}
+                      onChange={(e) => setFormData({ ...formData, fontFamily: e.target.value as 'default' | 'serif' | 'mono' })}
                     >
                       <Stack spacing={1}>
                         {fonts.map((font) => (
@@ -239,9 +247,9 @@ export default function AppearancePage() {
                       variant="contained"
                       startIcon={<SaveIcon />}
                       type="submit"
-                      disabled={saving}
+                      disabled={updateAppearance.isPending}
                     >
-                      {saving ? 'Saving...' : 'Save Changes'}
+                      {updateAppearance.isPending ? 'Saving...' : 'Save Changes'}
                     </Button>
                     <Button
                       variant="outlined"

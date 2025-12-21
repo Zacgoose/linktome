@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
@@ -16,7 +16,8 @@ import {
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
-import { apiGet, apiPut } from '@/utils/api';
+import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 interface UserProfile {
   userId: string;
@@ -29,64 +30,61 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  useRequireAuth();
+  
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [displayName, setDisplayName] = useState('');
-  const [bio, setBio] = useState('');
-  const [avatar, setAvatar] = useState('');
+  const { data: profile, isLoading } = useApiGet<UserProfile>({
+    url: 'admin/GetProfile',
+    queryKey: 'admin-profile',
+  });
 
+  const [formData, setFormData] = useState({
+    displayName: profile?.displayName || '',
+    bio: profile?.bio || '',
+    avatar: profile?.avatar || '',
+  });
+
+  // Only update form when profile initially loads
+  const profileLoadedRef = useRef(false);
+  
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
+    if (profile && !profileLoadedRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData({
+        displayName: profile.displayName || '',
+        bio: profile.bio || '',
+        avatar: profile.avatar || '',
+      });
+      profileLoadedRef.current = true;
     }
+  }, [profile]);
 
-    fetchProfile();
-  }, [router]);
+  const updateProfile = useApiPut({
+    relatedQueryKeys: ['admin-profile'],
+    onSuccess: () => {
+      setSuccess('Profile updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    },
+    onError: (err) => {
+      setError((err.response?.data as { error?: string })?.error || 'Failed to update profile');
+      setTimeout(() => setError(''), 3000);
+    },
+  });
 
-  const fetchProfile = async () => {
-    try {
-      const data = await apiGet('admin/GetProfile');
-      setProfile(data);
-      setDisplayName(data.displayName || '');
-      setBio(data.bio || '');
-      setAvatar(data.avatar || '');
-    } catch {
-      setError('Failed to load profile');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError('');
     setSuccess('');
 
-    try {
-      await apiPut('admin/UpdateProfile', {
-        displayName,
-        bio,
-        avatar,
-      });
-      setSuccess('Profile updated successfully');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to update profile');
-      setTimeout(() => setError(''), 3000);
-    } finally {
-      setSaving(false);
-    }
+    updateProfile.mutate({
+      url: 'admin/UpdateProfile',
+      data: formData,
+    });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AdminLayout>
         <Box display="flex" justifyContent="center" p={5}>
@@ -128,8 +126,8 @@ export default function ProfilePage() {
                 <Stack spacing={3}>
                   <Box textAlign="center">
                     <Avatar
-                      src={avatar}
-                      alt={displayName}
+                      src={formData.avatar}
+                      alt={formData.displayName}
                       sx={{ width: 120, height: 120, mx: 'auto', mb: 2 }}
                     />
                     <Typography variant="body2" color="text.secondary">
@@ -143,8 +141,8 @@ export default function ProfilePage() {
                   <TextField
                     fullWidth
                     label="Display Name"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    value={formData.displayName}
+                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                     required
                     helperText="This is how your name will appear on your profile"
                   />
@@ -152,8 +150,8 @@ export default function ProfilePage() {
                   <TextField
                     fullWidth
                     label="Bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     multiline
                     rows={4}
                     helperText="Tell visitors about yourself"
@@ -162,8 +160,8 @@ export default function ProfilePage() {
                   <TextField
                     fullWidth
                     label="Avatar URL"
-                    value={avatar}
-                    onChange={(e) => setAvatar(e.target.value)}
+                    value={formData.avatar}
+                    onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
                     helperText="Direct link to your profile picture"
                     placeholder="https://example.com/avatar.jpg"
                   />
@@ -173,9 +171,9 @@ export default function ProfilePage() {
                       variant="contained"
                       startIcon={<SaveIcon />}
                       type="submit"
-                      disabled={saving}
+                      disabled={updateProfile.isPending}
                     >
-                      {saving ? 'Saving...' : 'Save Changes'}
+                      {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
                     </Button>
                     <Button
                       variant="outlined"

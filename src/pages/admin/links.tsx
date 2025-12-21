@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useState } from 'react';
 import Head from 'next/head';
 import {
   Container,
@@ -14,7 +13,8 @@ import { Add as AddIcon } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import LinkCard from '@/components/LinkCard';
 import LinkForm from '@/components/LinkForm';
-import { apiGet, apiPost, apiPut, apiDelete } from '@/utils/api';
+import { useApiGet, useApiPost, useApiPut, useApiDelete } from '@/hooks/useApiQuery';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 interface Link {
   id: string;
@@ -23,67 +23,73 @@ interface Link {
   order: number;
 }
 
+interface LinksResponse {
+  links: Link[];
+}
+
 export default function LinksPage() {
-  const router = useRouter();
-  const [links, setLinks] = useState<Link[]>([]);
-  const [loading, setLoading] = useState(true);
+  useRequireAuth();
+  
   const [formOpen, setFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+  const { data, isLoading,  } = useApiGet<LinksResponse>({
+    url: 'admin/GetLinks',
+    queryKey: 'admin-links',
+    onError: () => setError('Failed to load links'),
+  });
 
-    fetchLinks();
-  }, [router]);
-
-  const fetchLinks = async () => {
-    try {
-      const data = await apiGet('admin/GetLinks');
-      setLinks(data.links || []);
-    } catch {
-      setError('Failed to load links');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveLink = async (link: { id?: string; title: string; url: string; order?: number }) => {
-    try {
-      if (link.id) {
-        await apiPut(`admin/UpdateLink?id=${link.id}`, link);
-        setSuccess('Link updated successfully');
-      } else {
-        await apiPost('admin/CreateLink', link);
-        setSuccess('Link created successfully');
-      }
-      fetchLinks();
+  const createLink = useApiPost({
+    relatedQueryKeys: ['admin-links'],
+    onSuccess: () => {
+      setSuccess('Link created successfully');
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to save link');
+    },
+    onError: (err) => {
+      setError((err.response?.data as { error?: string })?.error || 'Failed to create link');
       setTimeout(() => setError(''), 3000);
-    }
-  };
+    },
+  });
 
-  const handleDeleteLink = async (linkId: string) => {
-    if (!confirm('Are you sure you want to delete this link?')) return;
+  const updateLink = useApiPut({
+    relatedQueryKeys: ['admin-links'],
+    onSuccess: () => {
+      setSuccess('Link updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    },
+    onError: (err) => {
+      setError((err.response?.data as { error?: string })?.error || 'Failed to update link');
+      setTimeout(() => setError(''), 3000);
+    },
+  });
 
-    try {
-      await apiDelete(`admin/DeleteLink?id=${linkId}`);
+  const deleteLink = useApiDelete({
+    relatedQueryKeys: ['admin-links'],
+    onSuccess: () => {
       setSuccess('Link deleted successfully');
-      fetchLinks();
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to delete link');
+    },
+    onError: (err) => {
+      setError((err.response?.data as { error?: string })?.error || 'Failed to delete link');
       setTimeout(() => setError(''), 3000);
+    },
+  });
+
+  const links = data?.links || [];
+
+  const handleSaveLink = (link: { id?: string; title: string; url: string; order?: number }) => {
+    if (link.id) {
+      updateLink.mutate({ url: `admin/UpdateLink?id=${link.id}`, data: link });
+    } else {
+      createLink.mutate({ url: 'admin/CreateLink', data: link });
     }
+  };
+
+  const handleDeleteLink = (linkId: string) => {
+    if (!confirm('Are you sure you want to delete this link?')) return;
+    deleteLink.mutate({ url: `admin/DeleteLink?id=${linkId}` });
   };
 
   const handleEditClick = (link: Link) => {
@@ -96,7 +102,7 @@ export default function LinksPage() {
     setFormOpen(true);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AdminLayout>
         <Box display="flex" justifyContent="center" p={5}>

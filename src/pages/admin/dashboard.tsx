@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { 
@@ -20,7 +19,8 @@ import {
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
-import { apiGet } from '@/utils/api';
+import { useApiGet } from '@/hooks/useApiQuery';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 interface UserProfile {
   userId: string;
@@ -39,40 +39,25 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [stats, setStats] = useState<DashboardStats>({ totalLinks: 0, totalViews: 0, totalClicks: 0 });
-  const [loading, setLoading] = useState(true);
+  useRequireAuth();
 
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+  const { data: profile, isLoading: profileLoading } = useApiGet<UserProfile>({
+    url: 'admin/GetProfile',
+    queryKey: 'admin-profile',
+  });
 
-    const fetchData = async () => {
-      try {
-        const profileData = await apiGet('admin/GetProfile');
-        setProfile(profileData);
-        
-        // Try to fetch stats, but don't fail if not available
-        try {
-          const statsData = await apiGet('admin/GetDashboardStats');
-          setStats(statsData);
-        } catch {
-          // Use default stats if endpoint not available
-        }
-      } catch {
-        router.push('/login');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data: stats } = useApiGet<DashboardStats>({
+    url: 'admin/GetDashboardStats',
+    queryKey: 'admin-dashboard-stats',
+    retry: 0, // Don't retry if endpoint doesn't exist yet
+    onError: () => {
+      // Silently fail if stats endpoint doesn't exist
+    },
+  });
 
-    fetchData();
-  }, [router]);
+  const dashboardStats = stats || { totalLinks: 0, totalViews: 0, totalClicks: 0 };
 
-  if (loading) {
+  if (profileLoading) {
     return (
       <AdminLayout>
         <Box display="flex" justifyContent="center" p={5}>
@@ -110,7 +95,7 @@ export default function Dashboard() {
                     </Box>
                     <Box>
                       <Typography variant="h4" fontWeight={700}>
-                        {stats.totalLinks}
+                        {dashboardStats.totalLinks}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Total Links
@@ -130,7 +115,7 @@ export default function Dashboard() {
                     </Box>
                     <Box>
                       <Typography variant="h4" fontWeight={700}>
-                        {stats.totalViews}
+                        {dashboardStats.totalViews}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Profile Views
@@ -150,7 +135,7 @@ export default function Dashboard() {
                     </Box>
                     <Box>
                       <Typography variant="h4" fontWeight={700}>
-                        {stats.totalClicks}
+                        {dashboardStats.totalClicks}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Link Clicks
