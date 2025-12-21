@@ -14,7 +14,6 @@ import AdminLayout from '@/layouts/AdminLayout';
 import LinkCard from '@/components/LinkCard';
 import LinkForm from '@/components/LinkForm';
 import { useApiGet, useApiPost, useApiPut, useApiDelete } from '@/hooks/useApiQuery';
-import { useRequireAuth } from '@/hooks/useAuth';
 
 interface Link {
   id: string;
@@ -28,8 +27,6 @@ interface LinksResponse {
 }
 
 export default function LinksPage() {
-  useRequireAuth();
-  
   const [formOpen, setFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [error, setError] = useState('');

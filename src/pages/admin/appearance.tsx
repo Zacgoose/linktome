@@ -21,7 +21,6 @@ import {
 import { Save as SaveIcon } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
-import { useRequireAuth } from '@/hooks/useAuth';
 
 const themes = [
   { value: 'light', label: 'Light', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
@@ -54,7 +53,6 @@ interface AppearanceResponse {
 
 export default function AppearancePage() {
   const router = useRouter();
-  useRequireAuth();
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');

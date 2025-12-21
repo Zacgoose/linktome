@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { 
@@ -56,13 +56,18 @@ const features = [
 
 export default function Home() {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
-    if (token) {
-      router.push('/admin/dashboard');
-    }
-  }, [router]);
+    setIsLoggedIn(!!token);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    setIsLoggedIn(false);
+    router.push('/');
+  };
 
   return (
     <>
@@ -70,6 +75,79 @@ export default function Home() {
         <title>LinkToMe - Your Link in Bio Alternative</title>
         <meta name="description" content="Create your personalized link-in-bio page. Share all your important links in one place." />
       </Head>
+      
+      {/* Header */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1100,
+          bgcolor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              py: 2,
+            }}
+          >
+            <Typography
+              variant="h5"
+              fontWeight={700}
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                cursor: 'pointer',
+              }}
+              onClick={() => router.push('/')}
+            >
+              LinkToMe
+            </Typography>
+            
+            <Stack direction="row" spacing={2}>
+              {isLoggedIn ? (
+                <>
+                  <Button
+                    variant="outlined"
+                    onClick={() => router.push('/admin/dashboard')}
+                  >
+                    Dashboard
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outlined"
+                    onClick={() => router.push('/login')}
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={() => router.push('/login?signup=true')}
+                  >
+                    Sign Up
+                  </Button>
+                </>
+              )}
+            </Stack>
+          </Box>
+        </Container>
+      </Box>
       
       {/* Hero Section */}
       <Box
@@ -80,6 +158,7 @@ export default function Home() {
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           position: 'relative',
           overflow: 'hidden',
+          pt: 10, // Add padding-top for fixed header
         }}
       >
         {/* Decorative circles */}

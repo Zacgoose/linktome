@@ -11,6 +11,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  CircularProgress,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -19,6 +20,7 @@ import {
   Palette as PaletteIcon,
   BarChart as AnalyticsIcon,
 } from '@mui/icons-material';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -36,6 +38,24 @@ const menuItems = [
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
+  const { isAuthenticated } = useRequireAuth();
+
+  // Centralized authentication enforcement
+  // Show loading spinner while checking auth or redirecting
+  if (typeof window !== 'undefined' && !isAuthenticated) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');

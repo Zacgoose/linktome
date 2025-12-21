@@ -17,7 +17,6 @@ import {
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
-import { useRequireAuth } from '@/hooks/useAuth';
 
 interface AnalyticsData {
   views: number;
@@ -34,8 +33,6 @@ interface AnalyticsResponse {
 }
 
 export default function AnalyticsPage() {
-  useRequireAuth();
-
   const { data, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
     queryKey: 'admin-analytics',

@@ -20,7 +20,6 @@ import {
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
-import { useRequireAuth } from '@/hooks/useAuth';
 
 interface UserProfile {
   username: string;
@@ -45,7 +44,6 @@ interface DashboardStatsResponse {
 
 export default function Dashboard() {
   const router = useRouter();
-  useRequireAuth();
 
   const { data: profileData, isLoading: profileLoading } = useApiGet<UserProfileResponse>({
     url: 'admin/GetProfile',

@@ -17,7 +17,6 @@ import {
 import { Save as SaveIcon } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
-import { useRequireAuth } from '@/hooks/useAuth';
 
 interface UserProfile {
   username: string;
@@ -32,7 +31,6 @@ interface UserProfileResponse {
 
 export default function ProfilePage() {
   const router = useRouter();
-  useRequireAuth();
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
