@@ -15,7 +15,7 @@ const buildHeaders = () => {
   return headers;
 };
 
-export const apiGet = async (endpoint: string, params?: any) => {
+export const apiGet = async (endpoint: string, params?: Record<string, unknown>) => {
   try {
     const response = await axios.get(`${API_BASE}/${endpoint}`, {
       params,
@@ -28,7 +28,7 @@ export const apiGet = async (endpoint: string, params?: any) => {
   }
 };
 
-export const apiPost = async (endpoint: string, data?: any) => {
+export const apiPost = async (endpoint: string, data?: Record<string, unknown>) => {
   try {
     const response = await axios.post(`${API_BASE}/${endpoint}`, data, {
       headers: buildHeaders(),
@@ -40,7 +40,7 @@ export const apiPost = async (endpoint: string, data?: any) => {
   }
 };
 
-export const apiPut = async (endpoint: string, data?: any) => {
+export const apiPut = async (endpoint: string, data?: Record<string, unknown>) => {
   try {
     const response = await axios.put(`${API_BASE}/${endpoint}`, data, {
       headers: buildHeaders(),
@@ -64,7 +64,7 @@ export const apiDelete = async (endpoint: string) => {
   }
 };
 
-const handleApiError = (error: any) => {
+const handleApiError = (error: unknown) => {
   if (axios.isAxiosError(error)) {
     if (error.response?.status === 401) {
       localStorage.removeItem('accessToken');

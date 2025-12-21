@@ -55,7 +55,7 @@ export default function AnalyticsPage() {
     try {
       const data = await apiGet('admin/GetAnalytics');
       setAnalytics(data);
-    } catch (err: any) {
+    } catch {
       // If analytics endpoint doesn't exist yet, show placeholder data
       setAnalytics({
         totalViews: 0,

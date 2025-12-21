@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -24,18 +24,8 @@ interface LinkFormProps {
 }
 
 export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps) {
-  const [title, setTitle] = useState('');
-  const [url, setUrl] = useState('');
-
-  useEffect(() => {
-    if (link) {
-      setTitle(link.title);
-      setUrl(link.url);
-    } else {
-      setTitle('');
-      setUrl('');
-    }
-  }, [link, open]);
+  const [title, setTitle] = useState(link?.title || '');
+  const [url, setUrl] = useState(link?.url || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +47,22 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
     onClose();
   };
 
+  // Reset form when dialog opens with new data
+  const handleExited = () => {
+    setTitle(link?.title || '');
+    setUrl(link?.url || '');
+  };
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="sm" 
+      fullWidth
+      TransitionProps={{
+        onExited: handleExited,
+      }}
+    >
       <form onSubmit={handleSubmit}>
         <DialogTitle>
           {link ? 'Edit Link' : 'Add New Link'}

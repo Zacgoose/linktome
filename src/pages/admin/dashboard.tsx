@@ -15,7 +15,6 @@ import {
 } from '@mui/material';
 import {
   Link as LinkIcon,
-  Person as PersonIcon,
   Palette as PaletteIcon,
   BarChart as AnalyticsIcon,
   Visibility as ViewIcon,
@@ -63,7 +62,7 @@ export default function Dashboard() {
         } catch {
           // Use default stats if endpoint not available
         }
-      } catch (err) {
+      } catch {
         router.push('/login');
       } finally {
         setLoading(false);

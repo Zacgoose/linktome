@@ -56,7 +56,7 @@ export default function ProfilePage() {
       setDisplayName(data.displayName || '');
       setBio(data.bio || '');
       setAvatar(data.avatar || '');
-    } catch (err) {
+    } catch {
       setError('Failed to load profile');
     } finally {
       setLoading(false);
@@ -77,8 +77,9 @@ export default function ProfilePage() {
       });
       setSuccess('Profile updated successfully');
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update profile');
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to update profile');
       setTimeout(() => setError(''), 3000);
     } finally {
       setSaving(false);

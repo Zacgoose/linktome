@@ -46,8 +46,9 @@ export default function Login() {
         localStorage.setItem('accessToken', response.accessToken);
         router.push('/admin/dashboard');
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'An error occurred');
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'An error occurred');
     } finally {
       setLoading(false);
     }

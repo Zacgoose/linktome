@@ -46,14 +46,14 @@ export default function LinksPage() {
     try {
       const data = await apiGet('admin/GetLinks');
       setLinks(data.links || []);
-    } catch (err) {
+    } catch {
       setError('Failed to load links');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveLink = async (link: Link) => {
+  const handleSaveLink = async (link: { id?: string; title: string; url: string; order?: number }) => {
     try {
       if (link.id) {
         await apiPut(`admin/UpdateLink?id=${link.id}`, link);
@@ -64,8 +64,9 @@ export default function LinksPage() {
       }
       fetchLinks();
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save link');
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to save link');
       setTimeout(() => setError(''), 3000);
     }
   };
@@ -78,8 +79,9 @@ export default function LinksPage() {
       setSuccess('Link deleted successfully');
       fetchLinks();
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete link');
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to delete link');
       setTimeout(() => setError(''), 3000);
     }
   };

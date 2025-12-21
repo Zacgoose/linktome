@@ -44,8 +44,9 @@ export default function PublicProfile() {
       try {
         const data = await apiGet(`public/GetUserProfile?username=${username}`);
         setProfile(data);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Profile not found');
+      } catch (err) {
+        const error = err as { response?: { data?: { error?: string } } };
+        setError(error.response?.data?.error || 'Profile not found');
       } finally {
         setLoading(false);
       }

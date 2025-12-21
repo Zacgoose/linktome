@@ -13,7 +13,6 @@ import {
   FormControl,
   FormLabel,
   RadioGroup,
-  FormControlButton,
   Radio,
   Button,
   Grid,
@@ -22,12 +21,6 @@ import {
 import { Save as SaveIcon } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { apiGet, apiPut } from '@/utils/api';
-
-interface AppearanceSettings {
-  theme: 'light' | 'dark';
-  buttonStyle: 'rounded' | 'square' | 'pill';
-  fontFamily: 'default' | 'serif' | 'mono';
-}
 
 const themes = [
   { value: 'light', label: 'Light', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
@@ -75,7 +68,7 @@ export default function AppearancePage() {
         setButtonStyle(data.buttonStyle || 'rounded');
         setFontFamily(data.fontFamily || 'default');
       }
-    } catch (err) {
+    } catch {
       // If no settings exist, use defaults
       console.log('Using default appearance settings');
     } finally {
@@ -97,8 +90,9 @@ export default function AppearancePage() {
       });
       setSuccess('Appearance updated successfully');
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update appearance');
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to update appearance');
       setTimeout(() => setError(''), 3000);
     } finally {
       setSaving(false);
@@ -188,7 +182,7 @@ export default function AppearancePage() {
                     </FormLabel>
                     <RadioGroup
                       value={buttonStyle}
-                      onChange={(e) => setButtonStyle(e.target.value as any)}
+                      onChange={(e) => setButtonStyle(e.target.value as 'rounded' | 'square' | 'pill')}
                     >
                       <Stack spacing={1}>
                         {buttonStyles.map((style) => (
@@ -224,7 +218,7 @@ export default function AppearancePage() {
                     </FormLabel>
                     <RadioGroup
                       value={fontFamily}
-                      onChange={(e) => setFontFamily(e.target.value as any)}
+                      onChange={(e) => setFontFamily(e.target.value as 'default' | 'serif' | 'mono')}
                     >
                       <Stack spacing={1}>
                         {fonts.map((font) => (
