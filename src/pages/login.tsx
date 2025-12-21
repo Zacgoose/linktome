@@ -13,22 +13,18 @@ import {
   Link as MuiLink
 } from '@mui/material';
 import { useApiPost } from '@/hooks/useApiQuery';
+import { storeAuth, type UserAuth } from '@/hooks/useAuth';
 
 interface LoginResponse {
   accessToken: string;
-  user: {
-    userId: string;
-    username: string;
-    email: string;
-  };
+  refreshToken?: string;
+  user: UserAuth;
 }
 
 interface SignupResponse {
-  user: {
-    userId: string;
-    username: string;
-    email: string;
-  };
+  accessToken?: string;
+  refreshToken?: string;
+  user: UserAuth;
 }
 
 export default function Login() {
@@ -47,8 +43,9 @@ export default function Login() {
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data) => {
-      if (data.accessToken) {
-        localStorage.setItem('accessToken', data.accessToken);
+      if (data.accessToken && data.user) {
+        // Use centralized auth storage
+        storeAuth(data.accessToken, data.user, data.refreshToken);
         router.push('/admin/dashboard');
       }
     },
@@ -60,11 +57,17 @@ export default function Login() {
 
   const signupMutation = useApiPost<SignupResponse>({
     onSuccess: (data) => {
-      // After signup, switch to login mode
-      setMode('login');
-      setError('');
-      setPassword('');
-      alert(`Account created successfully! Welcome, ${data.user.username}. Please log in.`);
+      if (data.accessToken && data.user) {
+        // If tokens are returned on signup, store and redirect
+        storeAuth(data.accessToken, data.user, data.refreshToken);
+        router.push('/admin/dashboard');
+      } else {
+        // Otherwise, switch to login mode
+        setMode('login');
+        setError('');
+        setPassword('');
+        alert(`Account created successfully! Welcome, ${data.user.username}. Please log in.`);
+      }
     },
     onError: (error) => {
       setError(error);
