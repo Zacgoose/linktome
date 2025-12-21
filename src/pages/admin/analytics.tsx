@@ -20,24 +20,23 @@ import { useApiGet } from '@/hooks/useApiQuery';
 import { useRequireAuth } from '@/hooks/useAuth';
 
 interface AnalyticsData {
-  totalViews: number;
-  totalClicks: number;
-  clickThroughRate: number;
+  views: number;
+  clicks: number;
   topLinks: Array<{
-    id: string;
     title: string;
+    url: string;
     clicks: number;
   }>;
-  recentViews: Array<{
-    date: string;
-    count: number;
-  }>;
+}
+
+interface AnalyticsResponse {
+  analytics: AnalyticsData;
 }
 
 export default function AnalyticsPage() {
   useRequireAuth();
 
-  const { data, isLoading } = useApiGet<AnalyticsData>({
+  const { data, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
     queryKey: 'admin-analytics',
     retry: 0, // Don't retry if endpoint doesn't exist yet
@@ -46,13 +45,15 @@ export default function AnalyticsPage() {
     },
   });
 
-  const analytics = data || {
-    totalViews: 0,
-    totalClicks: 0,
-    clickThroughRate: 0,
+  const analytics = data?.analytics || {
+    views: 0,
+    clicks: 0,
     topLinks: [],
-    recentViews: [],
   };
+
+  const clickThroughRate = analytics.views > 0 
+    ? ((analytics.clicks / analytics.views) * 100) 
+    : 0;
 
   if (isLoading) {
     return (
@@ -80,7 +81,7 @@ export default function AnalyticsPage() {
           </Typography>
 
 
-          {!analytics?.totalViews && !analytics?.totalClicks && (
+          {!analytics?.views && !analytics?.clicks && (
             <Alert severity="info" sx={{ mb: 3 }}>
               Analytics will be available once your profile receives visits and clicks
             </Alert>
@@ -107,7 +108,7 @@ export default function AnalyticsPage() {
                     </Typography>
                   </Box>
                   <Typography variant="h3" fontWeight={700}>
-                    {analytics?.totalViews || 0}
+                    {analytics?.views || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
                     Total profile visits
@@ -136,7 +137,7 @@ export default function AnalyticsPage() {
                     </Typography>
                   </Box>
                   <Typography variant="h3" fontWeight={700}>
-                    {analytics?.totalClicks || 0}
+                    {analytics?.clicks || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
                     Total link engagements
@@ -165,7 +166,7 @@ export default function AnalyticsPage() {
                     </Typography>
                   </Box>
                   <Typography variant="h3" fontWeight={700}>
-                    {analytics?.clickThroughRate?.toFixed(1) || 0}%
+                    {clickThroughRate?.toFixed(1) || 0}%
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
                     Click-through rate
@@ -185,7 +186,7 @@ export default function AnalyticsPage() {
                     <Stack spacing={2} mt={2}>
                       {analytics.topLinks.slice(0, 5).map((link, index) => (
                         <Box
-                          key={link.id}
+                          key={index}
                           display="flex"
                           justifyContent="space-between"
                           alignItems="center"
@@ -235,31 +236,11 @@ export default function AnalyticsPage() {
                   <Typography variant="h6" fontWeight={600} gutterBottom>
                     Recent Activity
                   </Typography>
-                  {analytics?.recentViews && analytics.recentViews.length > 0 ? (
-                    <Stack spacing={2} mt={2}>
-                      {analytics.recentViews.slice(0, 7).map((view, index) => (
-                        <Box
-                          key={index}
-                          display="flex"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          p={2}
-                          sx={{ bgcolor: 'grey.50', borderRadius: 1 }}
-                        >
-                          <Typography variant="body2">
-                            {new Date(view.date).toLocaleDateString()}
-                          </Typography>
-                          <Typography fontWeight={600}>{view.count} views</Typography>
-                        </Box>
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Box textAlign="center" py={4}>
-                      <Typography color="text.secondary">
-                        No recent activity
-                      </Typography>
-                    </Box>
-                  )}
+                  <Box textAlign="center" py={4}>
+                    <Typography color="text.secondary">
+                      No recent activity
+                    </Typography>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>

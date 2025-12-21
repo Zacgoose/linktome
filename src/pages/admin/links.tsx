@@ -35,10 +35,13 @@ export default function LinksPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const { data, isLoading,  } = useApiGet<LinksResponse>({
+  const { data, isLoading } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
     queryKey: 'admin-links',
-    onError: () => setError('Failed to load links'),
+    onError: (error) => {
+      setError(error);
+      setTimeout(() => setError(''), 3000);
+    },
   });
 
   const createLink = useApiPost({
@@ -47,8 +50,8 @@ export default function LinksPage() {
       setSuccess('Link created successfully');
       setTimeout(() => setSuccess(''), 3000);
     },
-    onError: (err) => {
-      setError((err.response?.data as { error?: string })?.error || 'Failed to create link');
+    onError: (error) => {
+      setError(error);
       setTimeout(() => setError(''), 3000);
     },
   });
@@ -59,8 +62,8 @@ export default function LinksPage() {
       setSuccess('Link updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     },
-    onError: (err) => {
-      setError((err.response?.data as { error?: string })?.error || 'Failed to update link');
+    onError: (error) => {
+      setError(error);
       setTimeout(() => setError(''), 3000);
     },
   });
@@ -71,8 +74,8 @@ export default function LinksPage() {
       setSuccess('Link deleted successfully');
       setTimeout(() => setSuccess(''), 3000);
     },
-    onError: (err) => {
-      setError((err.response?.data as { error?: string })?.error || 'Failed to delete link');
+    onError: (error) => {
+      setError(error);
       setTimeout(() => setError(''), 3000);
     },
   });

@@ -16,6 +16,41 @@ const buildHeaders = () => {
   return headers;
 };
 
+// Standard API response format from backend
+interface ApiResponse<TData> {
+  success: boolean;
+  error?: string;
+  data?: TData;
+}
+
+// Helper to handle API errors and redirects
+const handleApiError = (error: AxiosError) => {
+  if (axios.isAxiosError(error) && error.response?.status === 401) {
+    localStorage.removeItem('accessToken');
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+  }
+};
+
+// Centralized retry logic
+const createRetryFn = (maxRetries: number) => {
+  return (failureCount: number, error: Error) => {
+    const HTTP_STATUS_TO_NOT_RETRY = [401, 403, 404, 500];
+    
+    if (failureCount >= maxRetries) {
+      return false;
+    }
+    
+    if (axios.isAxiosError(error) && HTTP_STATUS_TO_NOT_RETRY.includes(error.response?.status ?? 0)) {
+      handleApiError(error);
+      return false;
+    }
+    
+    return true;
+  };
+};
+
 interface ApiGetCallProps {
   url: string;
   queryKey: string;
@@ -25,7 +60,8 @@ interface ApiGetCallProps {
   staleTime?: number;
   refetchOnWindowFocus?: boolean;
   refetchOnMount?: boolean;
-  onError?: (error: AxiosError) => void;
+  onSuccess?: (data: unknown) => void;
+  onError?: (error: string) => void;
 }
 
 export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
@@ -38,6 +74,7 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     staleTime = 300000,
     refetchOnWindowFocus = false,
     refetchOnMount = true,
+    onSuccess,
     onError,
   } = props;
 
@@ -45,40 +82,47 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     queryKey: [queryKey, params],
     enabled,
     queryFn: async ({ signal }) => {
-      const response = await axios.get(`${API_BASE}/${url}`, {
+      const response = await axios.get<ApiResponse<TData>>(`${API_BASE}/${url}`, {
         signal,
         params,
         headers: buildHeaders(),
       });
-      return response.data;
+      
+      const data = response.data;
+      
+      // Handle backend error responses
+      if (!data.success && data.error) {
+        if (onError) {
+          onError(data.error);
+        }
+        throw new Error(data.error);
+      }
+      
+      // Return the actual data from the backend response
+      const result = data.data ?? data;
+      
+      if (onSuccess) {
+        onSuccess(result);
+      }
+      
+      return result as TData;
     },
     staleTime,
     refetchOnWindowFocus,
     refetchOnMount,
-    retry: (failureCount, error) => {
-      const HTTP_STATUS_TO_NOT_RETRY = [401, 403, 404, 500];
-      
-      if (failureCount >= retry) {
-        return false;
-      }
-      
-      if (axios.isAxiosError(error) && HTTP_STATUS_TO_NOT_RETRY.includes(error.response?.status ?? 0)) {
-        if (error.response?.status === 401) {
-          localStorage.removeItem('accessToken');
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
-        }
-        return false;
-      }
-      
-      return true;
-    },
+    retry: createRetryFn(retry),
   });
 
-  // Call onError if provided and there's an error
-  if (queryInfo.error && onError) {
-    onError(queryInfo.error);
+  // Handle axios errors
+  if (queryInfo.error) {
+    handleApiError(queryInfo.error);
+    if (onError && axios.isAxiosError(queryInfo.error)) {
+      const errorMessage = 
+        (queryInfo.error.response?.data as { error?: string })?.error || 
+        queryInfo.error.message ||
+        'An error occurred';
+      onError(errorMessage);
+    }
   }
 
   return queryInfo;
@@ -87,7 +131,7 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
 interface ApiMutationCallProps<TData = unknown> {
   relatedQueryKeys?: string[];
   onSuccess?: (data: TData) => void;
-  onError?: (error: AxiosError) => void;
+  onError?: (error: string) => void;
 }
 
 export function useApiPost<TData = unknown, TVariables = Record<string, unknown>>(
@@ -96,12 +140,21 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
 
-  const mutation = useMutation<TData, AxiosError, { url: string; data?: TVariables }>({
+  const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
-      const response = await axios.post(`${API_BASE}/${url}`, data, {
+      const response = await axios.post<ApiResponse<TData>>(`${API_BASE}/${url}`, data, {
         headers: buildHeaders(),
       });
-      return response.data;
+      
+      const responseData = response.data;
+      
+      // Handle backend error responses
+      if (!responseData.success && responseData.error) {
+        throw new Error(responseData.error);
+      }
+      
+      // Return the actual data from the backend response
+      return (responseData.data ?? responseData) as TData;
     },
     onSuccess: (data) => {
       if (relatedQueryKeys) {
@@ -114,14 +167,14 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
       }
     },
     onError: (error) => {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        localStorage.removeItem('accessToken');
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+      if (axios.isAxiosError(error)) {
+        handleApiError(error);
       }
       if (onError) {
-        onError(error);
+        const errorMessage = axios.isAxiosError(error)
+          ? (error.response?.data as { error?: string })?.error || error.message
+          : error.message;
+        onError(errorMessage);
       }
     },
   });
@@ -135,12 +188,21 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
 
-  const mutation = useMutation<TData, AxiosError, { url: string; data?: TVariables }>({
+  const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
-      const response = await axios.put(`${API_BASE}/${url}`, data, {
+      const response = await axios.put<ApiResponse<TData>>(`${API_BASE}/${url}`, data, {
         headers: buildHeaders(),
       });
-      return response.data;
+      
+      const responseData = response.data;
+      
+      // Handle backend error responses
+      if (!responseData.success && responseData.error) {
+        throw new Error(responseData.error);
+      }
+      
+      // Return the actual data from the backend response
+      return (responseData.data ?? responseData) as TData;
     },
     onSuccess: (data) => {
       if (relatedQueryKeys) {
@@ -153,14 +215,14 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
       }
     },
     onError: (error) => {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        localStorage.removeItem('accessToken');
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+      if (axios.isAxiosError(error)) {
+        handleApiError(error);
       }
       if (onError) {
-        onError(error);
+        const errorMessage = axios.isAxiosError(error)
+          ? (error.response?.data as { error?: string })?.error || error.message
+          : error.message;
+        onError(errorMessage);
       }
     },
   });
@@ -174,12 +236,21 @@ export function useApiDelete<TData = unknown>(
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
 
-  const mutation = useMutation<TData, AxiosError, { url: string }>({
+  const mutation = useMutation<TData, Error, { url: string }>({
     mutationFn: async ({ url }) => {
-      const response = await axios.delete(`${API_BASE}/${url}`, {
+      const response = await axios.delete<ApiResponse<TData>>(`${API_BASE}/${url}`, {
         headers: buildHeaders(),
       });
-      return response.data;
+      
+      const responseData = response.data;
+      
+      // Handle backend error responses
+      if (!responseData.success && responseData.error) {
+        throw new Error(responseData.error);
+      }
+      
+      // Return the actual data from the backend response
+      return (responseData.data ?? responseData) as TData;
     },
     onSuccess: (data) => {
       if (relatedQueryKeys) {
@@ -192,14 +263,14 @@ export function useApiDelete<TData = unknown>(
       }
     },
     onError: (error) => {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        localStorage.removeItem('accessToken');
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+      if (axios.isAxiosError(error)) {
+        handleApiError(error);
       }
       if (onError) {
-        onError(error);
+        const errorMessage = axios.isAxiosError(error)
+          ? (error.response?.data as { error?: string })?.error || error.message
+          : error.message;
+        onError(errorMessage);
       }
     },
   });

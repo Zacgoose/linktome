@@ -41,9 +41,15 @@ const fonts = [
 ];
 
 interface AppearanceData {
-  theme: 'light' | 'dark';
-  buttonStyle: 'rounded' | 'square' | 'pill';
-  fontFamily: 'default' | 'serif' | 'mono';
+  theme: string;
+  colors: {
+    primary: string;
+    background: string;
+  };
+}
+
+interface AppearanceResponse {
+  appearance: AppearanceData;
 }
 
 export default function AppearancePage() {
@@ -53,7 +59,7 @@ export default function AppearancePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const { data, isLoading } = useApiGet<AppearanceData>({
+  const { data, isLoading } = useApiGet<AppearanceResponse>({
     url: 'admin/GetAppearance',
     queryKey: 'admin-appearance',
     retry: 0, // Don't retry if endpoint doesn't exist yet
@@ -62,26 +68,28 @@ export default function AppearancePage() {
     },
   });
 
+  const appearance = data?.appearance;
+
   const [formData, setFormData] = useState({
-    theme: (data?.theme || 'light') as 'light' | 'dark',
-    buttonStyle: (data?.buttonStyle || 'rounded') as 'rounded' | 'square' | 'pill',
-    fontFamily: (data?.fontFamily || 'default') as 'default' | 'serif' | 'mono',
+    theme: (appearance?.theme || 'light') as 'light' | 'dark',
+    buttonStyle: 'rounded' as 'rounded' | 'square' | 'pill',
+    fontFamily: 'default' as 'default' | 'serif' | 'mono',
   });
 
   // Only update form when data initially loads
   const dataLoadedRef = useRef(false);
   
   useEffect(() => {
-    if (data && !dataLoadedRef.current) {
+    if (appearance && !dataLoadedRef.current) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
-        theme: data.theme || 'light',
-        buttonStyle: data.buttonStyle || 'rounded',
-        fontFamily: data.fontFamily || 'default',
+        theme: (appearance.theme || 'light') as 'light' | 'dark',
+        buttonStyle: 'rounded',
+        fontFamily: 'default',
       });
       dataLoadedRef.current = true;
     }
-  }, [data]);
+  }, [appearance]);
 
   const updateAppearance = useApiPut({
     relatedQueryKeys: ['admin-appearance'],
@@ -89,8 +97,8 @@ export default function AppearancePage() {
       setSuccess('Appearance updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     },
-    onError: (err) => {
-      setError((err.response?.data as { error?: string })?.error || 'Failed to update appearance');
+    onError: (error) => {
+      setError(error);
       setTimeout(() => setError(''), 3000);
     },
   });

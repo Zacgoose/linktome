@@ -20,12 +20,14 @@ import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
 import { useRequireAuth } from '@/hooks/useAuth';
 
 interface UserProfile {
-  userId: string;
   username: string;
-  email: string;
   displayName: string;
   bio: string;
-  avatar: string;
+  avatarUrl: string;
+}
+
+interface UserProfileResponse {
+  profile: UserProfile;
 }
 
 export default function ProfilePage() {
@@ -35,15 +37,17 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const { data: profile, isLoading } = useApiGet<UserProfile>({
+  const { data, isLoading } = useApiGet<UserProfileResponse>({
     url: 'admin/GetProfile',
     queryKey: 'admin-profile',
   });
 
+  const profile = data?.profile;
+
   const [formData, setFormData] = useState({
     displayName: profile?.displayName || '',
     bio: profile?.bio || '',
-    avatar: profile?.avatar || '',
+    avatarUrl: profile?.avatarUrl || '',
   });
 
   // Only update form when profile initially loads
@@ -55,7 +59,7 @@ export default function ProfilePage() {
       setFormData({
         displayName: profile.displayName || '',
         bio: profile.bio || '',
-        avatar: profile.avatar || '',
+        avatarUrl: profile.avatarUrl || '',
       });
       profileLoadedRef.current = true;
     }
@@ -67,8 +71,8 @@ export default function ProfilePage() {
       setSuccess('Profile updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     },
-    onError: (err) => {
-      setError((err.response?.data as { error?: string })?.error || 'Failed to update profile');
+    onError: (error) => {
+      setError(error);
       setTimeout(() => setError(''), 3000);
     },
   });
@@ -126,15 +130,12 @@ export default function ProfilePage() {
                 <Stack spacing={3}>
                   <Box textAlign="center">
                     <Avatar
-                      src={formData.avatar}
+                      src={formData.avatarUrl}
                       alt={formData.displayName}
                       sx={{ width: 120, height: 120, mx: 'auto', mb: 2 }}
                     />
                     <Typography variant="body2" color="text.secondary">
                       @{profile.username}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {profile.email}
                     </Typography>
                   </Box>
 
@@ -160,8 +161,8 @@ export default function ProfilePage() {
                   <TextField
                     fullWidth
                     label="Avatar URL"
-                    value={formData.avatar}
-                    onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+                    value={formData.avatarUrl}
+                    onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
                     helperText="Direct link to your profile picture"
                     placeholder="https://example.com/avatar.jpg"
                   />

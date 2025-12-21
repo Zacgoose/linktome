@@ -12,7 +12,22 @@ import {
   Alert,
   Link as MuiLink
 } from '@mui/material';
-import { apiPost } from '@/utils/api';
+import { useApiPost } from '@/hooks/useApiQuery';
+
+interface LoginResponse {
+  token: string;
+  user: {
+    id: string;
+    username: string;
+  };
+}
+
+interface SignupResponse {
+  user: {
+    id: string;
+    username: string;
+  };
+}
 
 export default function Login() {
   const router = useRouter();
@@ -23,36 +38,56 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setMode(isSignup ? 'signup' : 'login');
   }, [isSignup]);
 
+  const loginMutation = useApiPost<LoginResponse>({
+    onSuccess: (data) => {
+      if (data.token) {
+        localStorage.setItem('accessToken', data.token);
+        router.push('/admin/dashboard');
+      }
+    },
+    onError: (error) => {
+      setError(error);
+      setTimeout(() => setError(''), 5000);
+    },
+  });
+
+  const signupMutation = useApiPost<SignupResponse>({
+    onSuccess: (data) => {
+      // After signup, switch to login mode
+      setMode('login');
+      setError('');
+      setPassword('');
+      alert(`Account created successfully! Welcome, ${data.user.username}. Please log in.`);
+    },
+    onError: (error) => {
+      setError(error);
+      setTimeout(() => setError(''), 5000);
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    try {
-      const endpoint = mode === 'login' ? 'public/Login' : 'public/Signup';
-      const data = mode === 'login' 
-        ? { email, password }
-        : { email, username, password };
-
-      const response = await apiPost(endpoint, data);
-      
-      if (response.accessToken) {
-        localStorage.setItem('accessToken', response.accessToken);
-        router.push('/admin/dashboard');
-      }
-    } catch (err) {
-      const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'An error occurred');
-    } finally {
-      setLoading(false);
+    if (mode === 'login') {
+      loginMutation.mutate({
+        url: 'public/Login',
+        data: { email, password },
+      });
+    } else {
+      signupMutation.mutate({
+        url: 'public/Signup',
+        data: { email, username, password },
+      });
     }
   };
+
+  const loading = loginMutation.isPending || signupMutation.isPending;
 
   return (
     <>

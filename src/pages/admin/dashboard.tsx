@@ -23,12 +23,14 @@ import { useApiGet } from '@/hooks/useApiQuery';
 import { useRequireAuth } from '@/hooks/useAuth';
 
 interface UserProfile {
-  userId: string;
   username: string;
-  email: string;
   displayName: string;
   bio: string;
-  avatar: string;
+  avatarUrl: string;
+}
+
+interface UserProfileResponse {
+  profile: UserProfile;
 }
 
 interface DashboardStats {
@@ -37,16 +39,20 @@ interface DashboardStats {
   totalClicks: number;
 }
 
+interface DashboardStatsResponse {
+  stats: DashboardStats;
+}
+
 export default function Dashboard() {
   const router = useRouter();
   useRequireAuth();
 
-  const { data: profile, isLoading: profileLoading } = useApiGet<UserProfile>({
+  const { data: profileData, isLoading: profileLoading } = useApiGet<UserProfileResponse>({
     url: 'admin/GetProfile',
     queryKey: 'admin-profile',
   });
 
-  const { data: stats } = useApiGet<DashboardStats>({
+  const { data: statsData } = useApiGet<DashboardStatsResponse>({
     url: 'admin/GetDashboardStats',
     queryKey: 'admin-dashboard-stats',
     retry: 0, // Don't retry if endpoint doesn't exist yet
@@ -55,7 +61,8 @@ export default function Dashboard() {
     },
   });
 
-  const dashboardStats = stats || { totalLinks: 0, totalViews: 0, totalClicks: 0 };
+  const profile = profileData?.profile;
+  const dashboardStats = statsData?.stats || { totalLinks: 0, totalViews: 0, totalClicks: 0 };
 
   if (profileLoading) {
     return (
@@ -157,7 +164,7 @@ export default function Dashboard() {
                   </Typography>
                   <Box display="flex" alignItems="center" gap={3} mt={2}>
                     <Avatar
-                      src={profile.avatar}
+                      src={profile.avatarUrl}
                       alt={profile.displayName}
                       sx={{ width: 80, height: 80 }}
                     />
@@ -167,9 +174,6 @@ export default function Dashboard() {
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         @{profile.username}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {profile.email}
                       </Typography>
                     </Box>
                   </Box>
