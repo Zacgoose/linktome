@@ -113,11 +113,13 @@ export function useAuth() {
   const router = useRouter();
   const [auth, setAuth] = useState<TokenInfo | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Load auth from localStorage on mount
   useEffect(() => {
     const storedAuth = getStoredAuth();
     setAuth(storedAuth);
+    setLoading(false);
   }, []);
 
   /**
@@ -273,6 +275,7 @@ export function useAuth() {
 
   return {
     user: auth?.user || null,
+    loading,
     isAuthenticated: isAuthenticated(),
     hasRole,
     hasPermission,
