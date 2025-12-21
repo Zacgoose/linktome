@@ -40,6 +40,30 @@ export const apiPost = async (endpoint: string, data?: any) => {
   }
 };
 
+export const apiPut = async (endpoint: string, data?: any) => {
+  try {
+    const response = await axios.put(`${API_BASE}/${endpoint}`, data, {
+      headers: buildHeaders(),
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
+};
+
+export const apiDelete = async (endpoint: string) => {
+  try {
+    const response = await axios.delete(`${API_BASE}/${endpoint}`, {
+      headers: buildHeaders(),
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
+};
+
 const handleApiError = (error: any) => {
   if (axios.isAxiosError(error)) {
     if (error.response?.status === 401) {

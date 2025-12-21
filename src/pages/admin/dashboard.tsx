@@ -10,8 +10,16 @@ import {
   Button, 
   Avatar,
   CircularProgress,
-  Grid
+  Grid,
+  Stack,
 } from '@mui/material';
+import {
+  Link as LinkIcon,
+  Person as PersonIcon,
+  Palette as PaletteIcon,
+  BarChart as AnalyticsIcon,
+  Visibility as ViewIcon,
+} from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { apiGet } from '@/utils/api';
 
@@ -24,9 +32,16 @@ interface UserProfile {
   avatar: string;
 }
 
+interface DashboardStats {
+  totalLinks: number;
+  totalViews: number;
+  totalClicks: number;
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [stats, setStats] = useState<DashboardStats>({ totalLinks: 0, totalViews: 0, totalClicks: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,10 +51,18 @@ export default function Dashboard() {
       return;
     }
 
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
-        const data = await apiGet('admin/GetProfile');
-        setProfile(data);
+        const profileData = await apiGet('admin/GetProfile');
+        setProfile(profileData);
+        
+        // Try to fetch stats, but don't fail if not available
+        try {
+          const statsData = await apiGet('admin/GetDashboardStats');
+          setStats(statsData);
+        } catch {
+          // Use default stats if endpoint not available
+        }
       } catch (err) {
         router.push('/login');
       } finally {
@@ -47,7 +70,7 @@ export default function Dashboard() {
       }
     };
 
-    fetchProfile();
+    fetchData();
   }, [router]);
 
   if (loading) {
@@ -73,9 +96,76 @@ export default function Dashboard() {
           <Typography variant="h4" gutterBottom fontWeight={700}>
             Welcome back, {profile.displayName}!
           </Typography>
+          <Typography variant="body1" color="text.secondary" gutterBottom>
+            Manage your LinkToMe profile and track your performance
+          </Typography>
           
-          <Grid container spacing={3} sx={{ mt: 2 }}>
-            <Grid item xs={12} md={8}>
+          {/* Stats Overview */}
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={4}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Box sx={{ p: 1, bgcolor: 'primary.light', borderRadius: 2 }}>
+                      <LinkIcon sx={{ color: 'primary.main' }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="h4" fontWeight={700}>
+                        {stats.totalLinks}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Links
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Box sx={{ p: 1, bgcolor: 'secondary.light', borderRadius: 2 }}>
+                      <ViewIcon sx={{ color: 'secondary.main' }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="h4" fontWeight={700}>
+                        {stats.totalViews}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Profile Views
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Box sx={{ p: 1, bgcolor: 'success.light', borderRadius: 2 }}>
+                      <AnalyticsIcon sx={{ color: 'success.main' }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="h4" fontWeight={700}>
+                        {stats.totalClicks}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Link Clicks
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+          
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            {/* Profile Overview */}
+            <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom fontWeight={600}>
@@ -88,35 +178,75 @@ export default function Dashboard() {
                       sx={{ width: 80, height: 80 }}
                     />
                     <Box>
-                      <Typography variant="body2">
-                        <strong>Username:</strong> @{profile.username}
+                      <Typography variant="h6" fontWeight={600}>
+                        {profile.displayName}
                       </Typography>
-                      <Typography variant="body2">
-                        <strong>Email:</strong> {profile.email}
+                      <Typography variant="body2" color="text.secondary">
+                        @{profile.username}
                       </Typography>
-                      <Typography variant="body2">
-                        <strong>Display Name:</strong> {profile.displayName}
+                      <Typography variant="body2" color="text.secondary">
+                        {profile.email}
                       </Typography>
                     </Box>
                   </Box>
+                  {profile.bio && (
+                    <Typography variant="body2" color="text.secondary" mt={2}>
+                      {profile.bio}
+                    </Typography>
+                  )}
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={() => router.push('/admin/profile')}
+                  >
+                    Edit Profile
+                  </Button>
                 </CardContent>
               </Card>
             </Grid>
             
-            <Grid item xs={12} md={4}>
+            {/* Quick Actions */}
+            <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom fontWeight={600}>
                     Quick Actions
                   </Typography>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                    onClick={() => router.push(`/public/${profile.username}`)}
-                  >
-                    View Public Profile
-                  </Button>
+                  <Stack spacing={2} mt={2}>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      startIcon={<ViewIcon />}
+                      onClick={() => router.push(`/public/${profile.username}`)}
+                    >
+                      View Public Profile
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      startIcon={<LinkIcon />}
+                      onClick={() => router.push('/admin/links')}
+                    >
+                      Manage Links
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      startIcon={<PaletteIcon />}
+                      onClick={() => router.push('/admin/appearance')}
+                    >
+                      Customize Appearance
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      startIcon={<AnalyticsIcon />}
+                      onClick={() => router.push('/admin/analytics')}
+                    >
+                      View Analytics
+                    </Button>
+                  </Stack>
                 </CardContent>
               </Card>
             </Grid>
