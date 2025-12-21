@@ -70,7 +70,6 @@ export default function AppearancePage() {
       }
     } catch {
       // If no settings exist, use defaults
-      console.log('Using default appearance settings');
     } finally {
       setLoading(false);
     }

@@ -47,10 +47,15 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
     onClose();
   };
 
-  // Reset form when dialog opens with new data
+  // Reset form when dialog fully closes
   const handleExited = () => {
-    setTitle(link?.title || '');
-    setUrl(link?.url || '');
+    if (link) {
+      setTitle(link.title);
+      setUrl(link.url);
+    } else {
+      setTitle('');
+      setUrl('');
+    }
   };
 
   return (

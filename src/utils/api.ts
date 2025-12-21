@@ -15,7 +15,7 @@ const buildHeaders = () => {
   return headers;
 };
 
-export const apiGet = async (endpoint: string, params?: Record<string, unknown>) => {
+export const apiGet = async (endpoint: string, params?: Record<string, string | number | boolean>) => {
   try {
     const response = await axios.get(`${API_BASE}/${endpoint}`, {
       params,
