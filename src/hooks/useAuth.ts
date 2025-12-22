@@ -223,7 +223,7 @@ export function useAuth() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [router, isRefreshing]);
+  }, [router]);
 
   /**
    * Check if user is authenticated
@@ -309,21 +309,24 @@ export function useAuth() {
 
   // Auto-refresh token if expiring soon
   useEffect(() => {
-    if (!auth || !auth.refreshToken) return;
+    if (!auth || !auth.refreshToken || isRefreshing) return;
 
-    if (isTokenExpiringSoon(auth.expiresAt)) {
-      refreshAccessToken();
-    }
-
-    // Check every minute if token needs refresh
-    const interval = setInterval(() => {
-      if (isTokenExpiringSoon(auth.expiresAt)) {
+    // Check if token is expiring soon and refresh once
+    const checkAndRefresh = () => {
+      const currentAuth = getStoredAuth();
+      if (currentAuth && isTokenExpiringSoon(currentAuth.expiresAt) && !isRefreshing) {
         refreshAccessToken();
       }
-    }, 60000); // 1 minute
+    };
+
+    // Initial check
+    checkAndRefresh();
+
+    // Check every minute if token needs refresh
+    const interval = setInterval(checkAndRefresh, 60000); // 1 minute
 
     return () => clearInterval(interval);
-  }, [auth, refreshAccessToken]);
+  }, [auth?.expiresAt, auth?.refreshToken, isRefreshing, refreshAccessToken]);
 
   return {
     user: auth?.user || null,
