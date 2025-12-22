@@ -1,5 +1,4 @@
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -89,28 +88,7 @@ const menuItems: MenuItem[] = [
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
-  const { user, logout, loading } = useAuthContext();
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
-    }
-  }, [loading, user, router]);
-
-  // Show loading state while checking authentication
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // Don't render content if not authenticated (will redirect via useEffect)
-  if (!user) {
-    return null;
-  }
+  const { user, logout } = useAuthContext();
 
   // Filter menu items based on user permissions and roles
   const visibleMenuItems = menuItems.filter((item) => {
