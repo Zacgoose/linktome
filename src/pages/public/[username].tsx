@@ -17,16 +17,17 @@ import { useApiGet } from '@/hooks/useApiQuery';
 interface Link {
   title: string;
   url: string;
+  id?: string;
+  order?: number;
 }
 
-interface ProfileResponse {
-  profile: {
-    username: string;
-    displayName: string;
-    bio: string;
-    avatarUrl: string;
-    links: Link[];
-  };
+interface PublicProfile {
+  username: string;
+  displayName: string;
+  bio: string;
+  avatar?: string; // Backend returns 'avatar', not 'avatarUrl'
+  avatarUrl?: string; // Support both for backward compatibility
+  links: Link[];
 }
 
 export default function PublicProfile() {
@@ -35,7 +36,7 @@ export default function PublicProfile() {
   
   const [error, setError] = useState('');
 
-  const { data, isLoading } = useApiGet<ProfileResponse>({
+  const { data: profile, isLoading } = useApiGet<PublicProfile>({
     url: 'public/GetUserProfile',
     queryKey: `public-profile-${username}`,
     params: { username: username as string },
@@ -45,8 +46,6 @@ export default function PublicProfile() {
       setError(error);
     },
   });
-
-  const profile = data?.profile;
 
   if (isLoading) {
     return (
@@ -113,7 +112,7 @@ export default function PublicProfile() {
           <Card elevation={4}>
             <CardContent sx={{ p: 5, textAlign: 'center' }}>
               <Avatar
-                src={profile.avatarUrl}
+                src={profile.avatar || profile.avatarUrl}
                 alt={profile.displayName}
                 sx={{ 
                   width: 120, 
