@@ -314,33 +314,49 @@ export function useAuth() {
   useEffect(() => {
     if (!auth || !auth.refreshToken || !auth.expiresAt) return;
 
+    // Track last refresh time to prevent immediate re-refresh
+    let lastRefreshTime = Date.now();
+
     // Check if token is expiring soon and refresh once
     const checkAndRefresh = async () => {
       // Re-check auth from storage in case it was updated
       const currentAuth = getStoredAuth();
       if (!currentAuth || !currentAuth.expiresAt || isRefreshingRef.current) return;
       
-      // Only refresh if within 5 minutes of expiration
       const now = Date.now();
       const timeUntilExpiry = currentAuth.expiresAt - now;
       const fiveMinutes = 5 * 60 * 1000;
+      const oneMinute = 60 * 1000;
       
       // Debug log to help track refresh behavior
       if (process.env.NODE_ENV === 'development') {
         const minutesLeft = Math.floor(timeUntilExpiry / 60000);
-        console.log(`[Auth] Token expires in ${minutesLeft} minutes`);
+        const expiryDate = new Date(currentAuth.expiresAt);
+        console.log(`[Auth] Token expires in ${minutesLeft} minutes at ${expiryDate.toLocaleTimeString()}`);
       }
       
-      if (timeUntilExpiry < fiveMinutes && timeUntilExpiry > 0) {
+      // Prevent refresh if we just refreshed less than 1 minute ago
+      const timeSinceLastRefresh = now - lastRefreshTime;
+      if (timeSinceLastRefresh < oneMinute) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Auth] Skipping refresh - last refresh was ${Math.floor(timeSinceLastRefresh / 1000)} seconds ago`);
+        }
+        return;
+      }
+      
+      // Only refresh if within 5 minutes of expiration AND more than 10 minutes have passed since token issue
+      // This prevents immediate refresh of newly issued tokens
+      const tokenAge = now - (currentAuth.expiresAt - (15 * 60 * 1000)); // Assuming 15 min token
+      const tenMinutes = 10 * 60 * 1000;
+      
+      if (timeUntilExpiry < fiveMinutes && timeUntilExpiry > 0 && tokenAge > tenMinutes) {
         console.log('[Auth] Token expiring soon, refreshing...');
         await refreshAccessToken();
+        lastRefreshTime = Date.now();
       }
     };
 
-    // Check immediately on mount
-    checkAndRefresh();
-
-    // Then check every minute
+    // Don't check immediately - wait 1 minute before first check
     const interval = setInterval(checkAndRefresh, 60000); // 1 minute
 
     return () => clearInterval(interval);
