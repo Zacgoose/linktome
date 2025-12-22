@@ -22,11 +22,8 @@ interface UserProfile {
   username: string;
   displayName: string;
   bio: string;
-  avatarUrl: string;
-}
-
-interface UserProfileResponse {
-  profile: UserProfile;
+  avatar?: string; // Backend returns "avatar" not "avatarUrl"
+  avatarUrl?: string; // Keep for backwards compatibility
 }
 
 export default function ProfilePage() {
@@ -35,17 +32,17 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const { data, isLoading } = useApiGet<UserProfileResponse>({
+  const { data, isLoading } = useApiGet<UserProfile>({
     url: 'admin/GetProfile',
     queryKey: 'admin-profile',
   });
 
-  const profile = data?.profile;
+  const profile = data;
 
   const [formData, setFormData] = useState({
     displayName: profile?.displayName || '',
     bio: profile?.bio || '',
-    avatarUrl: profile?.avatarUrl || '',
+    avatarUrl: profile?.avatar || profile?.avatarUrl || '',
   });
 
   // Only update form when profile initially loads
@@ -57,7 +54,7 @@ export default function ProfilePage() {
       setFormData({
         displayName: profile.displayName || '',
         bio: profile.bio || '',
-        avatarUrl: profile.avatarUrl || '',
+        avatarUrl: profile.avatar || profile.avatarUrl || '',
       });
       profileLoadedRef.current = true;
     }
@@ -86,7 +83,7 @@ export default function ProfilePage() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || !profile) {
     return (
       <AdminLayout>
         <Box display="flex" justifyContent="center" p={5}>
@@ -95,8 +92,6 @@ export default function ProfilePage() {
       </AdminLayout>
     );
   }
-
-  if (!profile) return null;
 
   return (
     <>

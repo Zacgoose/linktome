@@ -25,11 +25,9 @@ interface UserProfile {
   username: string;
   displayName: string;
   bio: string;
-  avatarUrl: string;
-}
-
-interface UserProfileResponse {
-  profile: UserProfile;
+  avatar?: string; // Backend returns "avatar" not "avatarUrl"
+  avatarUrl?: string; // Keep for backwards compatibility
+  links?: Array<{ id: string; title: string; url: string; order: number }>;
 }
 
 interface DashboardStats {
@@ -45,7 +43,7 @@ interface DashboardStatsResponse {
 export default function Dashboard() {
   const router = useRouter();
 
-  const { data: profileData, isLoading: profileLoading } = useApiGet<UserProfileResponse>({
+  const { data: profileData, isLoading: profileLoading } = useApiGet<UserProfile>({
     url: 'admin/GetProfile',
     queryKey: 'admin-profile',
   });
@@ -59,8 +57,12 @@ export default function Dashboard() {
     },
   });
 
-  const profile = profileData?.profile;
-  const dashboardStats = statsData?.stats || { totalLinks: 0, totalViews: 0, totalClicks: 0 };
+  const profile = profileData;
+  const dashboardStats = statsData?.stats || { 
+    totalLinks: profileData?.links?.length || 0, 
+    totalViews: 0, 
+    totalClicks: 0 
+  };
 
   if (profileLoading || !profile) {
     return (
@@ -160,7 +162,7 @@ export default function Dashboard() {
                   </Typography>
                   <Box display="flex" alignItems="center" gap={3} mt={2}>
                     <Avatar
-                      src={profile.avatarUrl}
+                      src={profile.avatar || profile.avatarUrl}
                       alt={profile.displayName}
                       sx={{ width: 80, height: 80 }}
                     />
