@@ -19,7 +19,7 @@ import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 
 interface AnalyticsData {
-  views: number;
+  totalPageViews: number;
   clicks: number;
   topLinks: Array<{
     title: string;
@@ -29,10 +29,11 @@ interface AnalyticsData {
 }
 
 interface AnalyticsResponse {
-  analytics: AnalyticsData;
+  summary: AnalyticsData;
 }
 
 export default function AnalyticsPage() {
+
   const { data, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
     queryKey: 'admin-analytics',
@@ -42,15 +43,12 @@ export default function AnalyticsPage() {
     },
   });
 
-  const analytics = data?.analytics || {
-    views: 0,
-    clicks: 0,
-    topLinks: [],
-  };
-
-  const clickThroughRate = analytics.views > 0 
-    ? ((analytics.clicks / analytics.views) * 100) 
-    : 0;
+  const analytics: AnalyticsData | undefined = data?.summary;
+  let clickThroughRateDisplay = '0.0';
+  if (analytics && analytics.totalPageViews > 0) {
+    const ctr = (analytics.clicks / analytics.totalPageViews) * 100;
+    clickThroughRateDisplay = isFinite(ctr) ? ctr.toFixed(1) : '0.0';
+  }
 
   if (isLoading) {
     return (
@@ -78,7 +76,7 @@ export default function AnalyticsPage() {
           </Typography>
 
 
-          {!analytics?.views && !analytics?.clicks && (
+          {!analytics?.totalPageViews && !analytics?.clicks && (
             <Alert severity="info" sx={{ mb: 3 }}>
               Analytics will be available once your profile receives visits and clicks
             </Alert>
@@ -105,7 +103,7 @@ export default function AnalyticsPage() {
                     </Typography>
                   </Box>
                   <Typography variant="h3" fontWeight={700}>
-                    {analytics?.views || 0}
+                    {analytics?.totalPageViews || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
                     Total profile visits
@@ -163,7 +161,7 @@ export default function AnalyticsPage() {
                     </Typography>
                   </Box>
                   <Typography variant="h3" fontWeight={700}>
-                    {clickThroughRate?.toFixed(1) || 0}%
+                    {clickThroughRateDisplay}%
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
                     Click-through rate
