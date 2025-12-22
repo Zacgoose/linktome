@@ -32,8 +32,8 @@ interface UserProfile {
 
 interface DashboardStats {
   totalLinks: number;
-  totalViews: number;
-  totalClicks: number;
+  totalPageViews: number;
+  totalLinkClicks: number;
 }
 
 interface DashboardStatsResponse {
@@ -60,8 +60,8 @@ export default function Dashboard() {
   const profile = profileData;
   const dashboardStats = statsData?.stats || { 
     totalLinks: profileData?.links?.length || 0, 
-    totalViews: 0, 
-    totalClicks: 0 
+    totalPageViews: 0, 
+    totalLinkClicks: 0 
   };
 
   if (profileLoading || !profile) {
@@ -120,7 +120,7 @@ export default function Dashboard() {
                     </Box>
                     <Box>
                       <Typography variant="h4" fontWeight={700}>
-                        {dashboardStats.totalViews}
+                        {dashboardStats.totalPageViews}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Profile Views
@@ -140,7 +140,7 @@ export default function Dashboard() {
                     </Box>
                     <Box>
                       <Typography variant="h4" fontWeight={700}>
-                        {dashboardStats.totalClicks}
+                        {dashboardStats.totalLinkClicks}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Link Clicks
