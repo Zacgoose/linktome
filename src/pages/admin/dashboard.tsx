@@ -62,17 +62,15 @@ export default function Dashboard() {
   const profile = profileData?.profile;
   const dashboardStats = statsData?.stats || { totalLinks: 0, totalViews: 0, totalClicks: 0 };
 
-  if (profileLoading) {
+  if (profileLoading || !profile) {
     return (
       <AdminLayout>
-        <Box display="flex" justifyContent="center" p={5}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
           <CircularProgress />
         </Box>
       </AdminLayout>
     );
   }
-
-  if (!profile) return null;
 
   return (
     <>
