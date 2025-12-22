@@ -1,4 +1,4 @@
-import { useEffect, createElement, useState, useCallback } from 'react';
+import { useEffect, createElement, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { checkRouteAccess } from '../config/routes';
 
@@ -166,6 +166,7 @@ export function useAuth() {
   const [auth, setAuth] = useState<TokenInfo | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const isRefreshingRef = useRef(false);
 
   // Load auth from localStorage on mount
   useEffect(() => {
@@ -179,10 +180,11 @@ export function useAuth() {
    */
   const refreshAccessToken = useCallback(async (): Promise<boolean> => {
     const storedAuth = getStoredAuth();
-    if (!storedAuth?.refreshToken || isRefreshing) {
+    if (!storedAuth?.refreshToken || isRefreshingRef.current) {
       return false;
     }
 
+    isRefreshingRef.current = true;
     setIsRefreshing(true);
     try {
       // Call refresh token endpoint
@@ -221,6 +223,7 @@ export function useAuth() {
       router.push('/login');
       return false;
     } finally {
+      isRefreshingRef.current = false;
       setIsRefreshing(false);
     }
   }, [router]);
@@ -309,24 +312,25 @@ export function useAuth() {
 
   // Auto-refresh token if expiring soon
   useEffect(() => {
-    if (!auth || !auth.refreshToken || isRefreshing) return;
+    if (!auth || !auth.refreshToken) return;
 
     // Check if token is expiring soon and refresh once
-    const checkAndRefresh = () => {
+    const checkAndRefresh = async () => {
+      // Re-check auth from storage in case it was updated
       const currentAuth = getStoredAuth();
-      if (currentAuth && isTokenExpiringSoon(currentAuth.expiresAt) && !isRefreshing) {
-        refreshAccessToken();
+      if (!currentAuth || isRefreshingRef.current) return;
+      
+      if (isTokenExpiringSoon(currentAuth.expiresAt)) {
+        await refreshAccessToken();
       }
     };
-
-    // Initial check
-    checkAndRefresh();
 
     // Check every minute if token needs refresh
     const interval = setInterval(checkAndRefresh, 60000); // 1 minute
 
     return () => clearInterval(interval);
-  }, [auth?.expiresAt, auth?.refreshToken, isRefreshing, refreshAccessToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth?.expiresAt, auth?.refreshToken]);
 
   return {
     user: auth?.user || null,
