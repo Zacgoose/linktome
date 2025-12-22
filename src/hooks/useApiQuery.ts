@@ -3,16 +3,49 @@ import axios, { AxiosError } from 'axios';
 
 const API_BASE = '/api';
 
-const buildHeaders = () => {
+
+// Helper to check if access token is missing or expired, and refresh if possible
+const ensureValidAccessToken = async () => {
+  const accessToken = localStorage.getItem('accessToken');
+  const refreshToken = localStorage.getItem('refreshToken');
+  let isTokenValid = false;
+  if (accessToken) {
+    try {
+      const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const exp = payload.exp ? payload.exp * 1000 : 0;
+      isTokenValid = exp > Date.now() + 5000; // 5s leeway
+    } catch {}
+  }
+  if (!isTokenValid && refreshToken) {
+    // Try to refresh the access token
+    try {
+      const response = await fetch('/api/public/RefreshToken', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.accessToken) {
+          localStorage.setItem('accessToken', data.accessToken);
+          if (data.refreshToken) {
+            localStorage.setItem('refreshToken', data.refreshToken);
+          }
+        }
+      }
+    } catch {}
+  }
+};
+
+const buildHeaders = async () => {
+  await ensureValidAccessToken();
   const token = localStorage.getItem('accessToken');
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
   return headers;
 };
 
@@ -82,41 +115,31 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     queryKey: [queryKey, params],
     enabled,
     queryFn: async ({ signal }) => {
+      const headers = await buildHeaders();
       const response = await axios.get<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, {
         signal,
         params,
-        headers: buildHeaders(),
+        headers,
       });
-      
       const data = response.data;
-      
       // Check if response has the { success, error, data } format
       if (typeof data === 'object' && data !== null && 'success' in data) {
         const apiResponse = data as ApiResponse<TData>;
-        
-        // Handle backend error responses
         if (!apiResponse.success && apiResponse.error) {
           if (onError) {
             onError(apiResponse.error);
           }
           throw new Error(apiResponse.error);
         }
-        
-        // Return the actual data from the backend response
         const result = apiResponse.data ?? apiResponse;
-        
         if (onSuccess) {
           onSuccess(result);
         }
-        
         return result as TData;
       }
-      
-      // Response is already in the expected format
       if (onSuccess) {
         onSuccess(data);
       }
-      
       return data as TData;
     },
     staleTime,

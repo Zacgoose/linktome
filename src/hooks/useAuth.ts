@@ -54,7 +54,25 @@ function getStoredAuth(): TokenInfo | null {
   const refreshToken = localStorage.getItem('refreshToken');
   const userStr = localStorage.getItem('user');
 
-  if (!accessToken || !userStr) return null;
+  // If user is missing, cannot proceed
+  if (!userStr) return null;
+
+  // If accessToken is missing but refreshToken and user are present, allow partial auth for refresh
+  if (!accessToken && refreshToken) {
+    try {
+      const user = JSON.parse(userStr) as UserAuth;
+      return {
+        accessToken: '',
+        refreshToken,
+        expiresAt: undefined,
+        user,
+      };
+    } catch {
+      return null;
+    }
+  }
+  // If both accessToken and refreshToken are missing, treat as logged out
+  if (!accessToken) return null;
 
   try {
     const user = JSON.parse(userStr) as UserAuth;
