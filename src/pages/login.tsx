@@ -1,64 +1,142 @@
-import { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { 
-  Box, 
-  Container, 
-  Card, 
-  CardContent, 
-  TextField, 
-  Button, 
+import {
+  Box,
+  Container,
+  Card,
+  CardContent,
+  TextField,
+  Button,
   Typography,
   Alert,
   Link as MuiLink
 } from '@mui/material';
-import { apiPost } from '@/utils/api';
+import { useApiPost } from '@/hooks/useApiQuery';
+import { storeAuth, type UserAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/providers/AuthProvider';
 
-export default function Login() {
+export default function LoginPage() {
+  interface LoginResponse {
+    accessToken: string;
+    refreshToken?: string;
+    user: UserAuth;
+  }
+  interface SignupResponse {
+    accessToken?: string;
+    refreshToken?: string;
+    user: UserAuth;
+  }
+
   const router = useRouter();
+  const { setUser } = useAuthContext();
   const isSignup = router.query.signup === 'true';
-  
+
   const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
+  // Remove setMode from useEffect to avoid cascading renders
+  // Instead, derive mode directly from router.query.signup
+  const derivedMode: 'login' | 'signup' = isSignup ? 'signup' : 'login';
   useEffect(() => {
-    setMode(isSignup ? 'signup' : 'login');
-  }, [isSignup]);
+    setMode(derivedMode);
+  }, [derivedMode]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const endpoint = mode === 'login' ? 'public/Login' : 'public/Signup';
-      const data = mode === 'login' 
-        ? { email, password }
-        : { email, username, password };
-
-      const response = await apiPost(endpoint, data);
-      
-      if (response.accessToken) {
-        localStorage.setItem('accessToken', response.accessToken);
+  const loginMutation = useApiPost<LoginResponse>({
+    onSuccess: (data: LoginResponse) => {
+      if (data.accessToken && data.user) {
+        // Normalize user
+        const roles: string[] = Array.isArray(data.user.roles)
+          ? data.user.roles
+          : typeof data.user.roles === 'string'
+            ? (() => { try { return JSON.parse(data.user.roles); } catch { return [data.user.roles]; } })()
+            : [data.user.roles];
+        const permissions: string[] = Array.isArray(data.user.permissions)
+          ? data.user.permissions
+          : typeof data.user.permissions === 'string'
+            ? (() => { try { return JSON.parse(data.user.permissions); } catch { return [data.user.permissions]; } })()
+            : [data.user.permissions];
+        // Use only userId for id
+        const user = {
+          ...data.user,
+          id: data.user.userId,
+          roles,
+          permissions
+        };
+        storeAuth(data.accessToken, user, data.refreshToken);
+        setUser(user);
         router.push('/admin/dashboard');
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'An error occurred');
-    } finally {
-      setLoading(false);
+    },
+    onError: (error: string) => {
+      setError(error);
+      setTimeout(() => setError(''), 5000);
+    },
+  });
+
+  const signupMutation = useApiPost<SignupResponse>({
+    onSuccess: (data: SignupResponse) => {
+      if (data.accessToken && data.user) {
+        const roles: string[] = Array.isArray(data.user.roles)
+          ? data.user.roles
+          : typeof data.user.roles === 'string'
+            ? (() => { try { return JSON.parse(data.user.roles); } catch { return [data.user.roles]; } })()
+            : [data.user.roles];
+        const permissions: string[] = Array.isArray(data.user.permissions)
+          ? data.user.permissions
+          : typeof data.user.permissions === 'string'
+            ? (() => { try { return JSON.parse(data.user.permissions); } catch { return [data.user.permissions]; } })()
+            : [data.user.permissions];
+        const user = {
+          ...data.user,
+          id: data.user.userId,
+          roles,
+          permissions
+        };
+        storeAuth(data.accessToken, user, data.refreshToken);
+        setUser(user);
+        router.push('/admin/dashboard');
+      } else {
+        setMode('login');
+        setError('');
+        setPassword('');
+        alert(`Account created successfully! Welcome, ${data.user.username}. Please log in.`);
+      }
+    },
+    onError: (error: string) => {
+      setError(error);
+      setTimeout(() => setError(''), 5000);
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+
+    if (mode === 'login') {
+      loginMutation.mutate({
+        url: 'public/Login',
+        data: { email, password },
+      });
+    } else {
+      signupMutation.mutate({
+        url: 'public/Signup',
+        data: { email, username, password },
+      });
     }
   };
+
+  const loading = loginMutation.isPending || signupMutation.isPending;
 
   return (
     <>
       <Head>
         <title>{mode === 'login' ? 'Login' : 'Sign Up'} - LinkToMe</title>
       </Head>
-      
       <Box
         sx={{
           minHeight: '100vh',
@@ -73,45 +151,40 @@ export default function Login() {
               <Typography variant="h4" align="center" gutterBottom fontWeight={700}>
                 {mode === 'login' ? 'Welcome Back' : 'Create Account'}
               </Typography>
-              
               <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
                 <TextField
                   fullWidth
                   label="Email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                   required
                   margin="normal"
                 />
-                
                 {mode === 'signup' && (
                   <TextField
                     fullWidth
                     label="Username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                     required
                     margin="normal"
                   />
                 )}
-                
                 <TextField
                   fullWidth
                   label="Password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                   required
                   margin="normal"
                 />
-                
                 {error && (
                   <Alert severity="error" sx={{ mt: 2 }}>
                     {error}
                   </Alert>
                 )}
-                
                 <Button
                   fullWidth
                   variant="contained"
@@ -123,14 +196,13 @@ export default function Login() {
                   {loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Sign Up'}
                 </Button>
               </Box>
-              
               <Box textAlign="center" mt={3}>
                 <Typography variant="body2" color="text.secondary">
                   {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
                   <MuiLink
                     component="button"
                     variant="body2"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       setMode(mode === 'login' ? 'signup' : 'login');
                     }}
@@ -139,7 +211,6 @@ export default function Login() {
                   </MuiLink>
                 </Typography>
               </Box>
-
               {mode === 'login' && (
                 <Alert severity="info" sx={{ mt: 3 }}>
                   <Typography variant="caption" display="block">
