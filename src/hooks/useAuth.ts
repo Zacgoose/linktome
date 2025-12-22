@@ -73,15 +73,67 @@ function getStoredAuth(): TokenInfo | null {
 }
 
 /**
+ * Normalize roles - handle both string and array formats, and unwrap JSON-encoded strings
+ */
+function normalizeRoles(roles: string | string[] | unknown): string[] {
+  // If roles is already an array
+  if (Array.isArray(roles)) {
+    return roles.map((role) => {
+      // If the role is a JSON-encoded string like "\"user\"", parse it
+      if (typeof role === 'string' && role.startsWith('"') && role.endsWith('"')) {
+        try {
+          return JSON.parse(role);
+        } catch {
+          return role;
+        }
+      }
+      return String(role);
+    });
+  }
+  
+  // If roles is a string (could be JSON-encoded)
+  if (typeof roles === 'string') {
+    // Try to parse if it looks like JSON
+    if (roles.startsWith('"') && roles.endsWith('"')) {
+      try {
+        const parsed = JSON.parse(roles);
+        return [String(parsed)];
+      } catch {
+        return [roles];
+      }
+    }
+    // If it's a regular string, wrap in array
+    return [roles];
+  }
+  
+  // Fallback: return empty array
+  return [];
+}
+
+/**
  * Store authentication information in localStorage
  */
 export function storeAuth(
   accessToken: string,
-  user: UserAuth,
+  user: UserAuth | Record<string, unknown>,
   refreshToken?: string
 ): void {
+  // Normalize the user object to ensure roles is an array
+  const normalizedUser: UserAuth = {
+    userId: String((user as UserAuth).userId || (user as Record<string, unknown>).userId || ''),
+    username: String((user as UserAuth).username || (user as Record<string, unknown>).username || ''),
+    email: String((user as UserAuth).email || (user as Record<string, unknown>).email || ''),
+    roles: normalizeRoles((user as UserAuth).roles || (user as Record<string, unknown>).roles),
+    permissions: Array.isArray((user as UserAuth).permissions) 
+      ? (user as UserAuth).permissions 
+      : Array.isArray((user as Record<string, unknown>).permissions)
+      ? ((user as Record<string, unknown>).permissions as string[])
+      : [],
+    companyId: (user as UserAuth).companyId || (user as Record<string, unknown>).companyId as string | undefined,
+  };
+  
   localStorage.setItem('accessToken', accessToken);
-  localStorage.setItem('user', JSON.stringify(user));
+  localStorage.setItem('user', JSON.stringify(normalizedUser));
   if (refreshToken) {
     localStorage.setItem('refreshToken', refreshToken);
   }
