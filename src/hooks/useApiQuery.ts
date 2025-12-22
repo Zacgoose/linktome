@@ -56,11 +56,18 @@ interface ApiResponse<TData> {
   data?: TData;
 }
 
+// Track if we're already redirecting to prevent multiple simultaneous redirects
+let isRedirecting = false;
+
 // Helper to handle API errors and redirects
 const handleApiError = (error: AxiosError) => {
   if (axios.isAxiosError(error) && error.response?.status === 401) {
-    localStorage.removeItem('accessToken');
-    if (typeof window !== 'undefined') {
+    // Only redirect once, even if multiple API calls fail
+    if (!isRedirecting && typeof window !== 'undefined') {
+      isRedirecting = true;
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
       window.location.href = '/login';
     }
   }
@@ -177,8 +184,9 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
+      const headers = await buildHeaders();
       const response = await axios.post<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, data, {
-        headers: buildHeaders(),
+        headers,
       });
       
       const responseData = response.data;
@@ -233,8 +241,9 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
+      const headers = await buildHeaders();
       const response = await axios.put<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, data, {
-        headers: buildHeaders(),
+        headers,
       });
       
       const responseData = response.data;
@@ -289,8 +298,9 @@ export function useApiDelete<TData = unknown>(
 
   const mutation = useMutation<TData, Error, { url: string }>({
     mutationFn: async ({ url }) => {
+      const headers = await buildHeaders();
       const response = await axios.delete<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, {
-        headers: buildHeaders(),
+        headers,
       });
       
       const responseData = response.data;
