@@ -12,20 +12,21 @@ import {
   Stack,
   CircularProgress 
 } from '@mui/material';
-import { apiGet } from '@/utils/api';
+import { useApiGet } from '@/hooks/useApiQuery';
 
 interface Link {
-  id: string;
   title: string;
   url: string;
-  order: number;
+  id?: string;
+  order?: number;
 }
 
-interface Profile {
+interface PublicProfile {
   username: string;
   displayName: string;
   bio: string;
-  avatar: string;
+  avatar?: string; // Backend returns 'avatar', not 'avatarUrl'
+  avatarUrl?: string; // Support both for backward compatibility
   links: Link[];
 }
 
@@ -33,28 +34,20 @@ export default function PublicProfile() {
   const router = useRouter();
   const { username } = router.query;
   
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!username) return;
+  const { data: profile, isLoading } = useApiGet<PublicProfile>({
+    url: 'public/GetUserProfile',
+    queryKey: `public-profile-${username}`,
+    params: { username: username as string },
+    enabled: !!username,
+    retry: 0, // Don't retry for public profiles
+    onError: (error) => {
+      setError(error);
+    },
+  });
 
-    const fetchProfile = async () => {
-      try {
-        const data = await apiGet(`public/GetUserProfile?username=${username}`);
-        setProfile(data);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Profile not found');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [username]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <Box
         sx={{
@@ -119,7 +112,7 @@ export default function PublicProfile() {
           <Card elevation={4}>
             <CardContent sx={{ p: 5, textAlign: 'center' }}>
               <Avatar
-                src={profile.avatar}
+                src={profile.avatar || profile.avatarUrl}
                 alt={profile.displayName}
                 sx={{ 
                   width: 120, 
@@ -145,9 +138,9 @@ export default function PublicProfile() {
               )}
               
               <Stack spacing={2}>
-                {profile.links.map((link) => (
+                {profile.links && profile.links.map((link, index) => (
                   <Button
-                    key={link.id}
+                    key={index}
                     variant="contained"
                     size="large"
                     fullWidth

@@ -1,31 +1,48 @@
-import { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { 
-  Box, 
-  Container, 
-  Card, 
-  CardContent, 
-  TextField, 
-  Button, 
+import {
+  Box,
+  Container,
+  Card,
+  CardContent,
+  TextField,
+  Button,
   Typography,
   Alert,
   Link as MuiLink
 } from '@mui/material';
-import { apiPost } from '@/utils/api';
+import { useApiPost } from '@/hooks/useApiQuery';
+import { storeAuth, type UserAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/providers/AuthProvider';
 
-export default function Login() {
+export default function LoginPage() {
+  interface LoginResponse {
+    accessToken: string;
+    refreshToken?: string;
+    user: UserAuth;
+  }
+  interface SignupResponse {
+    accessToken?: string;
+    refreshToken?: string;
+    user: UserAuth;
+  }
+
   const router = useRouter();
+  const { setUser } = useAuthContext();
   const isSignup = router.query.signup === 'true';
 <<<<<<< Updated upstream
   
   const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
+  // Remove setMode from useEffect to avoid cascading renders
+  // Instead, derive mode directly from router.query.signup
+  const derivedMode: 'login' | 'signup' = isSignup ? 'signup' : 'login';
   useEffect(() => {
     setMode(isSignup ? 'signup' : 'login');
   }, [isSignup]);
@@ -117,7 +134,6 @@ export default function Login() {
 >>>>>>> Stashed changes
     e.preventDefault();
     setError('');
-    setLoading(true);
 
 <<<<<<< Updated upstream
     try {
@@ -156,7 +172,6 @@ export default function Login() {
       <Head>
           <title>{derivedMode === 'login' ? 'Login' : 'Sign Up'} - LinkToMe</title>
       </Head>
-      
       <Box
         sx={{
           minHeight: '100vh',
@@ -171,14 +186,13 @@ export default function Login() {
               <Typography variant="h4" align="center" gutterBottom fontWeight={700}>
                   {derivedMode === 'login' ? 'Welcome Back' : 'Create Account'}
               </Typography>
-              
               <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
                 <TextField
                   fullWidth
                   label="Email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                   required
                   margin="normal"
                 />
@@ -192,22 +206,20 @@ export default function Login() {
                     fullWidth
                     label="Username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                     required
                     margin="normal"
                   />
                 )}
-                
                 <TextField
                   fullWidth
                   label="Password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                   required
                   margin="normal"
                 />
-                
                 {error && (
                   <Alert severity="error" sx={{ mt: 2 }}>
                     {error}
@@ -233,14 +245,13 @@ export default function Login() {
                     {loading ? 'Please wait...' : derivedMode === 'login' ? 'Login' : 'Sign Up'}
                 </Button>
               </Box>
-              
               <Box textAlign="center" mt={3}>
                 <Typography variant="body2" color="text.secondary">
                     {derivedMode === 'login' ? "Don't have an account? " : 'Already have an account? '}
                   <MuiLink
                     component="button"
                     variant="body2"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                         router.replace({
                           pathname: router.pathname,
