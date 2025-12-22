@@ -65,22 +65,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
           return;
         } catch {
-          // Fallback to API
-        }
-      }
-      // Otherwise, fetch from API
-      try {
-        const profile = await apiGet('admin/GetProfile');
-        if (profile && profile.userId) {
-          const user = normalizeUser(profile);
-          setUser(user);
-          localStorage.setItem('user', JSON.stringify(user));
-        } else {
+          // If parsing fails, clear invalid data and set user to null
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
           setUser(null);
+          setLoading(false);
+          return;
         }
-      } catch {
-        setUser(null);
       }
+      // If no token in localStorage, don't try to fetch from API
+      // The user is not authenticated, let the pages handle the redirect
+      setUser(null);
       setLoading(false);
     }
     fetchAuth();

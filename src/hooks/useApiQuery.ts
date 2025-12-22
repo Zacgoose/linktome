@@ -56,11 +56,18 @@ interface ApiResponse<TData> {
   data?: TData;
 }
 
+// Track if we're already redirecting to prevent multiple redirects
+let isRedirecting = false;
+
 // Helper to handle API errors and redirects
 const handleApiError = (error: AxiosError) => {
   if (axios.isAxiosError(error) && error.response?.status === 401) {
-    localStorage.removeItem('accessToken');
-    if (typeof window !== 'undefined') {
+    // Only redirect once, even if multiple API calls fail
+    if (!isRedirecting && typeof window !== 'undefined') {
+      isRedirecting = true;
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
       window.location.href = '/login';
     }
   }
