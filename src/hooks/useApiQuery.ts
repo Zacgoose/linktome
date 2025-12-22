@@ -57,17 +57,20 @@ interface ApiResponse<TData> {
 }
 
 // Track if we're already redirecting to prevent multiple simultaneous redirects
+// This flag is per-page-load and will be reset when the page redirects
 let isRedirecting = false;
 
 // Helper to handle API errors and redirects
 const handleApiError = (error: AxiosError) => {
   if (axios.isAxiosError(error) && error.response?.status === 401) {
-    // Only redirect once, even if multiple API calls fail
+    // Only redirect once per page load, even if multiple API calls fail simultaneously
     if (!isRedirecting && typeof window !== 'undefined') {
       isRedirecting = true;
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       localStorage.removeItem('refreshToken');
+      // Use window.location.href which will cause a full page redirect
+      // and reset the isRedirecting flag on the next page load
       window.location.href = '/login';
     }
   }
