@@ -22,7 +22,7 @@ import {
   People as PeopleIcon,
   Business as BusinessIcon,
 } from '@mui/icons-material';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/providers/AuthProvider';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -85,86 +85,31 @@ const menuItems: MenuItem[] = [
   },
 ];
 
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
-  const { user, loading, logout, canAccessRoute, hasAllPermissions, hasAnyRole } = useAuth();
+  const { user, logout } = useAuthContext();
 
-  // Centralized authentication enforcement with route-based permission checking
-  // Show loading spinner while checking auth
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // Not authenticated - redirect happens in useAuth
-  if (!user) {
-    return null;
-  }
-
-  // Check if user can access current route
-  const currentPath = router.pathname;
-  if (!canAccessRoute(currentPath)) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-          gap: 2,
-          p: 3,
-        }}
-      >
-        <Typography variant="h4" gutterBottom>
-          Access Denied
-        </Typography>
-        <Typography variant="body1" color="text.secondary" align="center">
-          You don't have permission to access this page.
-        </Typography>
-        <Button
-          variant="contained"
-          onClick={() => router.push('/admin/dashboard')}
-          sx={{ mt: 2 }}
-        >
-          Go to Dashboard
-        </Button>
-      </Box>
-    );
-  }
+  // Filter menu items based on user permissions and roles
+  const visibleMenuItems = menuItems.filter((item) => {
+    // Check role requirements
+    if (item.requiredRoles && item.requiredRoles.length > 0) {
+      if (!user || !item.requiredRoles.some((role) => user.roles.includes(role))) {
+        return false;
+      }
+    }
+    // Check permission requirements
+    if (item.requiredPermissions && item.requiredPermissions.length > 0) {
+      if (!user || !item.requiredPermissions.every((perm) => user.permissions.includes(perm))) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   const handleLogout = () => {
     logout();
   };
-
-  // Filter menu items based on user permissions
-  const visibleMenuItems = menuItems.filter((item) => {
-    // Check role requirements
-    if (item.requiredRoles && item.requiredRoles.length > 0) {
-      if (!hasAnyRole(item.requiredRoles)) {
-        return false;
-      }
-    }
-    
-    // Check permission requirements
-    if (item.requiredPermissions && item.requiredPermissions.length > 0) {
-      if (!hasAllPermissions(item.requiredPermissions)) {
-        return false;
-      }
-    }
-    
-    return true;
-  });
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -186,7 +131,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </Button>
         </Toolbar>
       </AppBar>
-      
       <Drawer
         variant="permanent"
         sx={{
@@ -227,7 +171,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </List>
         </Box>
       </Drawer>
-      
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'grey.50' }}>
         <Toolbar />
         {children}

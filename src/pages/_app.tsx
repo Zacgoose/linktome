@@ -5,8 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
+
 import { createTheme } from '@/theme';
 import { createEmotionCache } from '@/utils/create-emotion-cache';
+import { AuthProvider } from '@/providers/AuthProvider';
 import '@/styles/globals.css';
 
 const clientSideEmotionCache = createEmotionCache();
@@ -35,7 +37,9 @@ export default function App(props: MyAppProps) {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <Component {...pageProps} />
+          <AuthProvider>
+            <Component {...pageProps} />
+          </AuthProvider>
         </ThemeProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
