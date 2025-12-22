@@ -312,20 +312,35 @@ export function useAuth() {
 
   // Auto-refresh token if expiring soon
   useEffect(() => {
-    if (!auth || !auth.refreshToken) return;
+    if (!auth || !auth.refreshToken || !auth.expiresAt) return;
 
     // Check if token is expiring soon and refresh once
     const checkAndRefresh = async () => {
       // Re-check auth from storage in case it was updated
       const currentAuth = getStoredAuth();
-      if (!currentAuth || isRefreshingRef.current) return;
+      if (!currentAuth || !currentAuth.expiresAt || isRefreshingRef.current) return;
       
-      if (isTokenExpiringSoon(currentAuth.expiresAt)) {
+      // Only refresh if within 5 minutes of expiration
+      const now = Date.now();
+      const timeUntilExpiry = currentAuth.expiresAt - now;
+      const fiveMinutes = 5 * 60 * 1000;
+      
+      // Debug log to help track refresh behavior
+      if (process.env.NODE_ENV === 'development') {
+        const minutesLeft = Math.floor(timeUntilExpiry / 60000);
+        console.log(`[Auth] Token expires in ${minutesLeft} minutes`);
+      }
+      
+      if (timeUntilExpiry < fiveMinutes && timeUntilExpiry > 0) {
+        console.log('[Auth] Token expiring soon, refreshing...');
         await refreshAccessToken();
       }
     };
 
-    // Check every minute if token needs refresh
+    // Check immediately on mount
+    checkAndRefresh();
+
+    // Then check every minute
     const interval = setInterval(checkAndRefresh, 60000); // 1 minute
 
     return () => clearInterval(interval);
