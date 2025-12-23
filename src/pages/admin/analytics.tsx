@@ -122,17 +122,8 @@ export default function AnalyticsPage() {
             <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <Box
-                      sx={{
-                        p: 1,
-                        borderRadius: 2,
-                        bgcolor: 'primary.light',
-                        mr: 2,
-                      }}
-                    >
-                      <ViewsIcon sx={{ color: 'primary.main' }} />
-                    </Box>
+                  <Box display="flex" alignItems="center" mb={2} gap={2}>
+                    <ViewsIcon sx={{ color: 'primary.main' }} />
                     <Typography variant="h6" fontWeight={600}>
                       Profile Views
                     </Typography>
@@ -151,17 +142,8 @@ export default function AnalyticsPage() {
             <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <Box
-                      sx={{
-                        p: 1,
-                        borderRadius: 2,
-                        bgcolor: 'secondary.light',
-                        mr: 2,
-                      }}
-                    >
+                  <Box display="flex" alignItems="center" mb={2} gap={2}>
                       <ClicksIcon sx={{ color: 'secondary.main' }} />
-                    </Box>
                     <Typography variant="h6" fontWeight={600}>
                       Link Clicks
                     </Typography>
@@ -180,17 +162,8 @@ export default function AnalyticsPage() {
             <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <Box
-                      sx={{
-                        p: 1,
-                        borderRadius: 2,
-                        bgcolor: 'success.light',
-                        mr: 2,
-                      }}
-                    >
+                  <Box display="flex" alignItems="center" mb={2} gap={2}>
                       <TrendingIcon sx={{ color: 'success.main' }} />
-                    </Box>
                     <Typography variant="h6" fontWeight={600}>
                       CTR
                     </Typography>
