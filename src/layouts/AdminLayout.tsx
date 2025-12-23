@@ -225,16 +225,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <ListItemButton
                   selected={router.pathname === item.path}
                   onClick={() => router.push(item.path)}
-                  sx={{
+                  sx={theme => ({
                     '&.Mui-selected': {
                       bgcolor: 'primary.light',
+                      color: theme.palette.mode === 'dark' ? theme.palette.primary.contrastText : theme.palette.primary.contrastText,
+                      '& .MuiListItemIcon-root': {
+                        color: theme.palette.mode === 'dark' ? theme.palette.primary.contrastText : theme.palette.primary.contrastText,
+                      },
                       '&:hover': {
                         bgcolor: 'primary.light',
                       },
                     },
-                  }}
+                  })}
                 >
-                  <ListItemIcon sx={{ color: router.pathname === item.path ? 'primary.main' : 'inherit' }}>
+                  <ListItemIcon>
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText primary={item.text} />

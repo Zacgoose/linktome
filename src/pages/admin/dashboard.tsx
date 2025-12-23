@@ -198,7 +198,7 @@ export default function Dashboard() {
                       variant="contained"
                       fullWidth
                       startIcon={<ViewIcon />}
-                      onClick={() => router.push(`/public/${profile.username}`)}
+                      onClick={() => window.open(`/public/${profile.username}`, '_blank', 'noopener,noreferrer')}
                     >
                       View Public Profile
                     </Button>
