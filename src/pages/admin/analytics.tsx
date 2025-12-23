@@ -18,31 +18,70 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 
-interface AnalyticsData {
-  totalPageViews: number;
-  clicks: number;
-  topLinks: Array<{
-    title: string;
-    url: string;
-    clicks: number;
-  }>;
+interface ClicksByDay {
+  date: string;
+  count: number;
 }
 
-interface AnalyticsResponse {
-  summary: AnalyticsData;
+interface ViewsByDay {
+  date: string;
+  count: number;
 }
+
+interface RecentPageView {
+  ipAddress: string;
+  userAgent: string;
+  referrer: string;
+  timestamp: string;
+}
+
+interface RecentLinkClick {
+  linkTitle: string;
+  userAgent: string;
+  timestamp: string;
+  linkUrl: string;
+  referrer: string;
+  ipAddress: string;
+  linkId: string;
+}
+
+interface LinkClicksByLink {
+  linkId: string;
+  clickCount: number;
+  linkTitle: string;
+  linkUrl: string;
+}
+
+interface AnalyticsSummary {
+  totalLinkClicks: number;
+  uniqueVisitors: number;
+  totalPageViews: number;
+}
+
+interface AnalyticsData {
+  clicksByDay: ClicksByDay[];
+  recentPageViews: RecentPageView[];
+  linkClicksByLink: LinkClicksByLink[];
+  summary: AnalyticsSummary;
+  viewsByDay: ViewsByDay[];
+  recentLinkClicks: RecentLinkClick[];
+}
+
+// The API response is now the AnalyticsData object directly, not wrapped in a summary property
+type AnalyticsResponse = AnalyticsData;
 
 export default function AnalyticsPage() {
 
-  const { data, isLoading } = useApiGet<AnalyticsResponse>({
+
+  const { data: analytics, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
     queryKey: 'admin-analytics',
   });
 
-  const analytics: AnalyticsData | undefined = data?.summary;
+  // Calculate click-through rate using summary fields
   let clickThroughRateDisplay = '0.0';
-  if (analytics && analytics.totalPageViews > 0) {
-    const ctr = (analytics.clicks / analytics.totalPageViews) * 100;
+  if (analytics && analytics.summary.totalPageViews > 0) {
+    const ctr = (analytics.summary.totalLinkClicks / analytics.summary.totalPageViews) * 100;
     clickThroughRateDisplay = isFinite(ctr) ? ctr.toFixed(1) : '0.0';
   }
 
@@ -72,7 +111,7 @@ export default function AnalyticsPage() {
           </Typography>
 
 
-          {!analytics?.totalPageViews && !analytics?.clicks && (
+          {!analytics?.summary.totalPageViews && !analytics?.summary.totalLinkClicks && (
             <Alert severity="info" sx={{ mb: 3 }}>
               Analytics will be available once your profile receives visits and clicks
             </Alert>
@@ -99,7 +138,7 @@ export default function AnalyticsPage() {
                     </Typography>
                   </Box>
                   <Typography variant="h3" fontWeight={700}>
-                    {analytics?.totalPageViews || 0}
+                    {analytics?.summary.totalPageViews || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
                     Total profile visits
@@ -128,7 +167,7 @@ export default function AnalyticsPage() {
                     </Typography>
                   </Box>
                   <Typography variant="h3" fontWeight={700}>
-                    {analytics?.clicks || 0}
+                    {analytics?.summary.totalLinkClicks || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
                     Total link engagements
@@ -173,11 +212,11 @@ export default function AnalyticsPage() {
                   <Typography variant="h6" fontWeight={600} gutterBottom>
                     Top Performing Links
                   </Typography>
-                  {analytics?.topLinks && analytics.topLinks.length > 0 ? (
+                  {analytics?.linkClicksByLink && analytics.linkClicksByLink.length > 0 ? (
                     <Stack spacing={2} mt={2}>
-                      {analytics.topLinks.slice(0, 5).map((link, index) => (
+                      {analytics.linkClicksByLink.slice(0, 5).map((link, index) => (
                         <Box
-                          key={index}
+                          key={link.linkId}
                           display="flex"
                           justifyContent="space-between"
                           alignItems="center"
@@ -201,10 +240,10 @@ export default function AnalyticsPage() {
                             >
                               {index + 1}
                             </Typography>
-                            <Typography fontWeight={500}>{link.title}</Typography>
+                            <Typography fontWeight={500}>{link.linkTitle + " (" + link.linkUrl + ")"}</Typography>
                           </Box>
                           <Typography variant="h6" fontWeight={600} color="primary">
-                            {link.clicks}
+                            {link.clickCount}
                           </Typography>
                         </Box>
                       ))}
@@ -220,18 +259,109 @@ export default function AnalyticsPage() {
               </Card>
             </Grid>
 
-            {/* Recent Activity */}
+            {/* Recent Link Clicks */}
             <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" fontWeight={600} gutterBottom>
-                    Recent Activity
+                    Recent Link Clicks
                   </Typography>
-                  <Box textAlign="center" py={4}>
-                    <Typography color="text.secondary">
-                      No recent activity
-                    </Typography>
-                  </Box>
+                  {analytics?.recentLinkClicks && analytics.recentLinkClicks.length > 0 ? (
+                    <Stack spacing={2} mt={2} sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                      {analytics.recentLinkClicks.slice(0, 10).map((click) => (
+                        <Box
+                          key={click.linkId + click.timestamp}
+                          p={2}
+                          sx={{ bgcolor: 'grey.50', borderRadius: 1 }}
+                        >
+                          <Typography fontWeight={600} gutterBottom>
+                            {click.linkTitle}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(click.timestamp).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Box textAlign="center" py={4}>
+                      <Typography color="text.secondary">
+                        No recent clicks
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Clicks by Day Chart */}
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    Clicks Over Time (Last 30 Days)
+                  </Typography>
+                  {analytics?.clicksByDay && analytics.clicksByDay.length > 0 ? (
+                    <Box sx={{ mt: 3 }}>
+                      <Stack spacing={1}>
+                        {(() => {
+                          const maxClicks = Math.max(...analytics.clicksByDay!.map(d => d.count));
+                          return analytics.clicksByDay.map((day) => {
+                            const widthPercent = maxClicks > 0 
+                              ? Math.min((day.count / maxClicks) * 100, 100)
+                              : 0;
+                            return (
+                              <Box
+                                key={day.date}
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  sx={{ minWidth: 100, color: 'text.secondary' }}
+                                >
+                                  {new Date(day.date).toLocaleDateString()}
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    flex: 1,
+                                    height: 24,
+                                    bgcolor: 'grey.100',
+                                    borderRadius: 1,
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      height: '100%',
+                                      bgcolor: 'primary.main',
+                                      width: `${widthPercent}%`,
+                                      transition: 'width 0.3s ease',
+                                    }}
+                                  />
+                                </Box>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={600}
+                                  sx={{ minWidth: 40, textAlign: 'right' }}
+                                >
+                                  {day.count}
+                                </Typography>
+                              </Box>
+                            );
+                          });
+                        })()}
+                      </Stack>
+                    </Box>
+                  ) : (
+                    <Box textAlign="center" py={4}>
+                      <Typography color="text.secondary">
+                        No click data available
+                      </Typography>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
