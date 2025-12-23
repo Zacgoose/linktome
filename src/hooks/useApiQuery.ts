@@ -4,6 +4,7 @@ import axios, { AxiosError } from 'axios';
 const API_BASE = '/api';
 
 
+
 // Helper to check if access token is missing or expired, and refresh if possible
 const ensureValidAccessToken = async () => {
   const accessToken = localStorage.getItem('accessToken');
@@ -34,6 +35,19 @@ const ensureValidAccessToken = async () => {
         }
       }
     } catch {}
+  }
+};
+
+// Helper to extract userId from JWT access token
+const getUserIdFromToken = (): string | undefined => {
+  const accessToken = localStorage.getItem('accessToken');
+  if (!accessToken) return undefined;
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    // Try common user id fields
+    return payload.sub || payload.userId || payload.uid || payload.id;
+  } catch {
+    return undefined;
   }
 };
 
@@ -116,6 +130,7 @@ interface ApiGetCallProps {
   onError?: (error: string) => void;
 }
 
+
 export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   const {
     url,
@@ -130,8 +145,16 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     onError,
   } = props;
 
+
+  // Attach userId to queryKey for user-specific cache, omit undefined/null params
+  const userId = getUserIdFromToken();
+  const userScopedQueryKey = [queryKey, userId];
+  if (params !== undefined && params !== null) {
+    userScopedQueryKey.push(params);
+  }
+
   const queryInfo = useQuery<TData, AxiosError>({
-    queryKey: [queryKey, params],
+    queryKey: userScopedQueryKey,
     enabled,
     queryFn: async ({ signal }) => {
       const headers = await buildHeaders();
@@ -188,11 +211,13 @@ interface ApiMutationCallProps<TData = unknown> {
   onError?: (error: string) => void;
 }
 
+
 export function useApiPost<TData = unknown, TVariables = Record<string, unknown>>(
   props?: ApiMutationCallProps<TData>
 ) {
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
+  const userId = getUserIdFromToken();
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
@@ -222,7 +247,7 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
     onSuccess: (data) => {
       if (relatedQueryKeys) {
         relatedQueryKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: [key] });
+          queryClient.invalidateQueries({ queryKey: [key, userId] });
         });
       }
       if (onSuccess) {
@@ -245,11 +270,13 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
   return mutation;
 }
 
+
 export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>(
   props?: ApiMutationCallProps<TData>
 ) {
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
+  const userId = getUserIdFromToken();
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
@@ -279,7 +306,7 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
     onSuccess: (data) => {
       if (relatedQueryKeys) {
         relatedQueryKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: [key] });
+          queryClient.invalidateQueries({ queryKey: [key, userId] });
         });
       }
       if (onSuccess) {
@@ -302,11 +329,13 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
   return mutation;
 }
 
+
 export function useApiDelete<TData = unknown>(
   props?: ApiMutationCallProps<TData>
 ) {
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
+  const userId = getUserIdFromToken();
 
   const mutation = useMutation<TData, Error, { url: string }>({
     mutationFn: async ({ url }) => {
@@ -336,7 +365,7 @@ export function useApiDelete<TData = unknown>(
     onSuccess: (data) => {
       if (relatedQueryKeys) {
         relatedQueryKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: [key] });
+          queryClient.invalidateQueries({ queryKey: [key, userId] });
         });
       }
       if (onSuccess) {
