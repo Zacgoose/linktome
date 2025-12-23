@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -97,6 +97,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout, loading } = useAuthContext();
   const { selectedContext, setSelectedContext } = useRbacContext();
 
+  // If user has no company memberships, ensure context is 'user'
+  useEffect(() => {
+    if (user && (!user.companyMemberships || user.companyMemberships.length === 0) && selectedContext !== 'user') {
+      setSelectedContext('user');
+    }
+  }, [user, selectedContext, setSelectedContext]);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !user) {
@@ -165,8 +172,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, color: 'primary.main' }}>
             LinkToMe
           </Typography>
-          {/* Context Switcher */}
-          {user && (
+          {/* Context Switcher: Only show if user has company memberships */}
+          {user && user.companyMemberships && user.companyMemberships.length > 0 && (
             <FormControl size="small" sx={{ minWidth: 180, mr: 2 }}>
               <InputLabel id="context-switch-label">Context</InputLabel>
               <Select
@@ -176,7 +183,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 onChange={(e) => setSelectedContext(e.target.value)}
               >
                 <MuiMenuItem value="user">My Account</MuiMenuItem>
-                {user.companyMemberships && user.companyMemberships.length > 0 && user.companyMemberships.map((company) => (
+                {user.companyMemberships.map((company) => (
                   <MuiMenuItem key={company.companyId} value={company.companyId}>
                     {company.companyName || company.companyId}
                   </MuiMenuItem>
