@@ -3,8 +3,6 @@ import axios, { AxiosError } from 'axios';
 
 const API_BASE = '/api';
 
-
-
 // Helper to check if access token is missing or expired, and refresh if possible
 const ensureValidAccessToken = async () => {
   const accessToken = localStorage.getItem('accessToken');
@@ -29,9 +27,12 @@ const ensureValidAccessToken = async () => {
         const data = await response.json();
         if (data.accessToken) {
           localStorage.setItem('accessToken', data.accessToken);
-          if (data.refreshToken) {
-            localStorage.setItem('refreshToken', data.refreshToken);
-          }
+        }
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
         }
       }
     } catch {}
@@ -44,8 +45,7 @@ const getUserIdFromToken = (): string | undefined => {
   if (!accessToken) return undefined;
   try {
     const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    // Try common user id fields
-    return payload.sub || payload.userId || payload.uid || payload.id;
+    return payload.sub;
   } catch {
     return undefined;
   }
@@ -63,13 +63,6 @@ const buildHeaders = async () => {
   return headers;
 };
 
-// Standard API response format from backend
-interface ApiResponse<TData> {
-  success: boolean;
-  error?: string;
-  data?: TData;
-}
-
 // Track if we're already redirecting to prevent multiple simultaneous redirects
 // This flag is per-page-load and will be reset when the page redirects
 let isRedirecting = false;
@@ -85,16 +78,15 @@ const handleApiError = (error: AxiosError) => {
       localStorage.removeItem('refreshToken');
       
       const currentPath = window.location.pathname + window.location.search;
-      // Match /login, /login/, /login?session=expired, /login/?session=expired, etc.
-      const loginRegex = /^\/login\/?(\?.*)?$/;
+      const loginRegex = /^\/login(\?.*)?$/;
       const isLoginPage = loginRegex.test(currentPath);
-      
+
       if (!isLoginPage) {
         // Use window.location.href which will cause a full page redirect
         // and reset the isRedirecting flag on the next page load
         window.location.href = '/login?session=expired';
       }
-      // If already on any login variant, do nothing (preserve error message)
+      // If already on /login, do nothing (preserve error message)
     }
   }
 };
@@ -130,7 +122,6 @@ interface ApiGetCallProps {
   onError?: (error: string) => void;
 }
 
-
 export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   const {
     url,
@@ -145,8 +136,6 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     onError,
   } = props;
 
-
-  // Attach userId to queryKey for user-specific cache, omit undefined/null params
   const userId = getUserIdFromToken();
   const userScopedQueryKey = [queryKey, userId];
   if (params !== undefined && params !== null) {
@@ -158,30 +147,17 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     enabled,
     queryFn: async ({ signal }) => {
       const headers = await buildHeaders();
-      const response = await axios.get<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, {
+      const response = await axios.get<TData | { error: string }>(`${API_BASE}/${url}`, {
         signal,
         params,
         headers,
       });
       const data = response.data;
-      // Check if response has the { success, error, data } format
-      if (typeof data === 'object' && data !== null && 'success' in data) {
-        const apiResponse = data as ApiResponse<TData>;
-        if (!apiResponse.success && apiResponse.error) {
-          if (onError) {
-            onError(apiResponse.error);
-          }
-          throw new Error(apiResponse.error);
-        }
-        const result = apiResponse.data ?? apiResponse;
-        if (onSuccess) {
-          onSuccess(result);
-        }
-        return result as TData;
+      if (typeof data === 'object' && data !== null && 'error' in data) {
+        if (onError) onError(data.error);
+        throw new Error(data.error);
       }
-      if (onSuccess) {
-        onSuccess(data);
-      }
+      if (onSuccess) onSuccess(data);
       return data as TData;
     },
     staleTime,
@@ -190,12 +166,11 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     retry: createRetryFn(retry),
   });
 
-  // Handle axios errors
   if (queryInfo.error) {
     handleApiError(queryInfo.error);
     if (onError && axios.isAxiosError(queryInfo.error)) {
-      const errorMessage = 
-        (queryInfo.error.response?.data as { error?: string })?.error || 
+      const errorMessage =
+        (queryInfo.error.response?.data as { error?: string })?.error ||
         queryInfo.error.message ||
         'An error occurred';
       onError(errorMessage);
@@ -211,7 +186,6 @@ interface ApiMutationCallProps<TData = unknown> {
   onError?: (error: string) => void;
 }
 
-
 export function useApiPost<TData = unknown, TVariables = Record<string, unknown>>(
   props?: ApiMutationCallProps<TData>
 ) {
@@ -222,26 +196,13 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
       const headers = await buildHeaders();
-      const response = await axios.post<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, data, {
+      const response = await axios.post<TData | { error: string }>(`${API_BASE}/${url}`, data, {
         headers,
       });
-      
       const responseData = response.data;
-      
-      // Check if response has the { success, error, data } format
-      if (typeof responseData === 'object' && responseData !== null && 'success' in responseData) {
-        const apiResponse = responseData as ApiResponse<TData>;
-        
-        // Handle backend error responses
-        if (!apiResponse.success && apiResponse.error) {
-          throw new Error(apiResponse.error);
-        }
-        
-        // Return the actual data from the backend response
-        return (apiResponse.data ?? apiResponse) as TData;
+      if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
+        throw new Error(responseData.error);
       }
-      
-      // Response is already in the expected format (e.g., Login returns { accessToken, user })
       return responseData as TData;
     },
     onSuccess: (data) => {
@@ -269,7 +230,6 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
 
   return mutation;
 }
-
 
 export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>(
   props?: ApiMutationCallProps<TData>
@@ -281,26 +241,13 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
       const headers = await buildHeaders();
-      const response = await axios.put<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, data, {
+      const response = await axios.put<TData | { error: string }>(`${API_BASE}/${url}`, data, {
         headers,
       });
-      
       const responseData = response.data;
-      
-      // Check if response has the { success, error, data } format
-      if (typeof responseData === 'object' && responseData !== null && 'success' in responseData) {
-        const apiResponse = responseData as ApiResponse<TData>;
-        
-        // Handle backend error responses
-        if (!apiResponse.success && apiResponse.error) {
-          throw new Error(apiResponse.error);
-        }
-        
-        // Return the actual data from the backend response
-        return (apiResponse.data ?? apiResponse) as TData;
+      if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
+        throw new Error(responseData.error);
       }
-      
-      // Response is already in the expected format
       return responseData as TData;
     },
     onSuccess: (data) => {
@@ -329,7 +276,6 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
   return mutation;
 }
 
-
 export function useApiDelete<TData = unknown>(
   props?: ApiMutationCallProps<TData>
 ) {
@@ -340,26 +286,13 @@ export function useApiDelete<TData = unknown>(
   const mutation = useMutation<TData, Error, { url: string }>({
     mutationFn: async ({ url }) => {
       const headers = await buildHeaders();
-      const response = await axios.delete<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, {
+      const response = await axios.delete<TData | { error: string }>(`${API_BASE}/${url}`, {
         headers,
       });
-      
       const responseData = response.data;
-      
-      // Check if response has the { success, error, data } format
-      if (typeof responseData === 'object' && responseData !== null && 'success' in responseData) {
-        const apiResponse = responseData as ApiResponse<TData>;
-        
-        // Handle backend error responses
-        if (!apiResponse.success && apiResponse.error) {
-          throw new Error(apiResponse.error);
-        }
-        
-        // Return the actual data from the backend response
-        return (apiResponse.data ?? apiResponse) as TData;
+      if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
+        throw new Error(responseData.error);
       }
-      
-      // Response is already in the expected format
       return responseData as TData;
     },
     onSuccess: (data) => {
