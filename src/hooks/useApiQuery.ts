@@ -1,3 +1,4 @@
+import { useRbacContext } from '@/context/RbacContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
 
@@ -113,6 +114,7 @@ interface ApiGetCallProps {
   url: string;
   queryKey: string;
   params?: Record<string, string | number | boolean>;
+  contextId?: string; // companyId or 'user'
   enabled?: boolean;
   retry?: number;
   staleTime?: number;
@@ -123,10 +125,12 @@ interface ApiGetCallProps {
 }
 
 export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
+  const { selectedContext } = useRbacContext();
   const {
     url,
     queryKey,
     params,
+    contextId,
     enabled = true,
     retry = 3,
     staleTime = 300000,
@@ -138,8 +142,14 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
 
   const userId = getUserIdFromToken();
   const userScopedQueryKey = [queryKey, userId];
-  if (params !== undefined && params !== null) {
-    userScopedQueryKey.push(params);
+  // Use contextId if provided, otherwise use selectedContext from RbacContext
+  const effectiveContextId = contextId !== undefined ? contextId : selectedContext;
+  let mergedParams = params ? { ...params } : {};
+  if (effectiveContextId && effectiveContextId !== 'user') {
+    mergedParams = { ...mergedParams, companyId: effectiveContextId };
+  }
+  if (Object.keys(mergedParams).length > 0) {
+    userScopedQueryKey.push(mergedParams);
   }
 
   const queryInfo = useQuery<TData, AxiosError>({
@@ -149,7 +159,7 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
       const headers = await buildHeaders();
       const response = await axios.get<TData | { error: string }>(`${API_BASE}/${url}`, {
         signal,
-        params,
+        params: mergedParams,
         headers,
       });
       const data = response.data;

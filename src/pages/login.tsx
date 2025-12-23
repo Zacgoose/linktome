@@ -50,26 +50,9 @@ export default function LoginPage() {
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
       if (data.accessToken && data.user) {
-        // Normalize user
-        const roles: string[] = Array.isArray(data.user.roles)
-          ? data.user.roles
-          : typeof data.user.roles === 'string'
-            ? (() => { try { return JSON.parse(data.user.roles); } catch { return [data.user.roles]; } })()
-            : [data.user.roles];
-        const permissions: string[] = Array.isArray(data.user.permissions)
-          ? data.user.permissions
-          : typeof data.user.permissions === 'string'
-            ? (() => { try { return JSON.parse(data.user.permissions); } catch { return [data.user.permissions]; } })()
-            : [data.user.permissions];
-        // Use only userId for id
-        const user = {
-          ...data.user,
-          id: data.user.userId,
-          roles,
-          permissions
-        };
-        storeAuth(data.accessToken, user, data.refreshToken);
-        setUser(user);
+        // Store using new RBAC structure
+        storeAuth(data.accessToken, data.user, data.refreshToken);
+        setUser(data.user);
         router.push('/admin/dashboard');
       }
     },
@@ -82,24 +65,8 @@ export default function LoginPage() {
   const signupMutation = useApiPost<SignupResponse>({
     onSuccess: (data: SignupResponse) => {
       if (data.accessToken && data.user) {
-        const roles: string[] = Array.isArray(data.user.roles)
-          ? data.user.roles
-          : typeof data.user.roles === 'string'
-            ? (() => { try { return JSON.parse(data.user.roles); } catch { return [data.user.roles]; } })()
-            : [data.user.roles];
-        const permissions: string[] = Array.isArray(data.user.permissions)
-          ? data.user.permissions
-          : typeof data.user.permissions === 'string'
-            ? (() => { try { return JSON.parse(data.user.permissions); } catch { return [data.user.permissions]; } })()
-            : [data.user.permissions];
-        const user = {
-          ...data.user,
-          id: data.user.userId,
-          roles,
-          permissions
-        };
-        storeAuth(data.accessToken, user, data.refreshToken);
-        setUser(user);
+        storeAuth(data.accessToken, data.user, data.refreshToken);
+        setUser(data.user);
         router.push('/admin/dashboard');
       } else {
         setError('');

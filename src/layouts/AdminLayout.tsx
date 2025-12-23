@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -13,6 +13,10 @@ import {
   ListItemIcon,
   ListItemText,
   CircularProgress,
+  Select,
+  MenuItem as MuiMenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -24,6 +28,7 @@ import {
   Business as BusinessIcon,
 } from '@mui/icons-material';
 import { useAuthContext } from '@/providers/AuthProvider';
+import { useRbacContext } from '@/context/RbacContext';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -90,6 +95,7 @@ const menuItems: MenuItem[] = [
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
   const { user, logout, loading } = useAuthContext();
+  const { selectedContext, setSelectedContext } = useRbacContext();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -112,17 +118,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return null;
   }
 
-  // Filter menu items based on user permissions and roles
+  // Determine context: global (user) or company
+  let contextRoles: string[] = user?.roles || [];
+  let contextPermissions: string[] = user?.permissions || [];
+  if (selectedContext !== 'user' && user?.companyMemberships) {
+    const company = user.companyMemberships.find((c) => c.companyId === selectedContext);
+    if (company) {
+      contextRoles = [company.role];
+      contextPermissions = company.permissions;
+    }
+  }
+
+  // Filter menu items based on context permissions and roles
   const visibleMenuItems = menuItems.filter((item) => {
     // Check role requirements
     if (item.requiredRoles && item.requiredRoles.length > 0) {
-      if (!user || !item.requiredRoles.some((role) => user.roles.includes(role))) {
+      if (!item.requiredRoles.some((role) => contextRoles.includes(role))) {
         return false;
       }
     }
     // Check permission requirements
     if (item.requiredPermissions && item.requiredPermissions.length > 0) {
-      if (!user || !item.requiredPermissions.every((perm) => user.permissions.includes(perm))) {
+      if (!item.requiredPermissions.every((perm) => contextPermissions.includes(perm))) {
         return false;
       }
     }
@@ -148,6 +165,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, color: 'primary.main' }}>
             LinkToMe
           </Typography>
+          {/* Context Switcher */}
+          {user && (
+            <FormControl size="small" sx={{ minWidth: 180, mr: 2 }}>
+              <InputLabel id="context-switch-label">Context</InputLabel>
+              <Select
+                labelId="context-switch-label"
+                value={selectedContext}
+                label="Context"
+                onChange={(e) => setSelectedContext(e.target.value)}
+              >
+                <MuiMenuItem value="user">My Account</MuiMenuItem>
+                {user.companyMemberships && user.companyMemberships.length > 0 && user.companyMemberships.map((company) => (
+                  <MuiMenuItem key={company.companyId} value={company.companyId}>
+                    {company.companyName || company.companyId}
+                  </MuiMenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
           <Button variant="outlined" onClick={handleLogout}>
             Logout
           </Button>

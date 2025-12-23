@@ -5,13 +5,21 @@ import { checkRouteAccess } from '../config/routes';
 /**
  * User information with roles and permissions
  */
+export interface CompanyMembership {
+  companyId: string;
+  companyName?: string;
+  role: string;
+  permissions: string[];
+}
+
 export interface UserAuth {
   userId: string;
   username: string;
   email: string;
-  roles: string[];
+  userRole: string; // global role (e.g. 'user', 'admin')
+  roles: string[]; // for backward compatibility, always include userRole as first element
   permissions: string[];
-  companyId?: string;
+  companyMemberships?: CompanyMembership[];
 }
 
 /**
@@ -93,11 +101,10 @@ function getStoredAuth(): TokenInfo | null {
 /**
  * Normalize roles - handle both string and array formats, and unwrap JSON-encoded strings
  */
-function normalizeRoles(roles: string | string[] | unknown): string[] {
-  // If roles is already an array
+function normalizeRoles(roles: string | string[] | unknown, userRole?: string): string[] {
+  let arr: string[] = [];
   if (Array.isArray(roles)) {
-    return roles.map((role) => {
-      // If the role is a JSON-encoded string like "\"user\"", parse it
+    arr = roles.map((role) => {
       if (typeof role === 'string' && role.startsWith('"') && role.endsWith('"')) {
         try {
           return JSON.parse(role);
@@ -107,25 +114,22 @@ function normalizeRoles(roles: string | string[] | unknown): string[] {
       }
       return String(role);
     });
-  }
-  
-  // If roles is a string (could be JSON-encoded)
-  if (typeof roles === 'string') {
-    // Try to parse if it looks like JSON
+  } else if (typeof roles === 'string') {
     if (roles.startsWith('"') && roles.endsWith('"')) {
       try {
-        const parsed = JSON.parse(roles);
-        return [String(parsed)];
+        arr = [String(JSON.parse(roles))];
       } catch {
-        return [roles];
+        arr = [roles];
       }
+    } else {
+      arr = [roles];
     }
-    // If it's a regular string, wrap in array
-    return [roles];
   }
-  
-  // Fallback: return empty array
-  return [];
+  // Always include userRole as first element if provided and not present
+  if (userRole && !arr.includes(userRole)) {
+    arr.unshift(userRole);
+  }
+  return arr;
 }
 
 /**
@@ -136,20 +140,28 @@ export function storeAuth(
   user: UserAuth | Record<string, unknown>,
   refreshToken?: string
 ): void {
-  // Normalize the user object to ensure roles is an array
+  // Normalize the user object to ensure roles is an array and new fields are present
+  const userRole = (user as any).userRole || (user as any).role || (Array.isArray((user as any).roles) ? (user as any).roles[0] : 'user');
   const normalizedUser: UserAuth = {
-    userId: String((user as UserAuth).userId || (user as Record<string, unknown>).userId || ''),
-    username: String((user as UserAuth).username || (user as Record<string, unknown>).username || ''),
-    email: String((user as UserAuth).email || (user as Record<string, unknown>).email || ''),
-    roles: normalizeRoles((user as UserAuth).roles || (user as Record<string, unknown>).roles),
-    permissions: Array.isArray((user as UserAuth).permissions) 
-      ? (user as UserAuth).permissions 
-      : Array.isArray((user as Record<string, unknown>).permissions)
-      ? ((user as Record<string, unknown>).permissions as string[])
+    userId: String((user as any).userId || (user as any).id || ''),
+    username: String((user as any).username || ''),
+    email: String((user as any).email || ''),
+    userRole: String(userRole),
+    roles: normalizeRoles((user as any).roles, userRole),
+    permissions: Array.isArray((user as any).permissions)
+      ? (user as any).permissions
+      : Array.isArray((user as any).permissions)
+      ? ((user as any).permissions as string[])
       : [],
-    companyId: (user as UserAuth).companyId || (user as Record<string, unknown>).companyId as string | undefined,
+    companyMemberships: Array.isArray((user as any).companyMemberships)
+      ? (user as any).companyMemberships.map((cm: any) => ({
+          companyId: String(cm.companyId),
+          companyName: cm.companyName,
+          role: cm.role,
+          permissions: Array.isArray(cm.permissions) ? cm.permissions : [],
+        }))
+      : undefined,
   };
-  
   localStorage.setItem('accessToken', accessToken);
   localStorage.setItem('user', JSON.stringify(normalizedUser));
   if (refreshToken) {
@@ -383,6 +395,8 @@ export function useAuth() {
 
   return {
     user: auth?.user || null,
+    userRole: auth?.user?.userRole || null,
+    companyMemberships: auth?.user?.companyMemberships || [],
     loading,
     isAuthenticated: isAuthenticated(),
     hasRole,

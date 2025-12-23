@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, ReactNode } from 'react';
 import { CircularProgress, Box, Typography, Button } from '@mui/material';
 import { useAuth } from '../hooks/useAuth';
+import { useRbacContext } from '@/context/RbacContext';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -29,7 +30,8 @@ export function ProtectedRoute({
   fallback,
 }: ProtectedRouteProps) {
   const router = useRouter();
-  const { user, loading, hasAnyRole, hasAllPermissions } = useAuth();
+  const { user, loading } = useAuth();
+  const { contextRoles, contextPermissions } = useRbacContext();
 
   useEffect(() => {
     // Redirect to login if not authenticated
@@ -59,9 +61,9 @@ export function ProtectedRoute({
     return null; // Will redirect via useEffect
   }
 
-  // Check role requirements
+  // Check role requirements (context-aware)
   if (requiredRoles && requiredRoles.length > 0) {
-    if (!hasAnyRole(requiredRoles)) {
+    if (!requiredRoles.some((role) => contextRoles.includes(role))) {
       return (
         <Box
           sx={{
@@ -95,9 +97,9 @@ export function ProtectedRoute({
     }
   }
 
-  // Check permission requirements
+  // Check permission requirements (context-aware)
   if (requiredPermissions && requiredPermissions.length > 0) {
-    if (!hasAllPermissions(requiredPermissions)) {
+    if (!requiredPermissions.every((perm) => contextPermissions.includes(perm))) {
       return (
         <Box
           sx={{

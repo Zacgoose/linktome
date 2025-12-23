@@ -9,6 +9,7 @@ import Head from 'next/head';
 import { createTheme } from '@/theme';
 import { createEmotionCache } from '@/utils/create-emotion-cache';
 import { AuthProvider } from '@/providers/AuthProvider';
+import { RbacProvider } from '@/context/RbacContext';
 import '@/styles/globals.css';
 
 const clientSideEmotionCache = createEmotionCache();
@@ -38,7 +39,9 @@ export default function App(props: MyAppProps) {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AuthProvider>
-            <Component {...pageProps} />
+            <RbacProvider>
+              <Component {...pageProps} />
+            </RbacProvider>
           </AuthProvider>
         </ThemeProvider>
         <ReactQueryDevtools initialIsOpen={false} />

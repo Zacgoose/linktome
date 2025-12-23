@@ -4,53 +4,46 @@ import { checkRouteAccess } from '@/config/routes';
 import { apiPost } from '@/utils/api';
 import { CircularProgress, Box } from '@mui/material';
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  roles: string[];
-  permissions: string[];
-}
+import { UserAuth, CompanyMembership } from '../hooks/useAuth';
 
 interface AuthContextType {
-  user: User | null;
+  user: UserAuth | null;
+  userRole: string | null;
+  companyMemberships: CompanyMembership[];
   loading: boolean;
   logout: () => void;
   canAccessRoute: (path: string) => boolean;
-  setUser: (user: User | null) => void;
+  setUser: (user: UserAuth | null) => void;
   refreshAuth: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserAuth | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   // Helper to normalize roles and permissions
-  function normalizeUser(user: any) {
-    let roles = user.roles;
-    if (typeof roles === 'string') {
-      try {
-        roles = JSON.parse(roles);
-      } catch {
-        roles = [roles];
-      }
-    }
-    if (!Array.isArray(roles)) roles = [roles];
-
-    let permissions = user.permissions;
-    if (typeof permissions === 'string') {
-      try {
-        permissions = JSON.parse(permissions);
-      } catch {
-        permissions = [permissions];
-      }
-    }
-    if (!Array.isArray(permissions)) permissions = [permissions];
-
-    return { ...user, roles, permissions };
+  function normalizeUser(user: any): UserAuth {
+    // Use the normalization logic from useAuth
+    const userRole = user.userRole || user.role || (Array.isArray(user.roles) ? user.roles[0] : 'user');
+    return {
+      userId: String(user.userId || user.id || ''),
+      username: String(user.username || ''),
+      email: String(user.email || ''),
+      userRole: String(userRole),
+      roles: Array.isArray(user.roles) ? user.roles : [userRole],
+      permissions: Array.isArray(user.permissions) ? user.permissions : [],
+      companyMemberships: Array.isArray(user.companyMemberships)
+        ? user.companyMemberships.map((cm: any) => ({
+            companyId: String(cm.companyId),
+            companyName: cm.companyName,
+            role: cm.role,
+            permissions: Array.isArray(cm.permissions) ? cm.permissions : [],
+          }))
+        : [],
+    };
   }
 
   useEffect(() => {
@@ -139,7 +132,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, canAccessRoute, setUser, refreshAuth }}>
+    <AuthContext.Provider value={{
+      user,
+      userRole: user?.userRole || null,
+      companyMemberships: user?.companyMemberships || [],
+      loading,
+      logout,
+      canAccessRoute,
+      setUser,
+      refreshAuth,
+    }}>
       {children}
     </AuthContext.Provider>
   );
