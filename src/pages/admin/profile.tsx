@@ -22,8 +22,7 @@ interface UserProfile {
   username: string;
   displayName: string;
   bio: string;
-  avatar?: string; // Backend returns "avatar" not "avatarUrl"
-  avatarUrl?: string; // Keep for backwards compatibility
+  avatar?: string;
 }
 
 export default function ProfilePage() {
@@ -42,7 +41,7 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     displayName: profile?.displayName || '',
     bio: profile?.bio || '',
-    avatarUrl: profile?.avatar || profile?.avatarUrl || '',
+    avatar: profile?.avatar || '',
   });
 
   // Only update form when profile initially loads
@@ -54,7 +53,7 @@ export default function ProfilePage() {
       setFormData({
         displayName: profile.displayName || '',
         bio: profile.bio || '',
-        avatarUrl: profile.avatar || profile.avatarUrl || '',
+        avatar: profile.avatar || '',
       });
       profileLoadedRef.current = true;
     }
@@ -119,7 +118,7 @@ export default function ProfilePage() {
                 <Stack spacing={3}>
                   <Box textAlign="center">
                     <Avatar
-                      src={formData.avatarUrl}
+                      src={formData.avatar}
                       alt={formData.displayName}
                       sx={{ width: 120, height: 120, mx: 'auto', mb: 2 }}
                     />
@@ -150,8 +149,8 @@ export default function ProfilePage() {
                   <TextField
                     fullWidth
                     label="Avatar URL"
-                    value={formData.avatarUrl}
-                    onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                    value={formData.avatar}
+                    onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
                     helperText="Direct link to your profile picture"
                     placeholder="https://example.com/avatar.jpg"
                   />

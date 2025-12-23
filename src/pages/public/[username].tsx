@@ -25,8 +25,7 @@ interface PublicProfile {
   username: string;
   displayName: string;
   bio: string;
-  avatar?: string; // Backend returns 'avatar', not 'avatarUrl'
-  avatarUrl?: string; // Support both for backward compatibility
+  avatar?: string;
   links: Link[];
 }
 
@@ -108,7 +107,7 @@ export default function PublicProfile() {
           <Card elevation={4}>
             <CardContent sx={{ p: 5, textAlign: 'center' }}>
               <Avatar
-                src={profile.avatar || profile.avatarUrl}
+                src={profile.avatar}
                 alt={profile.displayName}
                 sx={{ 
                   width: 120, 

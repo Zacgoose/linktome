@@ -25,8 +25,6 @@ interface UserProfile {
   username: string;
   displayName: string;
   bio: string;
-  avatar?: string; // Backend returns "avatar" not "avatarUrl"
-  avatarUrl?: string; // Keep for backwards compatibility
   links?: Array<{ id: string; title: string; url: string; order: number }>;
 }
 
@@ -158,7 +156,7 @@ export default function Dashboard() {
                   </Typography>
                   <Box display="flex" alignItems="center" gap={3} mt={2}>
                     <Avatar
-                      src={profile.avatar || profile.avatarUrl}
+                      src={profile.avatar}
                       alt={profile.displayName}
                       sx={{ width: 80, height: 80 }}
                     />
