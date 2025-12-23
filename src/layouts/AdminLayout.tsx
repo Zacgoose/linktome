@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useContext } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -17,7 +17,10 @@ import {
   MenuItem as MuiMenuItem,
   FormControl,
   InputLabel,
+  IconButton,
 } from '@mui/material';
+import { Brightness4, Brightness7 } from '@mui/icons-material';
+import { UiThemeContext } from '@/pages/_app';
 import {
   Dashboard as DashboardIcon,
   Link as LinkIcon,
@@ -93,6 +96,7 @@ const menuItems: MenuItem[] = [
 
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const { uiTheme, setUiTheme } = useContext(UiThemeContext);
   const router = useRouter();
   const { user, logout, loading } = useAuthContext();
   const { selectedContext, setSelectedContext } = useRbacContext();
@@ -163,8 +167,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         position="fixed" 
         elevation={1} 
         sx={{ 
-          bgcolor: 'white', 
-          color: 'text.primary',
+          bgcolor: (theme) => theme.palette.background.paper,
+          color: (theme) => theme.palette.text.primary,
           zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
@@ -172,6 +176,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, color: 'primary.main' }}>
             LinkToMe
           </Typography>
+          {/* UI Theme Switcher */}
+          <IconButton sx={{ mr: 1 }} onClick={() => setUiTheme(uiTheme === 'light' ? 'dark' : 'light')} color="inherit" aria-label="Toggle UI theme">
+            {uiTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
+          </IconButton>
           {/* Context Switcher: Only show if user has company memberships */}
           {user && user.companyMemberships && user.companyMemberships.length > 0 && (
             <FormControl size="small" sx={{ minWidth: 180, mr: 2 }}>
@@ -236,7 +244,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </List>
         </Box>
       </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: 'grey.50' }}>
+      <Box component="main" sx={{ flexGrow: 1, bgcolor: (theme) => theme.palette.background.default, }}>
         <Toolbar />
         {children}
       </Box>

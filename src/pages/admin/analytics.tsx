@@ -103,7 +103,7 @@ export default function AnalyticsPage() {
 
       <AdminLayout>
         <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
+          <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
             Analytics
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
@@ -207,9 +207,9 @@ export default function AnalyticsPage() {
 
             {/* Top Links */}
             <Grid item xs={12} md={6}>
-              <Card>
+              <Card sx={{ bgcolor: (theme) => theme.palette.background.paper }}>
                 <CardContent>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                  <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
                     Top Performing Links
                   </Typography>
                   {analytics?.linkClicksByLink && analytics.linkClicksByLink.length > 0 ? (
@@ -221,7 +221,7 @@ export default function AnalyticsPage() {
                           justifyContent="space-between"
                           alignItems="center"
                           p={2}
-                          sx={{ bgcolor: 'grey.50', borderRadius: 1 }}
+                          sx={{ bgcolor: (theme) => theme.palette.background.default, borderRadius: 1 }}
                         >
                           <Box display="flex" alignItems="center" gap={2}>
                             <Typography
@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
                             >
                               {index + 1}
                             </Typography>
-                            <Typography fontWeight={500}>{link.linkTitle + " (" + link.linkUrl + ")"}</Typography>
+                            <Typography fontWeight={500} color="text.primary">{link.linkTitle + " (" + link.linkUrl + ")"}</Typography>
                           </Box>
                           <Typography variant="h6" fontWeight={600} color="primary">
                             {link.clickCount}
@@ -261,9 +261,9 @@ export default function AnalyticsPage() {
 
             {/* Recent Link Clicks */}
             <Grid item xs={12} md={6}>
-              <Card>
+              <Card sx={{ bgcolor: (theme) => theme.palette.background.paper }}>
                 <CardContent>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                  <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
                     Recent Link Clicks
                   </Typography>
                   {analytics?.recentLinkClicks && analytics.recentLinkClicks.length > 0 ? (
@@ -272,9 +272,9 @@ export default function AnalyticsPage() {
                         <Box
                           key={click.linkId + click.timestamp}
                           p={2}
-                          sx={{ bgcolor: 'grey.50', borderRadius: 1 }}
+                          sx={{ bgcolor: (theme) => theme.palette.background.default, borderRadius: 1 }}
                         >
-                          <Typography fontWeight={600} gutterBottom>
+                          <Typography fontWeight={600} gutterBottom color="text.primary">
                             {click.linkTitle}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">

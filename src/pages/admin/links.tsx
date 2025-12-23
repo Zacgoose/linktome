@@ -105,7 +105,7 @@ export default function LinksPage() {
       <AdminLayout>
         <Container maxWidth="md" sx={{ py: 4 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h4" fontWeight={700}>
+            <Typography variant="h4" fontWeight={700} color="text.primary">
               Manage Links
             </Typography>
             <Button

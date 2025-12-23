@@ -96,7 +96,7 @@ export default function ProfilePage() {
 
       <AdminLayout>
         <Container maxWidth="md" sx={{ py: 4 }}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
+          <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
             Profile Settings
           </Typography>
 

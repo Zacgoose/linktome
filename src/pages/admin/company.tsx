@@ -63,7 +63,7 @@ export default function CompanyPage() {
       </Head>
       <AdminLayout>
         <Container maxWidth="md" sx={{ py: 4 }}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
+          <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
             Company Properties
           </Typography>
 

@@ -25,7 +25,7 @@ interface UserProfile {
   username: string;
   displayName: string;
   bio: string;
-  links?: Array<{ id: string; title: string; url: string; order: number }>;
+  avatar: string;
 }
 
 interface DashboardStats {
@@ -53,7 +53,7 @@ export default function Dashboard() {
 
   const profile = profileData;
   const dashboardStats = statsData?.stats || { 
-    totalLinks: profileData?.links?.length || 0, 
+    totalLinks: 0, 
     totalPageViews: 0, 
     totalLinkClicks: 0 
   };
@@ -76,7 +76,7 @@ export default function Dashboard() {
       
       <AdminLayout>
         <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Typography variant="h4" gutterBottom fontWeight={700}>
+          <Typography variant="h4" gutterBottom fontWeight={700} color="text.primary">
             Welcome back, {profile.displayName}!
           </Typography>
           <Typography variant="body1" color="text.secondary" gutterBottom>

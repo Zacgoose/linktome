@@ -8,9 +8,19 @@ import Head from 'next/head';
 
 import { createTheme } from '@/theme';
 import { createEmotionCache } from '@/utils/create-emotion-cache';
+
 import { AuthProvider } from '@/providers/AuthProvider';
 import { RbacProvider } from '@/context/RbacContext';
 import '@/styles/globals.css';
+
+import { createContext, useEffect, useState, useMemo } from 'react';
+
+// UI Theme Context for admin UI
+export const UiThemeContext = createContext({
+  uiTheme: 'light',
+  setUiTheme: (_: 'light' | 'dark') => {},
+});
+
 
 const clientSideEmotionCache = createEmotionCache();
 const queryClient = new QueryClient();
@@ -22,12 +32,24 @@ interface MyAppProps extends AppProps {
 export default function App(props: MyAppProps) {
   const { Component, emotionCache = clientSideEmotionCache, pageProps } = props;
 
-  const theme = createTheme({
+  // UI theme state (sync with localStorage)
+  const [uiTheme, setUiTheme] = useState<'light' | 'dark'>(
+    typeof window !== 'undefined' && localStorage.getItem('uiTheme') === 'dark' ? 'dark' : 'light'
+  );
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('uiTheme', uiTheme);
+    }
+  }, [uiTheme]);
+
+  // Memoize theme to avoid recreation on every render
+  const theme = useMemo(() => createTheme({
     direction: 'ltr',
-    paletteMode: 'light',
+    paletteMode: uiTheme,
     colorPreset: 'purple',
     contrast: 'normal',
-  });
+  }), [uiTheme]);
 
   return (
     <CacheProvider value={emotionCache}>
@@ -36,14 +58,16 @@ export default function App(props: MyAppProps) {
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <AuthProvider>
-            <RbacProvider>
-              <Component {...pageProps} />
-            </RbacProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <UiThemeContext.Provider value={{ uiTheme, setUiTheme }}>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <AuthProvider>
+              <RbacProvider>
+                <Component {...pageProps} />
+              </RbacProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </UiThemeContext.Provider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </CacheProvider>
