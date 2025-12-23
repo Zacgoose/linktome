@@ -32,23 +32,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { setUser } = useAuthContext();
   const isSignup = router.query.signup === 'true';
-<<<<<<< Updated upstream
-  
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState<string>('');
-  const [username, setUsername] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
-
-  // Remove setMode from useEffect to avoid cascading renders
-  // Instead, derive mode directly from router.query.signup
-  const derivedMode: 'login' | 'signup' = isSignup ? 'signup' : 'login';
-  useEffect(() => {
-    setMode(isSignup ? 'signup' : 'login');
-  }, [isSignup]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-=======
 
     // Remove mode state, use derivedMode everywhere
   const [email, setEmail] = useState<string>('');
@@ -131,28 +114,9 @@ export default function LoginPage() {
   });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
->>>>>>> Stashed changes
     e.preventDefault();
     setError('');
 
-<<<<<<< Updated upstream
-    try {
-      const endpoint = mode === 'login' ? 'public/Login' : 'public/Signup';
-      const data = mode === 'login' 
-        ? { email, password }
-        : { email, username, password };
-
-      const response = await apiPost(endpoint, data);
-      
-      if (response.accessToken) {
-        localStorage.setItem('accessToken', response.accessToken);
-        router.push('/admin/dashboard');
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'An error occurred');
-    } finally {
-      setLoading(false);
-=======
       if (derivedMode === 'login') {
       loginMutation.mutate({
         url: 'public/Login',
@@ -163,9 +127,10 @@ export default function LoginPage() {
         url: 'public/Signup',
         data: { email, username, password },
       });
->>>>>>> Stashed changes
     }
   };
+
+  const loading = loginMutation.isPending || signupMutation.isPending;
 
   return (
     <>
@@ -196,12 +161,7 @@ export default function LoginPage() {
                   required
                   margin="normal"
                 />
-<<<<<<< Updated upstream
-                
-                {mode === 'signup' && (
-=======
                 {derivedMode === 'signup' && (
->>>>>>> Stashed changes
                   <TextField
                     fullWidth
                     label="Username"
@@ -225,15 +185,11 @@ export default function LoginPage() {
                     {error}
                   </Alert>
                 )}
-<<<<<<< Updated upstream
-                
-=======
                 {!error && sessionExpired && (
                   <Alert severity="error" sx={{ mt: 2 }}>
                     Your session has expired. Please log in again.
                   </Alert>
                 )}
->>>>>>> Stashed changes
                 <Button
                   fullWidth
                   variant="contained"
@@ -266,12 +222,7 @@ export default function LoginPage() {
                   </MuiLink>
                 </Typography>
               </Box>
-<<<<<<< Updated upstream
-
-              {mode === 'login' && (
-=======
               {derivedMode === 'login' && (
->>>>>>> Stashed changes
                 <Alert severity="info" sx={{ mt: 3 }}>
                   <Typography variant="caption" display="block">
                     <strong>Demo credentials:</strong>

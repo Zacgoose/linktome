@@ -56,27 +56,29 @@ interface ApiResponse<TData> {
   data?: TData;
 }
 
+// Track if we're already redirecting to prevent multiple simultaneous redirects
+// This flag is per-page-load and will be reset when the page redirects
+let isRedirecting = false;
+
 // Helper to handle API errors and redirects
 const handleApiError = (error: AxiosError) => {
   if (axios.isAxiosError(error) && error.response?.status === 401) {
-    localStorage.removeItem('accessToken');
-    if (typeof window !== 'undefined') {
+    // Only redirect once per page load, even if multiple API calls fail simultaneously
+    if (!isRedirecting && typeof window !== 'undefined') {
+      isRedirecting = true;
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      
       const currentPath = window.location.pathname + window.location.search;
       // Match /login, /login/, /login?session=expired, /login/?session=expired, etc.
       const loginRegex = /^\/login\/?(\?.*)?$/;
       const isLoginPage = loginRegex.test(currentPath);
-      console.log('[handleApiError] currentPath:', currentPath, 'isLoginPage:', isLoginPage);
+      
       if (!isLoginPage) {
-        try {
-          const url = '/login?session=expired';
-          if (window.next && window.next.router) {
-            window.next.router.push(url);
-          } else {
-            window.location.href = url;
-          }
-        } catch {
-          window.location.href = '/login?session=expired';
-        }
+        // Use window.location.href which will cause a full page redirect
+        // and reset the isRedirecting flag on the next page load
+        window.location.href = '/login?session=expired';
       }
       // If already on any login variant, do nothing (preserve error message)
     }
@@ -194,8 +196,9 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
+      const headers = await buildHeaders();
       const response = await axios.post<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, data, {
-        headers: buildHeaders(),
+        headers,
       });
       
       const responseData = response.data;
@@ -250,8 +253,9 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
+      const headers = await buildHeaders();
       const response = await axios.put<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, data, {
-        headers: buildHeaders(),
+        headers,
       });
       
       const responseData = response.data;
@@ -306,8 +310,9 @@ export function useApiDelete<TData = unknown>(
 
   const mutation = useMutation<TData, Error, { url: string }>({
     mutationFn: async ({ url }) => {
+      const headers = await buildHeaders();
       const response = await axios.delete<ApiResponse<TData> | TData>(`${API_BASE}/${url}`, {
-        headers: buildHeaders(),
+        headers,
       });
       
       const responseData = response.data;

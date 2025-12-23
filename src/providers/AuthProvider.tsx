@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { checkRouteAccess, findRouteConfig } from '@/config/routes';
-import { apiGet, apiPost } from '@/utils/api';
+import { checkRouteAccess } from '@/config/routes';
+import { apiPost } from '@/utils/api';
 import { CircularProgress, Box } from '@mui/material';
 
 interface User {
@@ -71,32 +71,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
           return;
         } catch {
-          // Fallback to API
-        }
-      }
-      if (accessToken) {
-        try {
-          const profile = await apiGet('admin/GetProfile');
-          if (profile && profile.userId) {
-            const user = normalizeUser(profile);
-            setUser(user);
-            localStorage.setItem('user', JSON.stringify(user));
-          } else {
-            setUser(null);
-          }
-        } catch {
+          // If parsing fails, clear invalid data and set user to null
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
           setUser(null);
+          setLoading(false);
+          return;
         }
-      } else {
-        setUser(null);
       }
+      // If no token in localStorage, don't try to fetch from API
+      // The user is not authenticated, let the pages handle the redirect
+      setUser(null);
       setLoading(false);
     }
     fetchAuth();
   }, [router.asPath, loading]);
-
-
-
 
   const logout = async () => {
     try {
