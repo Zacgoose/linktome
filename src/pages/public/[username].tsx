@@ -41,10 +41,6 @@ export default function PublicProfile() {
     queryKey: `public-profile-${username}`,
     params: { username: username as string },
     enabled: !!username,
-    retry: 0, // Don't retry for public profiles
-    onError: (error) => {
-      setError(error);
-    },
   });
 
   if (isLoading) {

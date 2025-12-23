@@ -35,10 +35,6 @@ export default function LinksPage() {
   const { data, isLoading } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
     queryKey: 'admin-links',
-    onError: (error) => {
-      setError(error);
-      setTimeout(() => setError(''), 3000);
-    },
   });
 
   const createLink = useApiPost({
@@ -46,10 +42,6 @@ export default function LinksPage() {
     onSuccess: () => {
       setSuccess('Link created successfully');
       setTimeout(() => setSuccess(''), 3000);
-    },
-    onError: (error) => {
-      setError(error);
-      setTimeout(() => setError(''), 3000);
     },
   });
 
@@ -59,10 +51,6 @@ export default function LinksPage() {
       setSuccess('Link updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     },
-    onError: (error) => {
-      setError(error);
-      setTimeout(() => setError(''), 3000);
-    },
   });
 
   const deleteLink = useApiDelete({
@@ -70,10 +58,6 @@ export default function LinksPage() {
     onSuccess: () => {
       setSuccess('Link deleted successfully');
       setTimeout(() => setSuccess(''), 3000);
-    },
-    onError: (error) => {
-      setError(error);
-      setTimeout(() => setError(''), 3000);
     },
   });
 

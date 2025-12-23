@@ -60,10 +60,6 @@ export default function AppearancePage() {
   const { data, isLoading } = useApiGet<AppearanceResponse>({
     url: 'admin/GetAppearance',
     queryKey: 'admin-appearance',
-    retry: 0, // Don't retry if endpoint doesn't exist yet
-    onError: () => {
-      // Silently use defaults if endpoint doesn't exist
-    },
   });
 
   const appearance = data?.appearance;

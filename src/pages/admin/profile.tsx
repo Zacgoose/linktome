@@ -66,10 +66,6 @@ export default function ProfilePage() {
       setSuccess('Profile updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     },
-    onError: (error) => {
-      setError(error);
-      setTimeout(() => setError(''), 3000);
-    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -37,10 +37,6 @@ export default function AnalyticsPage() {
   const { data, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
     queryKey: 'admin-analytics',
-    retry: 0, // Don't retry if endpoint doesn't exist yet
-    onError: () => {
-      // Silently fail if analytics endpoint doesn't exist
-    },
   });
 
   const analytics: AnalyticsData | undefined = data?.summary;

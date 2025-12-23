@@ -51,10 +51,6 @@ export default function Dashboard() {
   const { data: statsData } = useApiGet<DashboardStatsResponse>({
     url: 'admin/GetDashboardStats',
     queryKey: 'admin-dashboard-stats',
-    retry: 0, // Don't retry if endpoint doesn't exist yet
-    onError: () => {
-      // Silently fail if stats endpoint doesn't exist
-    },
   });
 
   const profile = profileData;
