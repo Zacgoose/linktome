@@ -89,9 +89,7 @@ export default function Dashboard() {
               <Card>
                 <CardContent>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Box sx={{ p: 1, bgcolor: 'primary.light', borderRadius: 2 }}>
-                      <LinkIcon sx={{ color: 'primary.main' }} />
-                    </Box>
+                    <LinkIcon sx={{ color: 'primary.main' }} />
                     <Box>
                       <Typography variant="h4" fontWeight={700}>
                         {dashboardStats.totalLinks}
@@ -109,9 +107,7 @@ export default function Dashboard() {
               <Card>
                 <CardContent>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Box sx={{ p: 1, bgcolor: 'secondary.light', borderRadius: 2 }}>
-                      <ViewIcon sx={{ color: 'secondary.main' }} />
-                    </Box>
+                    <ViewIcon sx={{ color: 'secondary.main' }} />
                     <Box>
                       <Typography variant="h4" fontWeight={700}>
                         {dashboardStats.totalPageViews}
@@ -129,9 +125,7 @@ export default function Dashboard() {
               <Card>
                 <CardContent>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Box sx={{ p: 1, bgcolor: 'success.light', borderRadius: 2 }}>
-                      <AnalyticsIcon sx={{ color: 'success.main' }} />
-                    </Box>
+                    <AnalyticsIcon sx={{ color: 'success.main' }} />
                     <Box>
                       <Typography variant="h4" fontWeight={700}>
                         {dashboardStats.totalLinkClicks}
