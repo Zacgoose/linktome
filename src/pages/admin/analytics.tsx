@@ -275,7 +275,7 @@ export default function AnalyticsPage() {
                           sx={{ bgcolor: (theme) => theme.palette.background.default, borderRadius: 1 }}
                         >
                           <Typography fontWeight={600} gutterBottom color="text.primary">
-                            {click.linkTitle}
+                            {click.linkTitle + " (" + click.linkUrl + ")"}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {new Date(click.timestamp).toLocaleString()}
