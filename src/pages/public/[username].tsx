@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { 
@@ -13,6 +12,7 @@ import {
   CircularProgress 
 } from '@mui/material';
 import { useApiGet } from '@/hooks/useApiQuery';
+import axios from 'axios';
 
 interface Link {
   title: string;
@@ -32,8 +32,6 @@ interface PublicProfile {
 export default function PublicProfile() {
   const router = useRouter();
   const { username } = router.query;
-  
-  const [error, setError] = useState('');
 
   const { data: profile, isLoading } = useApiGet<PublicProfile>({
     url: 'public/GetUserProfile',
@@ -41,6 +39,24 @@ export default function PublicProfile() {
     params: { username: username as string },
     enabled: !!username,
   });
+
+  const handleLinkClick = async (linkId: string, url: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Track the click
+    try {
+      await axios.post('/api/public/TrackLinkClick', {
+        linkId,
+        username: username as string,
+      });
+    } catch (error) {
+      // Log error but don't block navigation
+      console.error('Failed to track link click:', error);
+    }
+    
+    // Navigate to the URL
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   if (isLoading) {
     return (
@@ -58,7 +74,7 @@ export default function PublicProfile() {
     );
   }
 
-  if (error || !profile) {
+  if (!profile) {
     return (
       <Box
         sx={{
@@ -75,7 +91,7 @@ export default function PublicProfile() {
                 Profile Not Found
               </Typography>
               <Typography color="text.secondary" paragraph>
-                {error}
+                The profile you are looking for does not exist.
               </Typography>
               <Button variant="contained" onClick={() => router.push('/')}>
                 Go Home
@@ -135,13 +151,11 @@ export default function PublicProfile() {
               <Stack spacing={2}>
                 {profile.links && profile.links.map((link, index) => (
                   <Button
-                    key={index}
+                    key={link.id || index}
                     variant="contained"
                     size="large"
                     fullWidth
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={(e) => handleLinkClick(link.id || '', link.url, e)}
                   >
                     {link.title}
                   </Button>

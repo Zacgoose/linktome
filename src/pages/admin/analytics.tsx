@@ -18,6 +18,27 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 
+interface LinkClick {
+  id: string;
+  linkId: string;
+  linkTitle: string;
+  timestamp: string;
+  userAgent?: string;
+  referrer?: string;
+}
+
+interface LinkClickCount {
+  linkId: string;
+  title: string;
+  url: string;
+  clicks: number;
+}
+
+interface ClicksByDay {
+  date: string;
+  clicks: number;
+}
+
 interface AnalyticsData {
   totalPageViews: number;
   clicks: number;
@@ -26,6 +47,9 @@ interface AnalyticsData {
     url: string;
     clicks: number;
   }>;
+  recentLinkClicks?: LinkClick[];
+  linkClicksByLink?: LinkClickCount[];
+  clicksByDay?: ClicksByDay[];
 }
 
 interface AnalyticsResponse {
@@ -173,11 +197,11 @@ export default function AnalyticsPage() {
                   <Typography variant="h6" fontWeight={600} gutterBottom>
                     Top Performing Links
                   </Typography>
-                  {analytics?.topLinks && analytics.topLinks.length > 0 ? (
+                  {analytics?.linkClicksByLink && analytics.linkClicksByLink.length > 0 ? (
                     <Stack spacing={2} mt={2}>
-                      {analytics.topLinks.slice(0, 5).map((link, index) => (
+                      {analytics.linkClicksByLink.slice(0, 5).map((link, index) => (
                         <Box
-                          key={index}
+                          key={link.linkId}
                           display="flex"
                           justifyContent="space-between"
                           alignItems="center"
@@ -220,18 +244,101 @@ export default function AnalyticsPage() {
               </Card>
             </Grid>
 
-            {/* Recent Activity */}
+            {/* Recent Link Clicks */}
             <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" fontWeight={600} gutterBottom>
-                    Recent Activity
+                    Recent Link Clicks
                   </Typography>
-                  <Box textAlign="center" py={4}>
-                    <Typography color="text.secondary">
-                      No recent activity
-                    </Typography>
-                  </Box>
+                  {analytics?.recentLinkClicks && analytics.recentLinkClicks.length > 0 ? (
+                    <Stack spacing={2} mt={2} sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                      {analytics.recentLinkClicks.slice(0, 10).map((click) => (
+                        <Box
+                          key={click.id}
+                          p={2}
+                          sx={{ bgcolor: 'grey.50', borderRadius: 1 }}
+                        >
+                          <Typography fontWeight={600} gutterBottom>
+                            {click.linkTitle}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(click.timestamp).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Box textAlign="center" py={4}>
+                      <Typography color="text.secondary">
+                        No recent clicks
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Clicks by Day Chart */}
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    Clicks Over Time (Last 30 Days)
+                  </Typography>
+                  {analytics?.clicksByDay && analytics.clicksByDay.length > 0 ? (
+                    <Box sx={{ mt: 3 }}>
+                      <Stack spacing={1}>
+                        {analytics.clicksByDay.map((day) => (
+                          <Box
+                            key={day.date}
+                            display="flex"
+                            alignItems="center"
+                            gap={2}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{ minWidth: 100, color: 'text.secondary' }}
+                            >
+                              {new Date(day.date).toLocaleDateString()}
+                            </Typography>
+                            <Box
+                              sx={{
+                                flex: 1,
+                                height: 24,
+                                bgcolor: 'grey.100',
+                                borderRadius: 1,
+                                position: 'relative',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  height: '100%',
+                                  bgcolor: 'primary.main',
+                                  width: `${Math.min((day.clicks / Math.max(...analytics.clicksByDay!.map(d => d.clicks))) * 100, 100)}%`,
+                                  transition: 'width 0.3s ease',
+                                }}
+                              />
+                            </Box>
+                            <Typography
+                              variant="body2"
+                              fontWeight={600}
+                              sx={{ minWidth: 40, textAlign: 'right' }}
+                            >
+                              {day.clicks}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Stack>
+                    </Box>
+                  ) : (
+                    <Box textAlign="center" py={4}>
+                      <Typography color="text.secondary">
+                        No click data available
+                      </Typography>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
