@@ -69,27 +69,16 @@ const handleApiError = (error: AxiosError) => {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       localStorage.removeItem('refreshToken');
-      // Use window.location.href which will cause a full page redirect
-      // and reset the isRedirecting flag on the next page load
-      window.location.href = '/login';
-    localStorage.removeItem('accessToken');
-    if (typeof window !== 'undefined') {
+      
       const currentPath = window.location.pathname + window.location.search;
       // Match /login, /login/, /login?session=expired, /login/?session=expired, etc.
       const loginRegex = /^\/login\/?(\?.*)?$/;
       const isLoginPage = loginRegex.test(currentPath);
-      console.log('[handleApiError] currentPath:', currentPath, 'isLoginPage:', isLoginPage);
+      
       if (!isLoginPage) {
-        try {
-          const url = '/login?session=expired';
-          if (window.next && window.next.router) {
-            window.next.router.push(url);
-          } else {
-            window.location.href = url;
-          }
-        } catch {
-          window.location.href = '/login?session=expired';
-        }
+        // Use window.location.href which will cause a full page redirect
+        // and reset the isRedirecting flag on the next page load
+        window.location.href = '/login?session=expired';
       }
       // If already on any login variant, do nothing (preserve error message)
     }

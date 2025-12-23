@@ -71,32 +71,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
           return;
         } catch {
-          // If parsing fails, clear invalid data
+          // If parsing fails, clear invalid data and set user to null
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
-          // Fallback to API
-        }
-      }
-      if (accessToken) {
-        try {
-          const profile = await apiGet('admin/GetProfile');
-          if (profile && profile.userId) {
-            const user = normalizeUser(profile);
-            setUser(user);
-            localStorage.setItem('user', JSON.stringify(user));
-          } else {
-            setUser(null);
-          }
-        } catch {
           setUser(null);
           setLoading(false);
           return;
         }
-      } else {
-        setUser(null);
       }
-      // If no token exists, don't call API - user is not authenticated
-      // Let pages handle the redirect to login
+      // If no token in localStorage, don't try to fetch from API
+      // The user is not authenticated, let the pages handle the redirect
       setUser(null);
       setLoading(false);
     }
