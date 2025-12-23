@@ -18,55 +18,70 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 
-interface LinkClick {
-  id: string;
-  linkId: string;
-  linkTitle: string;
-  timestamp: string;
-  userAgent?: string;
-  referrer?: string;
-}
-
-interface LinkClickCount {
-  linkId: string;
-  title: string;
-  url: string;
-  clicks: number;
-}
-
 interface ClicksByDay {
   date: string;
-  clicks: number;
+  count: number;
+}
+
+interface ViewsByDay {
+  date: string;
+  count: number;
+}
+
+interface RecentPageView {
+  ipAddress: string;
+  userAgent: string;
+  referrer: string;
+  timestamp: string;
+}
+
+interface RecentLinkClick {
+  linkTitle: string;
+  userAgent: string;
+  timestamp: string;
+  linkUrl: string;
+  referrer: string;
+  ipAddress: string;
+  linkId: string;
+}
+
+interface LinkClicksByLink {
+  linkId: string;
+  clickCount: number;
+  linkTitle: string;
+  linkUrl: string;
+}
+
+interface AnalyticsSummary {
+  totalLinkClicks: number;
+  uniqueVisitors: number;
+  totalPageViews: number;
 }
 
 interface AnalyticsData {
-  totalPageViews: number;
-  clicks: number;
-  topLinks: Array<{
-    title: string;
-    url: string;
-    clicks: number;
-  }>;
-  recentLinkClicks?: LinkClick[];
-  linkClicksByLink?: LinkClickCount[];
-  clicksByDay?: ClicksByDay[];
+  clicksByDay: ClicksByDay[];
+  recentPageViews: RecentPageView[];
+  linkClicksByLink: LinkClicksByLink[];
+  summary: AnalyticsSummary;
+  viewsByDay: ViewsByDay[];
+  recentLinkClicks: RecentLinkClick[];
 }
 
-interface AnalyticsResponse {
-  summary: AnalyticsData;
-}
+// The API response is now the AnalyticsData object directly, not wrapped in a summary property
+type AnalyticsResponse = AnalyticsData;
 
 export default function AnalyticsPage() {
 
-  const { data, isLoading } = useApiGet<AnalyticsResponse>({
+
+  const { data: analytics, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
     queryKey: 'admin-analytics',
   });
 
-  const analytics: AnalyticsData | undefined = data?.summary;
+  // Calculate click-through rate using summary fields
   let clickThroughRateDisplay = '0.0';
-  if (analytics && analytics.totalPageViews > 0) {
-    const ctr = (analytics.clicks / analytics.totalPageViews) * 100;
+  if (analytics && analytics.summary.totalPageViews > 0) {
+    const ctr = (analytics.summary.totalLinkClicks / analytics.summary.totalPageViews) * 100;
     clickThroughRateDisplay = isFinite(ctr) ? ctr.toFixed(1) : '0.0';
   }
 
@@ -96,7 +111,7 @@ export default function AnalyticsPage() {
           </Typography>
 
 
-          {!analytics?.totalPageViews && !analytics?.clicks && (
+          {!analytics?.summary.totalPageViews && !analytics?.summary.totalLinkClicks && (
             <Alert severity="info" sx={{ mb: 3 }}>
               Analytics will be available once your profile receives visits and clicks
             </Alert>
@@ -123,7 +138,7 @@ export default function AnalyticsPage() {
                     </Typography>
                   </Box>
                   <Typography variant="h3" fontWeight={700}>
-                    {analytics?.totalPageViews || 0}
+                    {analytics?.summary.totalPageViews || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
                     Total profile visits
@@ -152,7 +167,7 @@ export default function AnalyticsPage() {
                     </Typography>
                   </Box>
                   <Typography variant="h3" fontWeight={700}>
-                    {analytics?.clicks || 0}
+                    {analytics?.summary.totalLinkClicks || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
                     Total link engagements
@@ -225,10 +240,10 @@ export default function AnalyticsPage() {
                             >
                               {index + 1}
                             </Typography>
-                            <Typography fontWeight={500}>{link.title}</Typography>
+                            <Typography fontWeight={500}>{link.linkTitle + " (" + link.linkUrl + ")"}</Typography>
                           </Box>
                           <Typography variant="h6" fontWeight={600} color="primary">
-                            {link.clicks}
+                            {link.clickCount}
                           </Typography>
                         </Box>
                       ))}
@@ -255,7 +270,7 @@ export default function AnalyticsPage() {
                     <Stack spacing={2} mt={2} sx={{ maxHeight: 400, overflowY: 'auto' }}>
                       {analytics.recentLinkClicks.slice(0, 10).map((click) => (
                         <Box
-                          key={click.id}
+                          key={click.linkId + click.timestamp}
                           p={2}
                           sx={{ bgcolor: 'grey.50', borderRadius: 1 }}
                         >
@@ -290,10 +305,10 @@ export default function AnalyticsPage() {
                     <Box sx={{ mt: 3 }}>
                       <Stack spacing={1}>
                         {(() => {
-                          const maxClicks = Math.max(...analytics.clicksByDay!.map(d => d.clicks));
+                          const maxClicks = Math.max(...analytics.clicksByDay!.map(d => d.count));
                           return analytics.clicksByDay.map((day) => {
                             const widthPercent = maxClicks > 0 
-                              ? Math.min((day.clicks / maxClicks) * 100, 100)
+                              ? Math.min((day.count / maxClicks) * 100, 100)
                               : 0;
                             return (
                               <Box
@@ -332,7 +347,7 @@ export default function AnalyticsPage() {
                                   fontWeight={600}
                                   sx={{ minWidth: 40, textAlign: 'right' }}
                                 >
-                                  {day.clicks}
+                                  {day.count}
                                 </Typography>
                               </Box>
                             );
