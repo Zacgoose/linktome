@@ -18,6 +18,7 @@ import {
   FormControl,
   InputLabel,
   IconButton,
+  ListSubheader,
 } from '@mui/material';
 import { Brightness4, Brightness7 } from '@mui/icons-material';
 import { UiThemeContext } from '@/pages/_app';
@@ -82,8 +83,7 @@ const menuItems: MenuItem[] = [
     text: 'Users', 
     icon: <PeopleIcon />, 
     path: '/admin/users',
-    requiredPermissions: ['read:users'],
-    requiredRoles: ['admin', 'company_owner'],
+    requiredPermissions: ['read:users']
   },
   { 
     text: 'Company', 
@@ -98,15 +98,22 @@ const menuItems: MenuItem[] = [
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { uiTheme, setUiTheme } = useContext(UiThemeContext);
   const router = useRouter();
-  const { user, logout, loading } = useAuthContext();
-  const { selectedContext, setSelectedContext } = useRbacContext();
+  const { user, logout, loading, managedUsers: allManagedUsers, refreshAuth } = useAuthContext();
+  const { selectedContext, setSelectedContext, contextRoles, contextPermissions } = useRbacContext();
+  // managedUsers are already filtered for state === 'accepted' in AuthProvider
+  const managedUsers = allManagedUsers || [];
 
-  // If user has no company memberships, ensure context is 'user'
+  // If user has no company memberships AND no managed users, ensure context is 'user'
   useEffect(() => {
-    if (user && (!user.companyMemberships || user.companyMemberships.length === 0) && selectedContext !== 'user') {
+    if (
+      user &&
+      (!user.companyMemberships || user.companyMemberships.length === 0) &&
+      (!managedUsers || managedUsers.length === 0) &&
+      selectedContext !== 'user'
+    ) {
       setSelectedContext('user');
     }
-  }, [user, selectedContext, setSelectedContext]);
+  }, [user, selectedContext, setSelectedContext, managedUsers]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -129,40 +136,36 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return null;
   }
 
-  // Determine context: global (user) or company
-  let contextRoles: string[] = user?.roles || [];
-  let contextPermissions: string[] = user?.permissions || [];
-  if (selectedContext !== 'user' && user?.companyMemberships) {
-    const company = user.companyMemberships.find((c) => c.companyId === selectedContext);
-    if (company) {
-      contextRoles = [company.role];
-      contextPermissions = company.permissions;
-    }
-  }
-
   // Filter menu items based on context permissions and roles
-  const visibleMenuItems = menuItems.filter((item) => {
-    // Check role requirements
-    if (item.requiredRoles && item.requiredRoles.length > 0) {
-      if (!item.requiredRoles.some((role) => contextRoles.includes(role))) {
-        return false;
+  let visibleMenuItems = menuItems;
+  // If contextPermissions is non-empty, filter as normal. If empty, show all (for managed user fallback/debug)
+  if (contextPermissions && contextPermissions.length > 0) {
+    visibleMenuItems = menuItems.filter((item) => {
+      // Check role requirements
+      if (item.requiredRoles && item.requiredRoles.length > 0) {
+        if (!item.requiredRoles.some((role) => contextRoles.includes(role))) {
+          return false;
+        }
       }
-    }
-    // Check permission requirements
-    if (item.requiredPermissions && item.requiredPermissions.length > 0) {
-      if (!item.requiredPermissions.every((perm) => contextPermissions.includes(perm))) {
-        return false;
+      // Check permission requirements
+      if (item.requiredPermissions && item.requiredPermissions.length > 0) {
+        if (!item.requiredPermissions.every((perm) => contextPermissions.includes(perm))) {
+          return false;
+        }
       }
-    }
-    return true;
-  });
+      return true;
+    });
+  }
 
   const handleLogout = () => {
     logout();
   };
 
+
+  // Navigation bar and context switcher
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Navigation Bar */}
       <AppBar 
         position="fixed" 
         elevation={1} 
@@ -180,22 +183,39 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <IconButton sx={{ mr: 1 }} onClick={() => setUiTheme(uiTheme === 'light' ? 'dark' : 'light')} color="inherit" aria-label="Toggle UI theme">
             {uiTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
           </IconButton>
-          {/* Context Switcher: Only show if user has company memberships */}
-          {user && user.companyMemberships && user.companyMemberships.length > 0 && (
-            <FormControl size="small" sx={{ minWidth: 180, mr: 2 }}>
+          {/* Context Switcher: Show if user has company memberships or managed users */}
+          {user && ((user.companyMemberships && user.companyMemberships.length > 0) || (managedUsers && managedUsers.length > 0)) && (
+            <FormControl size="small" sx={{ minWidth: 220, mr: 2 }}>
               <InputLabel id="context-switch-label">Context</InputLabel>
               <Select
                 labelId="context-switch-label"
                 value={selectedContext}
                 label="Context"
-                onChange={(e) => setSelectedContext(e.target.value)}
+                onChange={async (e) => {
+                  setSelectedContext(e.target.value);
+                  if (typeof refreshAuth === 'function') {
+                    await refreshAuth();
+                  }
+                }}
+                MenuProps={{ PaperProps: { style: { maxHeight: 350 } } }}
               >
                 <MuiMenuItem value="user">My Account</MuiMenuItem>
-                {user.companyMemberships.map((company) => (
-                  <MuiMenuItem key={company.companyId} value={company.companyId}>
-                    {company.companyName || company.companyId}
-                  </MuiMenuItem>
-                ))}
+                {user.companyMemberships && user.companyMemberships.length > 0 && [
+                  <ListSubheader key="company-header">Companies</ListSubheader>,
+                  ...user.companyMemberships.map((company) => (
+                    <MuiMenuItem key={company.companyId} value={company.companyId}>
+                      {company.companyName || company.companyId}
+                    </MuiMenuItem>
+                  )),
+                ]}
+                {managedUsers && managedUsers.length > 0 && [
+                  <ListSubheader key="managed-header">Accounts I Manage</ListSubheader>,
+                  ...managedUsers.map((um) => (
+                    <MuiMenuItem key={um.userId} value={um.userId}>
+                      Managed User: {um.userId} ({um.role})
+                    </MuiMenuItem>
+                  )),
+                ]}
               </Select>
             </FormControl>
           )}
@@ -204,6 +224,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </Button>
         </Toolbar>
       </AppBar>
+      {/* Side Drawer Navigation */}
       <Drawer
         variant="permanent"
         sx={{

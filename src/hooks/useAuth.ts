@@ -12,14 +12,26 @@ export interface CompanyMembership {
   permissions: string[];
 }
 
+export interface UserManagement {
+  userId: string;
+  role: string;
+  state: string;
+  direction: 'manager' | 'managed';
+  permissions: string[];
+  // Optionally: created, updated
+  created?: string;
+  updated?: string;
+}
+
 export interface UserAuth {
   userId: string;
   username: string;
   email: string;
   userRole: string; // global role (e.g. 'user', 'admin')
-  roles: string[]; // for backward compatibility, always include userRole as first element
+  roles: string[];
   permissions: string[];
   companyMemberships?: CompanyMembership[];
+  userManagements?: UserManagement[];
 }
 
 /**
@@ -159,6 +171,17 @@ export function storeAuth(
           companyName: cm.companyName,
           role: cm.role,
           permissions: Array.isArray(cm.permissions) ? cm.permissions : [],
+        }))
+      : undefined,
+    userManagements: Array.isArray((user as any).userManagements)
+      ? (user as any).userManagements.map((um: any) => ({
+          userId: String(um.userId),
+          role: um.role,
+          state: um.state,
+          direction: um.direction,
+          permissions: Array.isArray(um.permissions) ? um.permissions : [],
+          created: um.created,
+          updated: um.updated,
         }))
       : undefined,
   };

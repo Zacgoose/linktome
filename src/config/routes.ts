@@ -136,6 +136,12 @@ export const PERMISSIONS = {
   'write:users': 'Create and edit users',
   'manage:users': 'Full user management including deletion',
 
+  // User-to-user management permissions
+  'invite:user_manager': 'Invite another user to manage your account',
+  'list:user_manager': 'List user managers and managed users',
+  'remove:user_manager': 'Remove a user manager or managed user',
+  'respond:user_manager': 'Accept or reject a user manager invitation',
+
   // Company permissions
   'read:company': 'View company information',
   'write:company': 'Edit company information',
@@ -143,6 +149,11 @@ export const PERMISSIONS = {
   'read:company_members': 'View company members',
   'manage:company_members': 'Manage company members',
   'write:company_settings': 'Edit company settings',
+  'manage:billing': 'Manage company billing and subscriptions',
+  'assign:company_admin': 'Assign company admin role',
+  'revoke:company_admin': 'Revoke company admin role',
+  'assign:company_owner': 'Assign company owner role',
+  'revoke:company_owner': 'Revoke company owner role',
 } as const;
 
 /**
@@ -162,29 +173,53 @@ export const ROLES = {
       'read:appearance',
       'write:appearance',
       'read:analytics',
+      'read:users',
+      'manage:users',
+      'invite:user_manager',
+      'list:user_manager',
+      'remove:user_manager',
+      'respond:user_manager'
     ],
   },
-  admin: {
-    name: 'Administrator',
-    description: 'Administrator with full system access',
+  user_manager: {
+    name: 'User Manager',
+    description: 'User manager with limited access to manage specific users',
     defaultPermissions: [
       'read:dashboard',
       'read:profile',
       'write:profile',
       'read:links',
       'write:links',
-      'manage:links',
+      'read:appearance',
+      'write:appearance',
+      'read:analytics'
+    ],
+  },
+  company_admin: {
+    name: 'Company Admin',
+    description: 'Company administrator with elevated permissions',
+    defaultPermissions: [
+      'read:dashboard',
+      'read:profile',
+      'write:profile',
+      'read:links',
+      'write:links',
       'read:appearance',
       'write:appearance',
       'read:analytics',
       'read:users',
-      'write:users',
       'manage:users',
+      'read:company_members',
+      'manage:company_members',
+      'invite:user_manager',
+      'list:user_manager',
+      'remove:user_manager',
+      'respond:user_manager'
     ],
   },
   company_owner: {
     name: 'Company Owner',
-    description: 'Company owner who can manage multiple users',
+    description: 'Company owner who can manage multiple all aspect of the company',
     defaultPermissions: [
       'read:dashboard',
       'read:profile',
@@ -195,14 +230,21 @@ export const ROLES = {
       'write:appearance',
       'read:analytics',
       'read:users',
-      'write:users',
       'manage:users',
       'read:company',
       'write:company',
-      'manage:company',
       'read:company_members',
       'manage:company_members',
-      'write:company_settings',
+      'manage:billing',
+      'manage:company_settings',
+      'assign:company_admin',
+      'revoke:company_admin',
+      'assign:company_owner',
+      'revoke:company_owner',
+      'invite:user_manager',
+      'list:user_manager',
+      'remove:user_manager',
+      'respond:user_manager'
     ],
   },
 } as const;

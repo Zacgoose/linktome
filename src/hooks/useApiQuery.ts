@@ -1,4 +1,5 @@
 import { useRbacContext } from '@/context/RbacContext';
+import { useAuthContext } from '@/providers/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
 
@@ -130,7 +131,6 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     url,
     queryKey,
     params,
-    contextId,
     enabled = true,
     retry = 3,
     staleTime = 300000,
@@ -140,20 +140,42 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     onError,
   } = props;
 
-  const userId = getUserIdFromToken();
-  const userScopedQueryKey = [queryKey, userId];
-  // Use contextId if provided, otherwise use selectedContext from RbacContext
-  const effectiveContextId = contextId !== undefined ? contextId : selectedContext;
-  let mergedParams = params ? { ...params } : {};
-  if (effectiveContextId && effectiveContextId !== 'user') {
-    mergedParams = { ...mergedParams, companyId: effectiveContextId };
+
+  // Detect context type using the user object
+  const { user } = useAuthContext();
+  let contextKey: Record<string, string> | undefined = undefined;
+  if (selectedContext !== 'user' && user) {
+    // Check if selectedContext matches a companyMembership
+    const company = user.companyMemberships?.find((c: { companyId: string }) => c.companyId === selectedContext);
+    if (company) {
+      contextKey = { companyId: selectedContext };
+    } else if (user.userManagements?.find((um: { userId: string; state: string }) => um.userId === selectedContext && um.state === 'accepted')) {
+      contextKey = { userId: selectedContext };
+    }
+  }
+
+  // Merge params with contextKey if not already present
+  const mergedParams = params ? { ...params } : {};
+  if (contextKey) {
+    if (contextKey.companyId && !mergedParams.companyId) {
+      mergedParams.companyId = contextKey.companyId;
+    }
+    if (contextKey.userId && !mergedParams.userId) {
+      mergedParams.userId = contextKey.userId;
+    }
+  }
+
+  // Build a query key that includes the context (companyId or userId) if not 'user'
+  const queryKeyArr: string[] = [queryKey];
+  if (contextKey) {
+    queryKeyArr.push(JSON.stringify(contextKey));
   }
   if (Object.keys(mergedParams).length > 0) {
-    userScopedQueryKey.push(mergedParams);
+    queryKeyArr.push(JSON.stringify(mergedParams));
   }
 
   const queryInfo = useQuery<TData, AxiosError>({
-    queryKey: userScopedQueryKey,
+    queryKey: queryKeyArr,
     enabled,
     queryFn: async ({ signal }) => {
       const headers = await buildHeaders();
