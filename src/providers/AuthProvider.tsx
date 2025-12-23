@@ -54,8 +54,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
+    // Use router.asPath for robust login route detection
+    const loginRegex = /^\/login\/?(\?.*)?$/;
+    const isLoginRoute = loginRegex.test(router.asPath);
+    if (isLoginRoute) {
+      if (loading) setLoading(false);
+      return;
+    }
     async function fetchAuth() {
-      // Try localStorage first
       const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
       if (accessToken && userStr) {
@@ -68,10 +74,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // If parsing fails, clear invalid data
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
+          // Fallback to API
+        }
+      }
+      if (accessToken) {
+        try {
+          const profile = await apiGet('admin/GetProfile');
+          if (profile && profile.userId) {
+            const user = normalizeUser(profile);
+            setUser(user);
+            localStorage.setItem('user', JSON.stringify(user));
+          } else {
+            setUser(null);
+          }
+        } catch {
           setUser(null);
           setLoading(false);
           return;
         }
+      } else {
+        setUser(null);
       }
       // If no token exists, don't call API - user is not authenticated
       // Let pages handle the redirect to login
@@ -79,10 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
     fetchAuth();
-  }, []);
-
-
-
+  }, [router.asPath, loading]);
 
   const logout = async () => {
     try {

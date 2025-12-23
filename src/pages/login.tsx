@@ -32,7 +32,8 @@ export default function LoginPage() {
   const router = useRouter();
   const { setUser } = useAuthContext();
   const isSignup = router.query.signup === 'true';
-
+<<<<<<< Updated upstream
+  
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState<string>('');
   const [username, setUsername] = useState<string>('');
@@ -43,8 +44,25 @@ export default function LoginPage() {
   // Instead, derive mode directly from router.query.signup
   const derivedMode: 'login' | 'signup' = isSignup ? 'signup' : 'login';
   useEffect(() => {
-    setMode(derivedMode);
-  }, [derivedMode]);
+    setMode(isSignup ? 'signup' : 'login');
+  }, [isSignup]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+=======
+
+    // Remove mode state, use derivedMode everywhere
+  const [email, setEmail] = useState<string>('');
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
+
+  // Show session expired message if redirected
+  const sessionExpired = router.query.session === 'expired';
+  console.log('[LoginPage] render sessionExpired:', sessionExpired, 'router.query.session:', router.query.session);
+
+  // Remove setMode from useEffect to avoid cascading renders
+  // Instead, derive mode directly from router.query.signup
+  const derivedMode: 'login' | 'signup' = isSignup ? 'signup' : 'login';
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
@@ -101,7 +119,6 @@ export default function LoginPage() {
         setUser(user);
         router.push('/admin/dashboard');
       } else {
-        setMode('login');
         setError('');
         setPassword('');
         alert(`Account created successfully! Welcome, ${data.user.username}. Please log in.`);
@@ -114,10 +131,29 @@ export default function LoginPage() {
   });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+>>>>>>> Stashed changes
     e.preventDefault();
     setError('');
 
-    if (mode === 'login') {
+<<<<<<< Updated upstream
+    try {
+      const endpoint = mode === 'login' ? 'public/Login' : 'public/Signup';
+      const data = mode === 'login' 
+        ? { email, password }
+        : { email, username, password };
+
+      const response = await apiPost(endpoint, data);
+      
+      if (response.accessToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+        router.push('/admin/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'An error occurred');
+    } finally {
+      setLoading(false);
+=======
+      if (derivedMode === 'login') {
       loginMutation.mutate({
         url: 'public/Login',
         data: { email, password },
@@ -127,15 +163,14 @@ export default function LoginPage() {
         url: 'public/Signup',
         data: { email, username, password },
       });
+>>>>>>> Stashed changes
     }
   };
-
-  const loading = loginMutation.isPending || signupMutation.isPending;
 
   return (
     <>
       <Head>
-        <title>{mode === 'login' ? 'Login' : 'Sign Up'} - LinkToMe</title>
+          <title>{derivedMode === 'login' ? 'Login' : 'Sign Up'} - LinkToMe</title>
       </Head>
       <Box
         sx={{
@@ -149,7 +184,7 @@ export default function LoginPage() {
           <Card elevation={4}>
             <CardContent sx={{ p: 5 }}>
               <Typography variant="h4" align="center" gutterBottom fontWeight={700}>
-                {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+                  {derivedMode === 'login' ? 'Welcome Back' : 'Create Account'}
               </Typography>
               <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
                 <TextField
@@ -161,7 +196,12 @@ export default function LoginPage() {
                   required
                   margin="normal"
                 />
+<<<<<<< Updated upstream
+                
                 {mode === 'signup' && (
+=======
+                {derivedMode === 'signup' && (
+>>>>>>> Stashed changes
                   <TextField
                     fullWidth
                     label="Username"
@@ -185,6 +225,15 @@ export default function LoginPage() {
                     {error}
                   </Alert>
                 )}
+<<<<<<< Updated upstream
+                
+=======
+                {!error && sessionExpired && (
+                  <Alert severity="error" sx={{ mt: 2 }}>
+                    Your session has expired. Please log in again.
+                  </Alert>
+                )}
+>>>>>>> Stashed changes
                 <Button
                   fullWidth
                   variant="contained"
@@ -193,25 +242,36 @@ export default function LoginPage() {
                   disabled={loading}
                   sx={{ mt: 3 }}
                 >
-                  {loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Sign Up'}
+                    {loading ? 'Please wait...' : derivedMode === 'login' ? 'Login' : 'Sign Up'}
                 </Button>
               </Box>
               <Box textAlign="center" mt={3}>
                 <Typography variant="body2" color="text.secondary">
-                  {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                    {derivedMode === 'login' ? "Don't have an account? " : 'Already have an account? '}
                   <MuiLink
                     component="button"
                     variant="body2"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
-                      setMode(mode === 'login' ? 'signup' : 'login');
+                        router.replace({
+                          pathname: router.pathname,
+                          query: {
+                            ...router.query,
+                            signup: derivedMode === 'login' ? 'true' : undefined
+                          }
+                        });
                     }}
                   >
-                    {mode === 'login' ? 'Sign Up' : 'Login'}
+                      {derivedMode === 'login' ? 'Sign Up' : 'Login'}
                   </MuiLink>
                 </Typography>
               </Box>
+<<<<<<< Updated upstream
+
               {mode === 'login' && (
+=======
+              {derivedMode === 'login' && (
+>>>>>>> Stashed changes
                 <Alert severity="info" sx={{ mt: 3 }}>
                   <Typography variant="caption" display="block">
                     <strong>Demo credentials:</strong>
