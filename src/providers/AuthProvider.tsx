@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { checkRouteAccess, findRouteConfig } from '@/config/routes';
-import { apiGet, apiPost } from '@/utils/api';
+import { checkRouteAccess } from '@/config/routes';
+import { apiPost } from '@/utils/api';
 import { CircularProgress, Box } from '@mui/material';
 
 interface User {
