@@ -40,18 +40,20 @@ export default function PublicProfile() {
     enabled: !!username,
   });
 
-  const handleLinkClick = async (linkId: string, url: string, e: React.MouseEvent) => {
+  const handleLinkClick = async (linkId: string | undefined, url: string, e: React.MouseEvent) => {
     e.preventDefault();
     
-    // Track the click
-    try {
-      await axios.post('/api/public/TrackLinkClick', {
-        linkId,
-        username: username as string,
-      });
-    } catch (error) {
-      // Log error but don't block navigation
-      console.error('Failed to track link click:', error);
+    // Track the click only if linkId is available
+    if (linkId) {
+      try {
+        await axios.post('/api/public/TrackLinkClick', {
+          linkId,
+          username: username as string,
+        });
+      } catch (error) {
+        // Log error but don't block navigation
+        console.error('Failed to track link click:', error);
+      }
     }
     
     // Navigate to the URL
@@ -155,7 +157,7 @@ export default function PublicProfile() {
                     variant="contained"
                     size="large"
                     fullWidth
-                    onClick={(e) => handleLinkClick(link.id || '', link.url, e)}
+                    onClick={(e) => handleLinkClick(link.id, link.url, e)}
                   >
                     {link.title}
                   </Button>

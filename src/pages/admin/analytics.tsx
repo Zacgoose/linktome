@@ -289,47 +289,55 @@ export default function AnalyticsPage() {
                   {analytics?.clicksByDay && analytics.clicksByDay.length > 0 ? (
                     <Box sx={{ mt: 3 }}>
                       <Stack spacing={1}>
-                        {analytics.clicksByDay.map((day) => (
-                          <Box
-                            key={day.date}
-                            display="flex"
-                            alignItems="center"
-                            gap={2}
-                          >
-                            <Typography
-                              variant="body2"
-                              sx={{ minWidth: 100, color: 'text.secondary' }}
-                            >
-                              {new Date(day.date).toLocaleDateString()}
-                            </Typography>
-                            <Box
-                              sx={{
-                                flex: 1,
-                                height: 24,
-                                bgcolor: 'grey.100',
-                                borderRadius: 1,
-                                position: 'relative',
-                                overflow: 'hidden',
-                              }}
-                            >
+                        {(() => {
+                          const maxClicks = Math.max(...analytics.clicksByDay!.map(d => d.clicks));
+                          return analytics.clicksByDay.map((day) => {
+                            const widthPercent = maxClicks > 0 
+                              ? Math.min((day.clicks / maxClicks) * 100, 100)
+                              : 0;
+                            return (
                               <Box
-                                sx={{
-                                  height: '100%',
-                                  bgcolor: 'primary.main',
-                                  width: `${Math.min((day.clicks / Math.max(...analytics.clicksByDay!.map(d => d.clicks))) * 100, 100)}%`,
-                                  transition: 'width 0.3s ease',
-                                }}
-                              />
-                            </Box>
-                            <Typography
-                              variant="body2"
-                              fontWeight={600}
-                              sx={{ minWidth: 40, textAlign: 'right' }}
-                            >
-                              {day.clicks}
-                            </Typography>
-                          </Box>
-                        ))}
+                                key={day.date}
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  sx={{ minWidth: 100, color: 'text.secondary' }}
+                                >
+                                  {new Date(day.date).toLocaleDateString()}
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    flex: 1,
+                                    height: 24,
+                                    bgcolor: 'grey.100',
+                                    borderRadius: 1,
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      height: '100%',
+                                      bgcolor: 'primary.main',
+                                      width: `${widthPercent}%`,
+                                      transition: 'width 0.3s ease',
+                                    }}
+                                  />
+                                </Box>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={600}
+                                  sx={{ minWidth: 40, textAlign: 'right' }}
+                                >
+                                  {day.clicks}
+                                </Typography>
+                              </Box>
+                            );
+                          });
+                        })()}
                       </Stack>
                     </Box>
                   ) : (
