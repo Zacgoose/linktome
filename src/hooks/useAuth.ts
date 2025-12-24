@@ -202,16 +202,6 @@ export function clearAuth(): void {
 }
 
 /**
- * Check if token is expired or about to expire (within 5 minutes)
- */
-function isTokenExpiringSoon(expiresAt?: number): boolean {
-  if (!expiresAt) return false;
-  const now = Date.now();
-  const fiveMinutes = 5 * 60 * 1000;
-  return expiresAt - now < fiveMinutes;
-}
-
-/**
  * Enhanced authentication hook with RBAC support
  */
 export function useAuth() {
