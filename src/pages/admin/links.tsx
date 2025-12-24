@@ -67,7 +67,7 @@ export default function LinksPage() {
     if (link.id) {
       updateLink.mutate({ url: `admin/UpdateLink?id=${link.id}`, data: link });
     } else {
-      createLink.mutate({ url: 'admin/CreateLink', data: link });
+      createLink.mutate({ url: 'admin/UpdateLinks', data: link });
     }
   };
 
