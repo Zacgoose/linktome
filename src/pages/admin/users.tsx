@@ -127,7 +127,7 @@ export default function UsersPage() {
       url = 'admin/UserManagerRespond';
       data = { FromUserId: UserId, State: action === 'accept' ? 'accepted' : 'rejected' };
     } else if (action === 'remove') {
-      url = 'admin/UserManagementRemove';
+      url = 'admin/UserManagerRemove';
       data = { UserId };
     }
     userManagerAction.mutate({ url, data });
