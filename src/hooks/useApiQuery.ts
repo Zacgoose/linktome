@@ -41,7 +41,7 @@ const ensureValidAccessToken = async () => {
   }
 };
 
-// Helper to extract userId from JWT access token
+// Helper to extract UserId from JWT access token
 const getUserIdFromToken = (): string | undefined => {
   const accessToken = localStorage.getItem('accessToken');
   if (!accessToken) return undefined;
@@ -149,8 +149,8 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     const company = user.companyMemberships?.find((c: { companyId: string }) => c.companyId === selectedContext);
     if (company) {
       contextKey = { companyId: selectedContext };
-    } else if (user.userManagements?.find((um: { userId: string; state: string }) => um.userId === selectedContext && um.state === 'accepted')) {
-      contextKey = { userId: selectedContext };
+    } else if (user.userManagements?.find((um: { UserId: string; state: string }) => um.UserId === selectedContext && um.state === 'accepted')) {
+      contextKey = { UserId: selectedContext };
     }
   }
 
@@ -160,22 +160,19 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     if (contextKey.companyId && !mergedParams.companyId) {
       mergedParams.companyId = contextKey.companyId;
     }
-    if (contextKey.userId && !mergedParams.userId) {
-      mergedParams.userId = contextKey.userId;
+    if (contextKey.UserId && !mergedParams.UserId) {
+      mergedParams.UserId = contextKey.UserId;
     }
   }
 
-  // Always include the calling user (userId from JWT) in the query key, in addition to context
+  // Always include the calling user (UserId from JWT) in the query key, in addition to context
   const callingUserId = getUserIdFromToken();
   const queryKeyArr: string[] = [queryKey];
   if (callingUserId) {
-    queryKeyArr.push(`userId:${callingUserId}`);
-  }
-  if (contextKey) {
-    queryKeyArr.push(JSON.stringify(contextKey));
+    queryKeyArr.push(`UserId:${callingUserId}`);
   }
   if (Object.keys(mergedParams).length > 0) {
-    queryKeyArr.push(JSON.stringify(mergedParams));
+  queryKeyArr.push(JSON.stringify(mergedParams));
   }
 
   const queryInfo = useQuery<TData, AxiosError>({
@@ -231,7 +228,7 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
   // Helper to build query key for invalidation, matching useApiGet
   const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
     const arr = [key];
-    if (callingUserId) arr.push(`userId:${callingUserId}`);
+    if (callingUserId) arr.push(`UserId:${callingUserId}`);
     if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
     return arr;
   };
@@ -283,7 +280,7 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
   // Helper to build query key for invalidation, matching useApiGet
   const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
     const arr = [key];
-    if (callingUserId) arr.push(`userId:${callingUserId}`);
+    if (callingUserId) arr.push(`UserId:${callingUserId}`);
     if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
     return arr;
   };
@@ -335,7 +332,7 @@ export function useApiDelete<TData = unknown>(
   // Helper to build query key for invalidation, matching useApiGet
   const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
     const arr = [key];
-    if (callingUserId) arr.push(`userId:${callingUserId}`);
+    if (callingUserId) arr.push(`UserId:${callingUserId}`);
     if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
     return arr;
   };

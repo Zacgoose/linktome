@@ -211,8 +211,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 {managedUsers && managedUsers.length > 0 && [
                   <ListSubheader key="managed-header">Accounts I Manage</ListSubheader>,
                   ...managedUsers.map((um) => (
-                    <MuiMenuItem key={um.userId} value={um.userId}>
-                      Managed User: {um.userId} ({um.role})
+                    <MuiMenuItem key={um.UserId} value={um.UserId}>
+                      Managed User: {um.UserId} ({um.role})
                     </MuiMenuItem>
                   )),
                 ]}

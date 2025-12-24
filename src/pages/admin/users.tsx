@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
-import { useRbacContext } from '@/context/RbacContext';
 import Head from 'next/head';
 import {
   Container,
@@ -27,13 +26,13 @@ interface CompanyUser {
   companyDisplayName: string;
   companyEmail: string;
   companyRole: string;
-  userId: string;
+  UserId: string;
   // Add any company-specific properties if needed
 }
 
 
 interface UserManagerRelationship {
-  userId: string;
+  UserId: string;
   role: string;
   state: string;
   created: string;
@@ -51,20 +50,20 @@ interface UserManagerListResponse {
 
 
 export default function UsersPage() {
-  const { selectedContext } = useRbacContext();
   const { data: companyData, isLoading } = useApiGet<CompanyUsersResponse>({
     url: 'admin/GetCompanyUsers',
-    queryKey: ['admin-company-users', selectedContext],
+    queryKey: 'admin-company-users',
   });
   const users = companyData?.users || [];
 
   // Fetch user manager relationships
   const { data: userManagerList } = useApiGet<UserManagerListResponse>({
     url: 'admin/UserManagerList',
-    queryKey: ['admin-user-manager-list', selectedContext],
+    queryKey: 'admin-user-manager-list',
   });
+  // With backend fixed, managers = users who manage me, managees = users I manage
   const managers: UserManagerRelationship[] = userManagerList?.managers || [];
-  const managedUsers: UserManagerRelationship[] = userManagerList?.managees || [];
+  const managees: UserManagerRelationship[] = userManagerList?.managees || [];
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [inviteEmail, setInviteEmail] = useReactState('');
@@ -119,14 +118,19 @@ export default function UsersPage() {
     });
   };
 
-  const handleUserAction = (userId: string, action: 'accept' | 'reject' | 'remove') => {
+  const handleUserAction = (UserId: string, action: 'accept' | 'reject' | 'remove') => {
     setError('');
     setSuccess('');
     let url = '';
-    if (action === 'accept') url = 'admin/UserManagementAccept';
-    else if (action === 'reject') url = 'admin/UserManagementReject';
-    else if (action === 'remove') url = 'admin/UserManagementRemove';
-    userManagerAction.mutate({ url, data: { userId } });
+    let data: any = {};
+    if (action === 'accept' || action === 'reject') {
+      url = 'admin/UserManagerRespond';
+      data = { FromUserId: UserId, State: action === 'accept' ? 'accepted' : 'rejected' };
+    } else if (action === 'remove') {
+      url = 'admin/UserManagementRemove';
+      data = { UserId };
+    }
+    userManagerAction.mutate({ url, data });
   };
 
   return (
@@ -173,7 +177,7 @@ export default function UsersPage() {
                 </TableHead>
                 <TableBody>
                   {users.map((user) => (
-                    <TableRow key={user.userId}>
+                    <TableRow key={user.UserId}>
                       <TableCell>{user.companyDisplayName}</TableCell>
                       <TableCell>{user.companyEmail}</TableCell>
                       <TableCell>{user.companyRole}</TableCell>
@@ -218,44 +222,6 @@ export default function UsersPage() {
 
               {/* Managed Users Table */}
               <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary" sx={{ mt: 2 }}>
-                Users You Manage
-              </Typography>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>User ID</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {managedUsers.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">No users</TableCell>
-                    </TableRow>
-                  )}
-                  {managedUsers.map((um) => (
-                    <TableRow key={um.userId}>
-                      <TableCell>{um.userId}</TableCell>
-                      <TableCell>{um.role}</TableCell>
-                      <TableCell>{um.state}</TableCell>
-                      <TableCell>
-                        {um.state === 'pending' ? (
-                          <>
-                            <Button size="small" onClick={() => handleUserAction(um.userId, 'remove')} disabled={userManagerAction.isPending}>Cancel</Button>
-                          </>
-                        ) : (
-                          <Button size="small" color="error" onClick={() => handleUserAction(um.userId, 'remove')} disabled={userManagerAction.isPending}>Remove</Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* Managers Table */}
-              <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary" sx={{ mt: 4 }}>
                 Your Managers
               </Typography>
               <Table size="small">
@@ -274,18 +240,50 @@ export default function UsersPage() {
                     </TableRow>
                   )}
                   {managers.map((um) => (
-                    <TableRow key={um.userId}>
-                      <TableCell>{um.userId}</TableCell>
+                    <TableRow key={um.UserId}>
+                      <TableCell>{um.UserId}</TableCell>
+                      <TableCell>{um.role}</TableCell>
+                      <TableCell>{um.state}</TableCell>
+                      <TableCell>
+                        <Button size="small" color="error" onClick={() => handleUserAction(um.UserId, 'remove')} disabled={userManagerAction.isPending}>Remove</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Managees Table */}
+              <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary" sx={{ mt: 4 }}>
+                Users You Manage
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>User ID</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {managees.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">No users</TableCell>
+                    </TableRow>
+                  )}
+                  {managees.map((um) => (
+                    <TableRow key={um.UserId}>
+                      <TableCell>{um.UserId}</TableCell>
                       <TableCell>{um.role}</TableCell>
                       <TableCell>{um.state}</TableCell>
                       <TableCell>
                         {um.state === 'pending' ? (
                           <>
-                            <Button size="small" color="success" onClick={() => handleUserAction(um.userId, 'accept')} disabled={userManagerAction.isPending}>Accept</Button>
-                            <Button size="small" color="error" onClick={() => handleUserAction(um.userId, 'reject')} disabled={userManagerAction.isPending}>Reject</Button>
+                            <Button size="small" color="success" onClick={() => handleUserAction(um.UserId, 'accept')} disabled={userManagerAction.isPending}>Accept</Button>
+                            <Button size="small" color="error" onClick={() => handleUserAction(um.UserId, 'reject')} disabled={userManagerAction.isPending}>Reject</Button>
                           </>
                         ) : (
-                          <Button size="small" color="error" onClick={() => handleUserAction(um.userId, 'remove')} disabled={userManagerAction.isPending}>Remove</Button>
+                          <Button size="small" color="error" onClick={() => handleUserAction(um.UserId, 'remove')} disabled={userManagerAction.isPending}>Remove</Button>
                         )}
                       </TableCell>
                     </TableRow>

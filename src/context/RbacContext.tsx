@@ -45,7 +45,7 @@ export const RbacProvider: React.FC<{ children: React.ReactNode }> = ({ children
     (!user?.companyMemberships || !user.companyMemberships.some((c) => c.companyId === selectedContext)) &&
     user?.userManagements && Array.isArray(user.userManagements)
   ) {
-    const managed = user.userManagements.find((um) => um.userId === selectedContext && um.state === 'accepted');
+    const managed = user.userManagements.find((um) => um.UserId === selectedContext && um.state === 'accepted');
     if (managed) {
       contextRoles = [managed.role];
       // Use permissions from the userManagements entry (from JWT)

@@ -18,7 +18,7 @@ export interface CompanyMembership {
 }
 
 export interface UserAuth {
-  userId: string;
+  UserId: string;
   username: string;
   email: string;
   userRole: string; // global role (e.g. 'user', 'admin')
@@ -67,7 +67,7 @@ The backend returns user info in this format:
 
 ```json
 {
-  "userId": "string",
+  "UserId": "string",
   "username": "string",
   "email": "string",
   "userRole": "user",

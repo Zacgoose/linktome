@@ -13,7 +13,7 @@ export interface CompanyMembership {
 }
 
 export interface UserManagement {
-  userId: string;
+  UserId: string;
   role: string;
   state: string;
   direction: 'manager' | 'managed';
@@ -24,7 +24,7 @@ export interface UserManagement {
 }
 
 export interface UserAuth {
-  userId: string;
+  UserId: string;
   username: string;
   email: string;
   userRole: string; // global role (e.g. 'user', 'admin')
@@ -155,7 +155,7 @@ export function storeAuth(
   // Normalize the user object to ensure roles is an array and new fields are present
   const userRole = (user as any).userRole || (user as any).role || (Array.isArray((user as any).roles) ? (user as any).roles[0] : 'user');
   const normalizedUser: UserAuth = {
-    userId: String((user as any).userId || (user as any).id || ''),
+    UserId: String((user as any).UserId || (user as any).id || ''),
     username: String((user as any).username || ''),
     email: String((user as any).email || ''),
     userRole: String(userRole),
@@ -175,7 +175,7 @@ export function storeAuth(
       : undefined,
     userManagements: Array.isArray((user as any).userManagements)
       ? (user as any).userManagements.map((um: any) => ({
-          userId: String(um.userId),
+          UserId: String(um.UserId),
           role: um.role,
           state: um.state,
           direction: um.direction,

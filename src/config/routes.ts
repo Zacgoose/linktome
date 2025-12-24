@@ -80,7 +80,7 @@ export const ROUTE_CONFIG: RoutePermission[] = [
     requiredPermissions: ['write:users'],
   },
   {
-    path: '/admin/users/:userId/edit',
+    path: '/admin/users/:UserId/edit',
     allowedFor: 'admin',
     requiredRoles: ['admin', 'company_owner'],
     requiredPermissions: ['write:users'],
@@ -259,7 +259,7 @@ export function findRouteConfig(path: string): RoutePermission | null {
       return route;
     }
 
-    // Pattern match (e.g., /admin/users/:userId)
+    // Pattern match (e.g., /admin/users/:UserId)
     const pattern = route.path.replace(/:[^/]+/g, '[^/]+');
     const regex = new RegExp(`^${pattern}$`);
     if (regex.test(path)) {

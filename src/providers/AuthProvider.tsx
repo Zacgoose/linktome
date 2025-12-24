@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   function normalizeUser(user: any): UserAuth {
     const userRole = user.userRole || user.role || (Array.isArray(user.roles) ? user.roles[0] : 'user');
     return {
-      userId: String(user.userId || user.id || ''),
+      UserId: String(user.UserId || user.id || ''),
       username: String(user.username || ''),
       email: String(user.email || ''),
       userRole: String(userRole),
@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         : [],
       userManagements: Array.isArray(user.userManagements)
         ? user.userManagements.map((um: any) => ({
-            userId: String(um.userId),
+            UserId: String(um.UserId),
             role: um.role,
             state: um.state,
             direction: um.direction,
