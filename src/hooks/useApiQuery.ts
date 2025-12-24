@@ -165,8 +165,12 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     }
   }
 
-  // Build a query key that includes the context (companyId or userId) if not 'user'
+  // Always include the calling user (userId from JWT) in the query key, in addition to context
+  const callingUserId = getUserIdFromToken();
   const queryKeyArr: string[] = [queryKey];
+  if (callingUserId) {
+    queryKeyArr.push(`userId:${callingUserId}`);
+  }
   if (contextKey) {
     queryKeyArr.push(JSON.stringify(contextKey));
   }
@@ -223,7 +227,14 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
 ) {
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
-  const userId = getUserIdFromToken();
+  const callingUserId = getUserIdFromToken();
+  // Helper to build query key for invalidation, matching useApiGet
+  const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
+    const arr = [key];
+    if (callingUserId) arr.push(`userId:${callingUserId}`);
+    if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
+    return arr;
+  };
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
@@ -240,7 +251,7 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
     onSuccess: (data) => {
       if (relatedQueryKeys) {
         relatedQueryKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: [key, userId] });
+          queryClient.invalidateQueries({ queryKey: buildRelatedQueryKey(key, (props as any)?.params) });
         });
       }
       if (onSuccess) {
@@ -268,7 +279,14 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
 ) {
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
-  const userId = getUserIdFromToken();
+  const callingUserId = getUserIdFromToken();
+  // Helper to build query key for invalidation, matching useApiGet
+  const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
+    const arr = [key];
+    if (callingUserId) arr.push(`userId:${callingUserId}`);
+    if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
+    return arr;
+  };
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
@@ -285,7 +303,7 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
     onSuccess: (data) => {
       if (relatedQueryKeys) {
         relatedQueryKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: [key, userId] });
+          queryClient.invalidateQueries({ queryKey: buildRelatedQueryKey(key, (props as any)?.params) });
         });
       }
       if (onSuccess) {
@@ -313,7 +331,14 @@ export function useApiDelete<TData = unknown>(
 ) {
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
-  const userId = getUserIdFromToken();
+  const callingUserId = getUserIdFromToken();
+  // Helper to build query key for invalidation, matching useApiGet
+  const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
+    const arr = [key];
+    if (callingUserId) arr.push(`userId:${callingUserId}`);
+    if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
+    return arr;
+  };
 
   const mutation = useMutation<TData, Error, { url: string }>({
     mutationFn: async ({ url }) => {
@@ -330,7 +355,7 @@ export function useApiDelete<TData = unknown>(
     onSuccess: (data) => {
       if (relatedQueryKeys) {
         relatedQueryKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: [key, userId] });
+          queryClient.invalidateQueries({ queryKey: buildRelatedQueryKey(key, (props as any)?.params) });
         });
       }
       if (onSuccess) {
