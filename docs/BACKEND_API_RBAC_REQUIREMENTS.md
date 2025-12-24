@@ -109,7 +109,7 @@ Create refresh tokens with:
   "accessToken": "string",     // Short-lived (15 min)
   "refreshToken": "string",    // NEW: Long-lived (7 days)
   "user": {
-    "userId": "string",
+    "UserId": "string",
     "username": "string",
     "email": "string",
     "roles": ["user"],          // NEW
@@ -213,7 +213,7 @@ Create refresh tokens with:
   "accessToken": "string",     // NEW: Return token on signup
   "refreshToken": "string",    // NEW
   "user": {
-    "userId": "string",
+    "UserId": "string",
     "username": "string",
     "email": "string",
     "roles": ["user"],          // NEW: Default to 'user' role

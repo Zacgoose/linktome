@@ -1,4 +1,5 @@
 import { useRbacContext } from '@/context/RbacContext';
+import { useAuthContext } from '@/providers/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
 
@@ -40,7 +41,7 @@ const ensureValidAccessToken = async () => {
   }
 };
 
-// Helper to extract userId from JWT access token
+// Helper to extract UserId from JWT access token
 const getUserIdFromToken = (): string | undefined => {
   const accessToken = localStorage.getItem('accessToken');
   if (!accessToken) return undefined;
@@ -130,7 +131,6 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     url,
     queryKey,
     params,
-    contextId,
     enabled = true,
     retry = 3,
     staleTime = 300000,
@@ -140,20 +140,43 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     onError,
   } = props;
 
-  const userId = getUserIdFromToken();
-  const userScopedQueryKey = [queryKey, userId];
-  // Use contextId if provided, otherwise use selectedContext from RbacContext
-  const effectiveContextId = contextId !== undefined ? contextId : selectedContext;
-  let mergedParams = params ? { ...params } : {};
-  if (effectiveContextId && effectiveContextId !== 'user') {
-    mergedParams = { ...mergedParams, companyId: effectiveContextId };
+
+  // Detect context type using the user object
+  const { user } = useAuthContext();
+  let contextKey: Record<string, string> | undefined = undefined;
+  if (selectedContext !== 'user' && user) {
+    // Check if selectedContext matches a companyMembership
+    const company = user.companyMemberships?.find((c: { companyId: string }) => c.companyId === selectedContext);
+    if (company) {
+      contextKey = { companyId: selectedContext };
+    } else if (user.userManagements?.find((um: { UserId: string; state: string }) => um.UserId === selectedContext && um.state === 'accepted')) {
+      contextKey = { UserId: selectedContext };
+    }
+  }
+
+  // Merge params with contextKey if not already present
+  const mergedParams = params ? { ...params } : {};
+  if (contextKey) {
+    if (contextKey.companyId && !mergedParams.companyId) {
+      mergedParams.companyId = contextKey.companyId;
+    }
+    if (contextKey.UserId && !mergedParams.UserId) {
+      mergedParams.UserId = contextKey.UserId;
+    }
+  }
+
+  // Always include the calling user (UserId from JWT) in the query key, in addition to context
+  const callingUserId = getUserIdFromToken();
+  const queryKeyArr: string[] = [queryKey];
+  if (callingUserId) {
+    queryKeyArr.push(`UserId:${callingUserId}`);
   }
   if (Object.keys(mergedParams).length > 0) {
-    userScopedQueryKey.push(mergedParams);
+  queryKeyArr.push(JSON.stringify(mergedParams));
   }
 
   const queryInfo = useQuery<TData, AxiosError>({
-    queryKey: userScopedQueryKey,
+    queryKey: queryKeyArr,
     enabled,
     queryFn: async ({ signal }) => {
       const headers = await buildHeaders();
@@ -201,7 +224,14 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
 ) {
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
-  const userId = getUserIdFromToken();
+  const callingUserId = getUserIdFromToken();
+  // Helper to build query key for invalidation, matching useApiGet
+  const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
+    const arr = [key];
+    if (callingUserId) arr.push(`UserId:${callingUserId}`);
+    if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
+    return arr;
+  };
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
@@ -218,7 +248,7 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
     onSuccess: (data) => {
       if (relatedQueryKeys) {
         relatedQueryKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: [key, userId] });
+          queryClient.invalidateQueries({ queryKey: buildRelatedQueryKey(key, (props as any)?.params) });
         });
       }
       if (onSuccess) {
@@ -246,7 +276,14 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
 ) {
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
-  const userId = getUserIdFromToken();
+  const callingUserId = getUserIdFromToken();
+  // Helper to build query key for invalidation, matching useApiGet
+  const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
+    const arr = [key];
+    if (callingUserId) arr.push(`UserId:${callingUserId}`);
+    if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
+    return arr;
+  };
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
@@ -263,7 +300,7 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
     onSuccess: (data) => {
       if (relatedQueryKeys) {
         relatedQueryKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: [key, userId] });
+          queryClient.invalidateQueries({ queryKey: buildRelatedQueryKey(key, (props as any)?.params) });
         });
       }
       if (onSuccess) {
@@ -291,7 +328,14 @@ export function useApiDelete<TData = unknown>(
 ) {
   const queryClient = useQueryClient();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
-  const userId = getUserIdFromToken();
+  const callingUserId = getUserIdFromToken();
+  // Helper to build query key for invalidation, matching useApiGet
+  const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
+    const arr = [key];
+    if (callingUserId) arr.push(`UserId:${callingUserId}`);
+    if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
+    return arr;
+  };
 
   const mutation = useMutation<TData, Error, { url: string }>({
     mutationFn: async ({ url }) => {
@@ -308,7 +352,7 @@ export function useApiDelete<TData = unknown>(
     onSuccess: (data) => {
       if (relatedQueryKeys) {
         relatedQueryKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: [key, userId] });
+          queryClient.invalidateQueries({ queryKey: buildRelatedQueryKey(key, (props as any)?.params) });
         });
       }
       if (onSuccess) {

@@ -4,12 +4,15 @@ import { checkRouteAccess } from '@/config/routes';
 import { apiPost } from '@/utils/api';
 import { CircularProgress, Box } from '@mui/material';
 
-import { UserAuth, CompanyMembership } from '../hooks/useAuth';
+import { UserAuth, CompanyMembership, UserManagement } from '../hooks/useAuth';
 
 interface AuthContextType {
   user: UserAuth | null;
   userRole: string | null;
   companyMemberships: CompanyMembership[];
+  userManagements: UserManagement[];
+  managedUsers: UserManagement[];
+  managers: UserManagement[];
   loading: boolean;
   logout: () => void;
   canAccessRoute: (path: string) => boolean;
@@ -26,10 +29,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Helper to normalize roles and permissions
   function normalizeUser(user: any): UserAuth {
-    // Use the normalization logic from useAuth
     const userRole = user.userRole || user.role || (Array.isArray(user.roles) ? user.roles[0] : 'user');
     return {
-      userId: String(user.userId || user.id || ''),
+      UserId: String(user.UserId || user.id || ''),
       username: String(user.username || ''),
       email: String(user.email || ''),
       userRole: String(userRole),
@@ -41,6 +43,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             companyName: cm.companyName,
             role: cm.role,
             permissions: Array.isArray(cm.permissions) ? cm.permissions : [],
+          }))
+        : [],
+      userManagements: Array.isArray(user.userManagements)
+        ? user.userManagements.map((um: any) => ({
+            UserId: String(um.UserId),
+            role: um.role,
+            state: um.state,
+            direction: um.direction,
+            permissions: Array.isArray(um.permissions) ? um.permissions : [],
+            created: um.created,
+            updated: um.updated,
           }))
         : [],
     };
@@ -131,11 +144,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
+  // Derive managedUsers and managers from userManagements
+  const userManagements = user?.userManagements || [];
+  const managedUsers = userManagements.filter((um) => um.direction === 'manager' && um.state === 'accepted');
+  const managers = userManagements.filter((um) => um.direction === 'managed' && um.state === 'accepted');
+
   return (
     <AuthContext.Provider value={{
       user,
       userRole: user?.userRole || null,
       companyMemberships: user?.companyMemberships || [],
+      userManagements,
+      managedUsers,
+      managers,
       loading,
       logout,
       canAccessRoute,

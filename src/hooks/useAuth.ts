@@ -12,14 +12,26 @@ export interface CompanyMembership {
   permissions: string[];
 }
 
+export interface UserManagement {
+  UserId: string;
+  role: string;
+  state: string;
+  direction: 'manager' | 'managed';
+  permissions: string[];
+  // Optionally: created, updated
+  created?: string;
+  updated?: string;
+}
+
 export interface UserAuth {
-  userId: string;
+  UserId: string;
   username: string;
   email: string;
   userRole: string; // global role (e.g. 'user', 'admin')
-  roles: string[]; // for backward compatibility, always include userRole as first element
+  roles: string[];
   permissions: string[];
   companyMemberships?: CompanyMembership[];
+  userManagements?: UserManagement[];
 }
 
 /**
@@ -143,7 +155,7 @@ export function storeAuth(
   // Normalize the user object to ensure roles is an array and new fields are present
   const userRole = (user as any).userRole || (user as any).role || (Array.isArray((user as any).roles) ? (user as any).roles[0] : 'user');
   const normalizedUser: UserAuth = {
-    userId: String((user as any).userId || (user as any).id || ''),
+    UserId: String((user as any).UserId || (user as any).id || ''),
     username: String((user as any).username || ''),
     email: String((user as any).email || ''),
     userRole: String(userRole),
@@ -161,6 +173,17 @@ export function storeAuth(
           permissions: Array.isArray(cm.permissions) ? cm.permissions : [],
         }))
       : undefined,
+    userManagements: Array.isArray((user as any).userManagements)
+      ? (user as any).userManagements.map((um: any) => ({
+          UserId: String(um.UserId),
+          role: um.role,
+          state: um.state,
+          direction: um.direction,
+          permissions: Array.isArray(um.permissions) ? um.permissions : [],
+          created: um.created,
+          updated: um.updated,
+        }))
+      : undefined,
   };
   localStorage.setItem('accessToken', accessToken);
   localStorage.setItem('user', JSON.stringify(normalizedUser));
@@ -176,16 +199,6 @@ export function clearAuth(): void {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
-}
-
-/**
- * Check if token is expired or about to expire (within 5 minutes)
- */
-function isTokenExpiringSoon(expiresAt?: number): boolean {
-  if (!expiresAt) return false;
-  const now = Date.now();
-  const fiveMinutes = 5 * 60 * 1000;
-  return expiresAt - now < fiveMinutes;
 }
 
 /**
