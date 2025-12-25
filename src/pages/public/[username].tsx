@@ -9,7 +9,8 @@ import {
   Typography, 
   Button,
   Stack,
-  CircularProgress 
+  CircularProgress,
+  Fade,
 } from '@mui/material';
 import { useApiGet } from '@/hooks/useApiQuery';
 import axios from 'axios';
@@ -128,7 +129,41 @@ export default function PublicProfile() {
   // Filter to show only active links
   const activeLinks = profile?.links?.filter(link => link.active !== false) || [];
 
-  if (isLoading) {
+  // Don't render anything until we have data or confirmed no profile exists
+  // This prevents flashing of default theme during loading
+  if (isLoading || !profile) {
+    // Only show loading/error UI after initial load to prevent flash
+    if (!isLoading && !profile) {
+      // Profile definitely doesn't exist
+      return (
+        <Box
+          sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          }}
+        >
+          <Container maxWidth="sm">
+            <Card>
+              <CardContent sx={{ p: 5, textAlign: 'center' }}>
+                <Typography variant="h4" gutterBottom>
+                  Profile Not Found
+                </Typography>
+                <Typography color="text.secondary" paragraph>
+                  The profile you are looking for does not exist.
+                </Typography>
+                <Button variant="contained" onClick={() => router.push('/')}>
+                  Go Home
+                </Button>
+              </CardContent>
+            </Card>
+          </Container>
+        </Box>
+      );
+    }
+    
+    // Still loading - show minimal loading indicator to prevent flash
     return (
       <Box
         sx={{
@@ -136,39 +171,10 @@ export default function PublicProfile() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          bgcolor: 'background.default',
         }}
       >
-        <CircularProgress sx={{ color: 'white' }} />
-      </Box>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        }}
-      >
-        <Container maxWidth="sm">
-          <Card>
-            <CardContent sx={{ p: 5, textAlign: 'center' }}>
-              <Typography variant="h4" gutterBottom>
-                Profile Not Found
-              </Typography>
-              <Typography color="text.secondary" paragraph>
-                The profile you are looking for does not exist.
-              </Typography>
-              <Button variant="contained" onClick={() => router.push('/')}>
-                Go Home
-              </Button>
-            </CardContent>
-          </Card>
-        </Container>
+        <CircularProgress />
       </Box>
     );
   }
@@ -180,16 +186,17 @@ export default function PublicProfile() {
         <meta name="description" content={profile.bio} />
       </Head>
       
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          background: getBackgroundGradient(profile.appearance),
-          py: 4,
-          fontFamily: getFontFamily(profile.appearance?.fontFamily),
-        }}
-      >
+      <Fade in={true} timeout={300}>
+        <Box
+          sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            background: getBackgroundGradient(profile.appearance),
+            py: 4,
+            fontFamily: getFontFamily(profile.appearance?.fontFamily),
+          }}
+        >
         <Container maxWidth="sm">
           {profile.appearance?.layoutStyle === 'card' ? (
             <Card elevation={4}>
@@ -319,6 +326,7 @@ export default function PublicProfile() {
           )}
         </Container>
       </Box>
+      </Fade>
     </>
   );
 }
