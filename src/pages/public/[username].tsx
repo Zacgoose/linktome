@@ -9,7 +9,6 @@ import {
   Typography, 
   Button,
   Stack,
-  CircularProgress,
   Fade,
 } from '@mui/material';
 import { useApiGet } from '@/hooks/useApiQuery';
@@ -129,25 +128,13 @@ export default function PublicProfile() {
   // Filter to show only active links
   const activeLinks = profile?.links?.filter(link => link.active !== false) || [];
 
-  // Show loading while router is not ready or data is loading
-  // This prevents flash of "not found" during initial page load
+  // Don't render anything until router is ready and data is loaded or errored
+  // This prevents any flash of loading states or intermediate UI
   if (!router.isReady || isLoading || !username) {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'background.default',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
+    return null;
   }
 
-  // Only show "not found" after router is ready, loading complete, and no profile
+  // Show "not found" only after data fetch is complete and no profile exists
   if (!profile) {
     return (
       <Box
