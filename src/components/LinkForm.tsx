@@ -7,6 +7,8 @@ import {
   TextField,
   Button,
   Box,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 
 interface Link {
@@ -14,6 +16,8 @@ interface Link {
   title: string;
   url: string;
   order?: number;
+  active?: boolean;
+  icon?: string;
 }
 
 interface LinkFormProps {
@@ -26,6 +30,8 @@ interface LinkFormProps {
 export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps) {
   const [title, setTitle] = useState(link?.title || '');
   const [url, setUrl] = useState(link?.url || '');
+  const [icon, setIcon] = useState(link?.icon || '');
+  const [active, setActive] = useState(link?.active !== undefined ? link.active : true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +40,9 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
       ...(link?.id && { id: link.id }),
       title,
       url,
-      ...(link?.order && { order: link.order }),
+      active,
+      ...(icon && { icon }),
+      ...(link?.order !== undefined && { order: link.order }),
     };
     
     onSave(linkData);
@@ -44,6 +52,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
   const handleClose = () => {
     setTitle('');
     setUrl('');
+    setIcon('');
+    setActive(true);
     onClose();
   };
 
@@ -52,9 +62,13 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
     if (link) {
       setTitle(link.title);
       setUrl(link.url);
+      setIcon(link.icon || '');
+      setActive(link.active !== undefined ? link.active : true);
     } else {
       setTitle('');
       setUrl('');
+      setIcon('');
+      setActive(true);
     }
   };
 
@@ -94,6 +108,29 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
               required
               margin="normal"
               placeholder="https://example.com"
+            />
+            
+            <TextField
+              fullWidth
+              label="Icon URL (optional)"
+              type="url"
+              value={icon}
+              onChange={(e) => setIcon(e.target.value)}
+              margin="normal"
+              placeholder="https://example.com/icon.png"
+              helperText="Add an icon to display with your link"
+            />
+            
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={active}
+                  onChange={(e) => setActive(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Active (visible on profile)"
+              sx={{ mt: 2 }}
             />
           </Box>
         </DialogContent>

@@ -17,6 +17,7 @@ import {
   Button,
   Grid,
   Paper,
+  TextField,
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
@@ -25,25 +26,46 @@ import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
 const themes = [
   { value: 'light', label: 'Light', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
   { value: 'dark', label: 'Dark', gradient: 'linear-gradient(135deg, #434343 0%, #000000 100%)' },
+  { value: 'sunset', label: 'Sunset', gradient: 'linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)' },
+  { value: 'ocean', label: 'Ocean', gradient: 'linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%)' },
+  { value: 'forest', label: 'Forest', gradient: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)' },
+  { value: 'custom', label: 'Custom', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
 ];
 
 const buttonStyles = [
-  { value: 'rounded', label: 'Rounded' },
-  { value: 'square', label: 'Square' },
-  { value: 'pill', label: 'Pill' },
+  { value: 'rounded', label: 'Rounded', borderRadius: '8px' },
+  { value: 'square', label: 'Square', borderRadius: '0px' },
+  { value: 'pill', label: 'Pill', borderRadius: '50px' },
 ];
 
 const fonts = [
   { value: 'default', label: 'Default (Inter)', fontFamily: 'Inter, sans-serif' },
   { value: 'serif', label: 'Serif', fontFamily: 'Georgia, serif' },
-  { value: 'mono', label: 'Monospace', fontFamily: 'monospace' },
+  { value: 'mono', label: 'Monospace', fontFamily: 'Courier New, monospace' },
+  { value: 'poppins', label: 'Poppins', fontFamily: 'Poppins, sans-serif' },
+  { value: 'roboto', label: 'Roboto', fontFamily: 'Roboto, sans-serif' },
+];
+
+const layoutStyles = [
+  { value: 'centered', label: 'Centered' },
+  { value: 'card', label: 'Card Layout' },
 ];
 
 interface AppearanceData {
   theme: string;
+  buttonStyle: string;
+  fontFamily: string;
+  layoutStyle: string;
   colors: {
     primary: string;
+    secondary: string;
     background: string;
+    buttonBackground: string;
+    buttonText: string;
+  };
+  customGradient?: {
+    start: string;
+    end: string;
   };
 }
 
@@ -65,9 +87,21 @@ export default function AppearancePage() {
   const appearance = data?.appearance;
 
   const [formData, setFormData] = useState({
-    theme: (appearance?.theme || 'light') as 'light' | 'dark',
-    buttonStyle: 'rounded' as 'rounded' | 'square' | 'pill',
-    fontFamily: 'default' as 'default' | 'serif' | 'mono',
+    theme: (appearance?.theme || 'light') as string,
+    buttonStyle: (appearance?.buttonStyle || 'rounded') as string,
+    fontFamily: (appearance?.fontFamily || 'default') as string,
+    layoutStyle: (appearance?.layoutStyle || 'centered') as string,
+    colors: {
+      primary: appearance?.colors?.primary || '#667eea',
+      secondary: appearance?.colors?.secondary || '#764ba2',
+      background: appearance?.colors?.background || '#ffffff',
+      buttonBackground: appearance?.colors?.buttonBackground || '#667eea',
+      buttonText: appearance?.colors?.buttonText || '#ffffff',
+    },
+    customGradient: {
+      start: appearance?.customGradient?.start || '#667eea',
+      end: appearance?.customGradient?.end || '#764ba2',
+    },
   });
 
   // Only update form when data initially loads
@@ -77,9 +111,21 @@ export default function AppearancePage() {
     if (appearance && !dataLoadedRef.current) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
-        theme: (appearance.theme || 'light') as 'light' | 'dark',
-        buttonStyle: 'rounded',
-        fontFamily: 'default',
+        theme: (appearance.theme || 'light') as string,
+        buttonStyle: (appearance.buttonStyle || 'rounded') as string,
+        fontFamily: (appearance.fontFamily || 'default') as string,
+        layoutStyle: (appearance.layoutStyle || 'centered') as string,
+        colors: {
+          primary: appearance.colors?.primary || '#667eea',
+          secondary: appearance.colors?.secondary || '#764ba2',
+          background: appearance.colors?.background || '#ffffff',
+          buttonBackground: appearance.colors?.buttonBackground || '#667eea',
+          buttonText: appearance.colors?.buttonText || '#ffffff',
+        },
+        customGradient: {
+          start: appearance.customGradient?.start || '#667eea',
+          end: appearance.customGradient?.end || '#764ba2',
+        },
       });
       dataLoadedRef.current = true;
     }
@@ -152,15 +198,15 @@ export default function AppearancePage() {
                   {/* Theme Selection */}
                   <FormControl component="fieldset">
                     <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
-                      Color Theme
+                      Background Theme
                     </FormLabel>
                     <Grid container spacing={2}>
                       {themes.map((t) => (
-                        <Grid item xs={6} key={t.value}>
+                        <Grid item xs={6} md={4} key={t.value}>
                           <Paper
-                            onClick={() => setFormData({ ...formData, theme: t.value as 'light' | 'dark' })}
+                            onClick={() => setFormData({ ...formData, theme: t.value })}
                             sx={{
-                              p: 3,
+                              p: 2,
                               cursor: 'pointer',
                               border: 2,
                               borderColor: formData.theme === t.value ? 'primary.main' : 'transparent',
@@ -169,18 +215,119 @@ export default function AppearancePage() {
                           >
                             <Box
                               sx={{
-                                height: 100,
+                                height: 80,
                                 borderRadius: 1,
                                 background: t.gradient,
-                                mb: 2,
+                                mb: 1,
                               }}
                             />
-                            <Typography align="center" fontWeight={600}>
+                            <Typography align="center" fontWeight={600} variant="body2">
                               {t.label}
                             </Typography>
                           </Paper>
                         </Grid>
                       ))}
+                    </Grid>
+                  </FormControl>
+
+                  {/* Custom Colors - Only show if theme is custom */}
+                  {formData.theme === 'custom' && (
+                    <FormControl component="fieldset">
+                      <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
+                        Custom Background Gradient
+                      </FormLabel>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Box>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              Start Color
+                            </Typography>
+                            <TextField
+                              type="color"
+                              fullWidth
+                              value={formData.customGradient.start}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  customGradient: { ...formData.customGradient, start: e.target.value },
+                                })
+                              }
+                            />
+                          </Box>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Box>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              End Color
+                            </Typography>
+                            <TextField
+                              type="color"
+                              fullWidth
+                              value={formData.customGradient.end}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  customGradient: { ...formData.customGradient, end: e.target.value },
+                                })
+                              }
+                            />
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Box
+                            sx={{
+                              height: 100,
+                              borderRadius: 2,
+                              background: `linear-gradient(135deg, ${formData.customGradient.start} 0%, ${formData.customGradient.end} 100%)`,
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </FormControl>
+                  )}
+
+                  {/* Button Colors */}
+                  <FormControl component="fieldset">
+                    <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
+                      Button Colors
+                    </FormLabel>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Box>
+                          <Typography variant="body2" sx={{ mb: 1 }}>
+                            Button Background
+                          </Typography>
+                          <TextField
+                            type="color"
+                            fullWidth
+                            value={formData.colors.buttonBackground}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                colors: { ...formData.colors, buttonBackground: e.target.value },
+                              })
+                            }
+                          />
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Box>
+                          <Typography variant="body2" sx={{ mb: 1 }}>
+                            Button Text
+                          </Typography>
+                          <TextField
+                            type="color"
+                            fullWidth
+                            value={formData.colors.buttonText}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                colors: { ...formData.colors, buttonText: e.target.value },
+                              })
+                            }
+                          />
+                        </Box>
+                      </Grid>
                     </Grid>
                   </FormControl>
 
@@ -191,7 +338,7 @@ export default function AppearancePage() {
                     </FormLabel>
                     <RadioGroup
                       value={formData.buttonStyle}
-                      onChange={(e) => setFormData({ ...formData, buttonStyle: e.target.value as 'rounded' | 'square' | 'pill' })}
+                      onChange={(e) => setFormData({ ...formData, buttonStyle: e.target.value })}
                     >
                       <Stack spacing={1}>
                         {buttonStyles.map((style) => (
@@ -203,12 +350,13 @@ export default function AppearancePage() {
                                 variant="contained"
                                 size="small"
                                 sx={{
-                                  borderRadius:
-                                    style.value === 'square'
-                                      ? 0
-                                      : style.value === 'pill'
-                                      ? 25
-                                      : 1,
+                                  borderRadius: style.borderRadius,
+                                  bgcolor: formData.colors.buttonBackground,
+                                  color: formData.colors.buttonText,
+                                  '&:hover': {
+                                    bgcolor: formData.colors.buttonBackground,
+                                    opacity: 0.9,
+                                  },
                                 }}
                               >
                                 Example
@@ -227,7 +375,7 @@ export default function AppearancePage() {
                     </FormLabel>
                     <RadioGroup
                       value={formData.fontFamily}
-                      onChange={(e) => setFormData({ ...formData, fontFamily: e.target.value as 'default' | 'serif' | 'mono' })}
+                      onChange={(e) => setFormData({ ...formData, fontFamily: e.target.value })}
                     >
                       <Stack spacing={1}>
                         {fonts.map((font) => (
@@ -237,6 +385,28 @@ export default function AppearancePage() {
                               <Typography flex={1} sx={{ fontFamily: font.fontFamily }}>
                                 {font.label}
                               </Typography>
+                            </Box>
+                          </Paper>
+                        ))}
+                      </Stack>
+                    </RadioGroup>
+                  </FormControl>
+
+                  {/* Layout Style */}
+                  <FormControl component="fieldset">
+                    <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
+                      Layout Style
+                    </FormLabel>
+                    <RadioGroup
+                      value={formData.layoutStyle}
+                      onChange={(e) => setFormData({ ...formData, layoutStyle: e.target.value })}
+                    >
+                      <Stack spacing={1}>
+                        {layoutStyles.map((layout) => (
+                          <Paper key={layout.value} sx={{ p: 2 }}>
+                            <Box display="flex" alignItems="center">
+                              <Radio value={layout.value} />
+                              <Typography flex={1}>{layout.label}</Typography>
                             </Box>
                           </Paper>
                         ))}
