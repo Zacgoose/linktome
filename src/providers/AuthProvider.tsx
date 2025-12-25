@@ -105,23 +105,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     async function fetchAuth() {
       if (refreshing) {
-        // eslint-disable-next-line no-console
         console.debug('[AuthProvider] fetchAuth: skipping because refreshing is true');
         setLoading(false);
         return;
       }
       const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-      // eslint-disable-next-line no-console
       if (accessToken && userStr) {
         try {
           const user = normalizeUser(JSON.parse(userStr));
-          // eslint-disable-next-line no-console
           setUser(user);
           setLoading(false);
           return;
         } catch (e) {
-          // eslint-disable-next-line no-console
           // If parsing fails, clear invalid data and set user to null
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
@@ -146,7 +142,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
     localStorage.removeItem('refreshToken');
-    // eslint-disable-next-line no-console
     router.push('/login');
   };
 
@@ -155,11 +150,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   let refreshPromise: Promise<boolean> | null = null;
   const refreshAuth = async () => {
     if (refreshPromise) {
-      // eslint-disable-next-line no-console
       return refreshPromise;
     }
     setRefreshing(true);
-    // eslint-disable-next-line no-console
     // Preserve last valid user before refresh
     lastValidUser.current = user;
     refreshPromise = (async () => {
@@ -167,7 +160,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) {
           setRefreshing(false);
-          // eslint-disable-next-line no-console
           refreshPromise = null;
           return false;
         }
@@ -180,12 +172,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(newUser);
           lastValidUser.current = newUser;
           setRefreshing(false);
-          // eslint-disable-next-line no-console
           refreshPromise = null;
           return true;
         }
         setRefreshing(false);
-        // eslint-disable-next-line no-console
         refreshPromise = null;
         return false;
       } catch (e) {
@@ -195,7 +185,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         setRefreshing(false);
-        // eslint-disable-next-line no-console
         refreshPromise = null;
         return false;
       }
@@ -208,9 +197,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const result = checkRouteAccess(path, user.roles, user.permissions);
     return result.allowed;
   };
-
-  // Debug log for every render
-  // eslint-disable-next-line no-console
 
   // Use last valid user during refresh
   const effectiveUser = refreshing ? lastValidUser.current : user;
