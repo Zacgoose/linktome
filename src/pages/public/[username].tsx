@@ -99,7 +99,7 @@ export default function PublicProfile() {
   const router = useRouter();
   const { username } = router.query;
 
-  const { data: profile, isLoading } = useApiGet<PublicProfile>({
+  const { data: profile, isLoading, error } = useApiGet<PublicProfile>({
     url: 'public/GetUserProfile',
     queryKey: `public-profile-${username}`,
     params: { username: username as string },
@@ -129,41 +129,9 @@ export default function PublicProfile() {
   // Filter to show only active links
   const activeLinks = profile?.links?.filter(link => link.active !== false) || [];
 
-  // Don't render anything until we have data or confirmed no profile exists
-  // This prevents flashing of default theme during loading
-  if (isLoading || !profile) {
-    // Only show loading/error UI after initial load to prevent flash
-    if (!isLoading && !profile) {
-      // Profile definitely doesn't exist
-      return (
-        <Box
-          sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          }}
-        >
-          <Container maxWidth="sm">
-            <Card>
-              <CardContent sx={{ p: 5, textAlign: 'center' }}>
-                <Typography variant="h4" gutterBottom>
-                  Profile Not Found
-                </Typography>
-                <Typography color="text.secondary" paragraph>
-                  The profile you are looking for does not exist.
-                </Typography>
-                <Button variant="contained" onClick={() => router.push('/')}>
-                  Go Home
-                </Button>
-              </CardContent>
-            </Card>
-          </Container>
-        </Box>
-      );
-    }
-    
-    // Still loading - show minimal loading indicator to prevent flash
+  // Show loading while router is not ready or data is loading
+  // This prevents flash of "not found" during initial page load
+  if (!router.isReady || isLoading || !username) {
     return (
       <Box
         sx={{
@@ -175,6 +143,36 @@ export default function PublicProfile() {
         }}
       >
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Only show "not found" after router is ready, loading complete, and no profile
+  if (!profile) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        }}
+      >
+        <Container maxWidth="sm">
+          <Card>
+            <CardContent sx={{ p: 5, textAlign: 'center' }}>
+              <Typography variant="h4" gutterBottom>
+                Profile Not Found
+              </Typography>
+              <Typography color="text.secondary" paragraph>
+                The profile you are looking for does not exist.
+              </Typography>
+              <Button variant="contained" onClick={() => router.push('/')}>
+                Go Home
+              </Button>
+            </CardContent>
+          </Card>
+        </Container>
       </Box>
     );
   }
