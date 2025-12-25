@@ -9,7 +9,6 @@ import {
   Typography, 
   Button,
   Stack,
-  Fade,
 } from '@mui/material';
 import { useApiGet } from '@/hooks/useApiQuery';
 import axios from 'axios';
@@ -173,7 +172,7 @@ export default function PublicProfile() {
         <style dangerouslySetInnerHTML={{
           __html: `
             body {
-              background: ${getBackgroundGradient(profile.appearance)};
+              background: ${getBackgroundGradient(profile.appearance)} !important;
               margin: 0;
               min-height: 100vh;
             }
@@ -181,17 +180,16 @@ export default function PublicProfile() {
         }} />
       </Head>
       
-      <Fade in={true} timeout={300}>
-        <Box
-          sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            background: getBackgroundGradient(profile.appearance),
-            py: 4,
-            fontFamily: getFontFamily(profile.appearance?.fontFamily),
-          }}
-        >
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          background: getBackgroundGradient(profile.appearance),
+          py: 4,
+          fontFamily: getFontFamily(profile.appearance?.fontFamily),
+        }}
+      >
         <Container maxWidth="sm">
           {profile.appearance?.layoutStyle === 'card' ? (
             <Card elevation={4}>
@@ -321,7 +319,6 @@ export default function PublicProfile() {
           )}
         </Container>
       </Box>
-      </Fade>
     </>
   );
 }
