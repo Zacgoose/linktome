@@ -168,13 +168,20 @@ export default function PublicProfile() {
       <Head>
         <title>{profile.displayName} - LinkToMe</title>
         <meta name="description" content={profile.bio} />
+        <meta name="theme-color" content="#667eea" />
         {/* Prevent background flash by setting background before React hydrates */}
         <style dangerouslySetInnerHTML={{
           __html: `
-            body {
+            html, body, #__next {
               background: ${getBackgroundGradient(profile.appearance)} !important;
+              background-attachment: fixed !important;
               margin: 0;
               min-height: 100vh;
+            }
+            /* Override globals.css and prevent any background flashing */
+            :root {
+              --background: transparent !important;
+              --foreground: #ffffff !important;
             }
           `
         }} />
