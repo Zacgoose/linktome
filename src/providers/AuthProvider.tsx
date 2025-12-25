@@ -1,10 +1,9 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+
+import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
+import { CircularProgress, Box } from '@mui/material';
 import { useRouter } from 'next/router';
 import { checkRouteAccess } from '@/config/routes';
 import { apiPost } from '@/utils/api';
-import { CircularProgress, Box } from '@mui/material';
-
-import { UserAuth, CompanyMembership, UserManagement } from '../hooks/useAuth';
 
 interface AuthContextType {
   user: UserAuth | null;
@@ -14,17 +13,51 @@ interface AuthContextType {
   managedUsers: UserManagement[];
   managers: UserManagement[];
   loading: boolean;
+  refreshing: boolean;
+  authReady: boolean;
   logout: () => void;
   canAccessRoute: (path: string) => boolean;
   setUser: (user: UserAuth | null) => void;
   refreshAuth: () => Promise<boolean>;
 }
 
+export interface CompanyMembership {
+  companyId: string;
+  companyName?: string;
+  role: string;
+  permissions: string[];
+}
+
+export interface UserManagement {
+  UserId: string;
+  role: string;
+  state: string;
+  direction: 'manager' | 'managed';
+  permissions: string[];
+  created?: string;
+  updated?: string;
+}
+
+export interface UserAuth {
+  UserId: string;
+  username: string;
+  email: string;
+  userRole: string;
+  roles: string[];
+  permissions: string[];
+  companyMemberships?: CompanyMembership[];
+  userManagements?: UserManagement[];
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserAuth | null>(null);
+  // Ref to preserve last valid user during refresh
+  const lastValidUser = useRef<UserAuth | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const authReady = !loading && !refreshing;
   const router = useRouter();
 
   // Helper to normalize roles and permissions
@@ -64,19 +97,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loginRegex = /^\/login\/?(\?.*)?$/;
     const isLoginRoute = loginRegex.test(router.asPath);
     if (isLoginRoute) {
-      if (loading) setLoading(false);
+      if (loading) {
+        // Defer setLoading to avoid React warning about setState in effect
+        Promise.resolve().then(() => setLoading(false));
+      }
       return;
     }
     async function fetchAuth() {
+      if (refreshing) {
+        // eslint-disable-next-line no-console
+        console.debug('[AuthProvider] fetchAuth: skipping because refreshing is true');
+        setLoading(false);
+        return;
+      }
       const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      // eslint-disable-next-line no-console
       if (accessToken && userStr) {
         try {
           const user = normalizeUser(JSON.parse(userStr));
+          // eslint-disable-next-line no-console
           setUser(user);
           setLoading(false);
           return;
-        } catch {
+        } catch (e) {
+          // eslint-disable-next-line no-console
           // If parsing fails, clear invalid data and set user to null
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
@@ -91,7 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
     fetchAuth();
-  }, [router.asPath, loading]);
+  }, [router.asPath, loading, refreshing]);
 
   const logout = async () => {
     try {
@@ -100,31 +145,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
+    // eslint-disable-next-line no-console
     router.push('/login');
   };
 
   // Add refreshAuth function for token refresh
+  // Prevent concurrent refreshAuth calls
+  let refreshPromise: Promise<boolean> | null = null;
   const refreshAuth = async () => {
-    try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) return false;
-      const response = await apiPost('public/RefreshToken', { refreshToken });
-      if (response && response.accessToken && response.user) {
-        const user = normalizeUser(response.user);
-        localStorage.setItem('accessToken', response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
-        return true;
-      }
-      return false;
-    } catch {
-      setUser(null);
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      return false;
+    if (refreshPromise) {
+      // eslint-disable-next-line no-console
+      return refreshPromise;
     }
+    setRefreshing(true);
+    // eslint-disable-next-line no-console
+    // Preserve last valid user before refresh
+    lastValidUser.current = user;
+    refreshPromise = (async () => {
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+          setRefreshing(false);
+          // eslint-disable-next-line no-console
+          refreshPromise = null;
+          return false;
+        }
+        const response = await apiPost('public/RefreshToken', { refreshToken });
+        if (response && response.accessToken && response.user) {
+          const newUser = normalizeUser(response.user);
+          localStorage.setItem('accessToken', response.accessToken);
+          localStorage.setItem('refreshToken', response.refreshToken);
+          localStorage.setItem('user', JSON.stringify(newUser));
+          setUser(newUser);
+          lastValidUser.current = newUser;
+          setRefreshing(false);
+          // eslint-disable-next-line no-console
+          refreshPromise = null;
+          return true;
+        }
+        setRefreshing(false);
+        // eslint-disable-next-line no-console
+        refreshPromise = null;
+        return false;
+      } catch (e) {
+        setUser(null);
+        lastValidUser.current = null;
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        setRefreshing(false);
+        // eslint-disable-next-line no-console
+        refreshPromise = null;
+        return false;
+      }
+    })();
+    return refreshPromise;
   };
 
   const canAccessRoute = (path: string) => {
@@ -132,6 +208,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const result = checkRouteAccess(path, user.roles, user.permissions);
     return result.allowed;
   };
+
+  // Debug log for every render
+  // eslint-disable-next-line no-console
+
+  // Use last valid user during refresh
+  const effectiveUser = refreshing ? lastValidUser.current : user;
 
   // Show spinner only during initial auth check
   if (loading) {
@@ -142,22 +224,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   }
 
-
-
   // Derive managedUsers and managers from userManagements
-  const userManagements = user?.userManagements || [];
+  const userManagements = effectiveUser?.userManagements || [];
   const managedUsers = userManagements.filter((um) => um.direction === 'manager' && um.state === 'accepted');
   const managers = userManagements.filter((um) => um.direction === 'managed' && um.state === 'accepted');
 
   return (
     <AuthContext.Provider value={{
-      user,
-      userRole: user?.userRole || null,
-      companyMemberships: user?.companyMemberships || [],
+      user: effectiveUser,
+      userRole: effectiveUser?.userRole || null,
+      companyMemberships: effectiveUser?.companyMemberships || [],
       userManagements,
       managedUsers,
       managers,
       loading,
+      refreshing,
+      authReady,
       logout,
       canAccessRoute,
       setUser,

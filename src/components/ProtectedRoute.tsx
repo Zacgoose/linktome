@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, ReactNode } from 'react';
 import { CircularProgress, Box, Typography, Button } from '@mui/material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthContext } from '@/providers/AuthProvider';
 import { useRbacContext } from '@/context/RbacContext';
 
 interface ProtectedRouteProps {
@@ -30,18 +30,28 @@ export function ProtectedRoute({
   fallback,
 }: ProtectedRouteProps) {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, authReady, refreshing } = useAuthContext();
   const { contextRoles, contextPermissions } = useRbacContext();
 
   useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!loading && !user) {
-      router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
+    // Debug log for ProtectedRoute effect
+    // eslint-disable-next-line no-console
+    console.debug('[ProtectedRoute] useEffect', { authReady, user, refreshing, asPath: router.asPath });
+    // Wait for AuthProvider to finish before redirecting
+    if (authReady && !refreshing && !user) {
+      // Only redirect if not already on login
+      if (!/^\/login(\/?|\?.*)?$/.test(router.asPath)) {
+        router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
+      }
     }
-  }, [loading, user, router]);
+  }, [authReady, refreshing, user, router]);
 
-  // Show fallback while checking authentication
-  if (loading) {
+  // Always wait for AuthProvider to finish before making any auth decisions
+  // Debug log for every render
+  // eslint-disable-next-line no-console
+  console.debug('[ProtectedRoute] render', { authReady, user, refreshing });
+
+  if (!authReady || refreshing) {
     return fallback || (
       <Box
         sx={{
@@ -56,7 +66,7 @@ export function ProtectedRoute({
     );
   }
 
-  // Not authenticated
+  // Not authenticated (only after authReady is true)
   if (!user) {
     return null; // Will redirect via useEffect
   }
@@ -80,7 +90,7 @@ export function ProtectedRoute({
             Access Denied
           </Typography>
           <Typography variant="body1" color="text.secondary" align="center">
-            You don't have the required role to access this page.
+            You don&apos;t have the required role to access this page.
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Required: {requiredRoles.join(' or ')}
@@ -116,7 +126,7 @@ export function ProtectedRoute({
             Access Denied
           </Typography>
           <Typography variant="body1" color="text.secondary" align="center">
-            You don't have the required permissions to access this page.
+            You don&apos;t have the required permissions to access this page.
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Required: {requiredPermissions.join(', ')}

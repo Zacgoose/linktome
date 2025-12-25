@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
@@ -14,8 +14,8 @@ import {
   Link as MuiLink
 } from '@mui/material';
 import { useApiPost } from '@/hooks/useApiQuery';
-import { storeAuth, type UserAuth } from '@/hooks/useAuth';
-import { useAuthContext } from '@/providers/AuthProvider';
+import { useAuthContext, UserAuth } from '@/providers/AuthProvider';
+
 
 export default function LoginPage() {
   interface LoginResponse {
@@ -41,7 +41,6 @@ export default function LoginPage() {
 
   // Show session expired message if redirected
   const sessionExpired = router.query.session === 'expired';
-  console.log('[LoginPage] render sessionExpired:', sessionExpired, 'router.query.session:', router.query.session);
 
   // Remove setMode from useEffect to avoid cascading renders
   // Instead, derive mode directly from router.query.signup
@@ -50,8 +49,10 @@ export default function LoginPage() {
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
       if (data.accessToken && data.user) {
-        // Store using new RBAC structure
-        storeAuth(data.accessToken, data.user, data.refreshToken);
+        // Use AuthProvider's setUser and let AuthProvider handle token storage
+        localStorage.setItem('accessToken', data.accessToken);
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
       }
@@ -65,7 +66,9 @@ export default function LoginPage() {
   const signupMutation = useApiPost<SignupResponse>({
     onSuccess: (data: SignupResponse) => {
       if (data.accessToken && data.user) {
-        storeAuth(data.accessToken, data.user, data.refreshToken);
+        localStorage.setItem('accessToken', data.accessToken);
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
       } else {
@@ -83,7 +86,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
-
       if (derivedMode === 'login') {
       loginMutation.mutate({
         url: 'public/Login',

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { useAuthContext } from '@/providers/AuthProvider';
 import Head from 'next/head';
 import { 
   Box, 
@@ -56,16 +56,10 @@ const features = [
 
 export default function Home() {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    setIsLoggedIn(!!token);
-  }, []);
+  const { user, logout } = useAuthContext();
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    setIsLoggedIn(false);
+    logout();
     router.push('/');
   };
 
@@ -113,7 +107,7 @@ export default function Home() {
             </Typography>
             
             <Stack direction="row" spacing={2}>
-              {isLoggedIn ? (
+              {user ? (
                 <>
                   <Button
                     variant="outlined"
@@ -435,12 +429,14 @@ export default function Home() {
               © 2024 LinkToMe. All rights reserved.
             </Typography>
             <Stack direction="row" spacing={3}>
-              <Button 
-                sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
-                onClick={() => router.push('/login')}
-              >
-                Login
-              </Button>
+              {!user && (
+                <Button 
+                  sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
+                  onClick={() => router.push('/login')}
+                >
+                  Login
+                </Button>
+              )}
             </Stack>
           </Stack>
         </Container>

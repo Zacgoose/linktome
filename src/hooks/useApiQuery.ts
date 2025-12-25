@@ -1,3 +1,4 @@
+
 import { useRbacContext } from '@/context/RbacContext';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -5,45 +6,9 @@ import axios, { AxiosError } from 'axios';
 
 const API_BASE = '/api';
 
-// Helper to check if access token is missing or expired, and refresh if possible
-const ensureValidAccessToken = async () => {
-  const accessToken = localStorage.getItem('accessToken');
-  const refreshToken = localStorage.getItem('refreshToken');
-  let isTokenValid = false;
-  if (accessToken) {
-    try {
-      const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      const exp = payload.exp ? payload.exp * 1000 : 0;
-      isTokenValid = exp > Date.now() + 5000; // 5s leeway
-    } catch {}
-  }
-  if (!isTokenValid && refreshToken) {
-    // Try to refresh the access token
-    try {
-      const response = await fetch('/api/public/RefreshToken', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.accessToken) {
-          localStorage.setItem('accessToken', data.accessToken);
-        }
-        if (data.refreshToken) {
-          localStorage.setItem('refreshToken', data.refreshToken);
-        }
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
-        }
-      }
-    } catch {}
-  }
-};
-
 // Helper to extract UserId from JWT access token
 const getUserIdFromToken = (): string | undefined => {
-  const accessToken = localStorage.getItem('accessToken');
+  const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
   if (!accessToken) return undefined;
   try {
     const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
@@ -51,64 +16,6 @@ const getUserIdFromToken = (): string | undefined => {
   } catch {
     return undefined;
   }
-};
-
-const buildHeaders = async () => {
-  await ensureValidAccessToken();
-  const token = localStorage.getItem('accessToken');
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-};
-
-// Track if we're already redirecting to prevent multiple simultaneous redirects
-// This flag is per-page-load and will be reset when the page redirects
-let isRedirecting = false;
-
-// Helper to handle API errors and redirects
-const handleApiError = (error: AxiosError) => {
-  if (axios.isAxiosError(error) && error.response?.status === 401) {
-    // Only redirect once per page load, even if multiple API calls fail simultaneously
-    if (!isRedirecting && typeof window !== 'undefined') {
-      isRedirecting = true;
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('refreshToken');
-      
-      const currentPath = window.location.pathname + window.location.search;
-      const loginRegex = /^\/login(\?.*)?$/;
-      const isLoginPage = loginRegex.test(currentPath);
-
-      if (!isLoginPage) {
-        // Use window.location.href which will cause a full page redirect
-        // and reset the isRedirecting flag on the next page load
-        window.location.href = '/login?session=expired';
-      }
-      // If already on /login, do nothing (preserve error message)
-    }
-  }
-};
-
-// Centralized retry logic
-const createRetryFn = (maxRetries: number) => {
-  return (failureCount: number, error: Error) => {
-    const HTTP_STATUS_TO_NOT_RETRY = [401, 403, 404, 500];
-    
-    if (failureCount >= maxRetries) {
-      return false;
-    }
-    
-    if (axios.isAxiosError(error) && HTTP_STATUS_TO_NOT_RETRY.includes(error.response?.status ?? 0)) {
-      handleApiError(error);
-      return false;
-    }
-    
-    return true;
-  };
 };
 
 interface ApiGetCallProps {
@@ -127,12 +34,12 @@ interface ApiGetCallProps {
 
 export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   const { selectedContext } = useRbacContext();
+  const { refreshAuth, user, loading, refreshing, authReady } = useAuthContext();
   const {
     url,
     queryKey,
     params,
     enabled = true,
-    retry = 3,
     staleTime = 300000,
     refetchOnWindowFocus = false,
     refetchOnMount = true,
@@ -140,12 +47,10 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     onError,
   } = props;
 
+  const shouldEnable = enabled && authReady;
 
-  // Detect context type using the user object
-  const { user } = useAuthContext();
   let contextKey: Record<string, string> | undefined = undefined;
   if (selectedContext !== 'user' && user) {
-    // Check if selectedContext matches a companyMembership
     const company = user.companyMemberships?.find((c: { companyId: string }) => c.companyId === selectedContext);
     if (company) {
       contextKey = { companyId: selectedContext };
@@ -154,7 +59,6 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     }
   }
 
-  // Merge params with contextKey if not already present
   const mergedParams = params ? { ...params } : {};
   if (contextKey) {
     if (contextKey.companyId && !mergedParams.companyId) {
@@ -165,49 +69,101 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     }
   }
 
-  // Always include the calling user (UserId from JWT) in the query key, in addition to context
   const callingUserId = getUserIdFromToken();
   const queryKeyArr: string[] = [queryKey];
   if (callingUserId) {
     queryKeyArr.push(`UserId:${callingUserId}`);
   }
   if (Object.keys(mergedParams).length > 0) {
-  queryKeyArr.push(JSON.stringify(mergedParams));
+    queryKeyArr.push(JSON.stringify(mergedParams));
   }
 
+  // Pass loading/refreshing via closure
   const queryInfo = useQuery<TData, AxiosError>({
     queryKey: queryKeyArr,
-    enabled,
+    enabled: shouldEnable,
     queryFn: async ({ signal }) => {
-      const headers = await buildHeaders();
-      const response = await axios.get<TData | { error: string }>(`${API_BASE}/${url}`, {
-        signal,
-        params: mergedParams,
-        headers,
-      });
-      const data = response.data;
-      if (typeof data === 'object' && data !== null && 'error' in data) {
-        if (onError) onError(data.error);
-        throw new Error(data.error);
+      // Never trigger a refresh or API call if AuthProvider is not ready
+      if (!authReady) {
+        return new Promise<TData>(() => {});
       }
-      if (onSuccess) onSuccess(data);
-      return data as TData;
+      let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      // Only attempt refresh if authReady
+      if (!token && authReady) {
+        const refreshed = await refreshAuth();
+        if (refreshed) {
+          token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+        }
+      }
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      try {
+        const response = await axios.get<TData | { error: string }>(`${API_BASE}/${url}`, {
+          signal,
+          params: mergedParams,
+          headers,
+        });
+        const data = response.data;
+        if (typeof data === 'object' && data !== null && 'error' in data) {
+          if (onError) onError(data.error);
+          throw new Error(data.error);
+        }
+        if (onSuccess) onSuccess(data);
+        return data as TData;
+      } catch (err: any) {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          // Only attempt refresh if authReady
+          if (authReady) {
+            const refreshed = await refreshAuth();
+            if (refreshed) {
+              const retryToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+              const retryHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+              };
+              if (retryToken) retryHeaders['Authorization'] = `Bearer ${retryToken}`;
+              try {
+                const retryResponse = await axios.get<TData | { error: string }>(`${API_BASE}/${url}`, {
+                  signal,
+                  params: mergedParams,
+                  headers: retryHeaders,
+                });
+                const retryData = retryResponse.data;
+                if (typeof retryData === 'object' && retryData !== null && 'error' in retryData) {
+                  if (onError) onError(retryData.error);
+                  throw new Error(retryData.error);
+                }
+                if (onSuccess) onSuccess(retryData);
+                return retryData as TData;
+              } catch (retryErr: any) {
+                if (axios.isAxiosError(retryErr) && retryErr.response?.status === 401) {
+                  throw new Error('Session expired');
+                }
+                throw retryErr;
+              }
+            } else {
+              throw new Error('Session expired');
+            }
+          } else {
+            throw new Error('Session expired');
+          }
+        }
+        throw err;
+      }
     },
     staleTime,
     refetchOnWindowFocus,
     refetchOnMount,
-    retry: createRetryFn(retry),
+    retry: false,
   });
 
-  if (queryInfo.error) {
-    handleApiError(queryInfo.error);
-    if (onError && axios.isAxiosError(queryInfo.error)) {
-      const errorMessage =
-        (queryInfo.error.response?.data as { error?: string })?.error ||
-        queryInfo.error.message ||
-        'An error occurred';
-      onError(errorMessage);
-    }
+  if (queryInfo.error && onError && axios.isAxiosError(queryInfo.error)) {
+    const errorMessage =
+      (queryInfo.error.response?.data as { error?: string })?.error ||
+      queryInfo.error.message ||
+      'An error occurred';
+    onError(errorMessage);
   }
 
   return queryInfo;
@@ -223,9 +179,9 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
   props?: ApiMutationCallProps<TData>
 ) {
   const queryClient = useQueryClient();
+  const { refreshAuth, loading, refreshing, authReady } = useAuthContext();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
   const callingUserId = getUserIdFromToken();
-  // Helper to build query key for invalidation, matching useApiGet
   const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
     const arr = [key];
     if (callingUserId) arr.push(`UserId:${callingUserId}`);
@@ -235,15 +191,63 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
 
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
-      const headers = await buildHeaders();
-      const response = await axios.post<TData | { error: string }>(`${API_BASE}/${url}`, data, {
-        headers,
-      });
-      const responseData = response.data;
-      if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
-        throw new Error(responseData.error);
+      if (!authReady) {
+        return new Promise<TData>(() => {});
       }
-      return responseData as TData;
+      let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (!token && authReady) {
+        const refreshed = await refreshAuth();
+        if (refreshed) {
+          token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+        }
+      }
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      try {
+        const response = await axios.post<TData | { error: string }>(`${API_BASE}/${url}`, data, {
+          headers,
+        });
+        const responseData = response.data;
+        if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
+          throw new Error(responseData.error);
+        }
+        return responseData as TData;
+      } catch (err: any) {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          if (authReady) {
+            const refreshed = await refreshAuth();
+            if (refreshed) {
+              const retryToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+              const retryHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+              };
+              if (retryToken) retryHeaders['Authorization'] = `Bearer ${retryToken}`;
+              try {
+                const retryResponse = await axios.post<TData | { error: string }>(`${API_BASE}/${url}`, data, {
+                  headers: retryHeaders,
+                });
+                const retryData = retryResponse.data;
+                if (typeof retryData === 'object' && retryData !== null && 'error' in retryData) {
+                  throw new Error(retryData.error);
+                }
+                return retryData as TData;
+              } catch (retryErr: any) {
+                if (axios.isAxiosError(retryErr) && retryErr.response?.status === 401) {
+                  throw new Error('Session expired');
+                }
+                throw retryErr;
+              }
+            } else {
+              throw new Error('Session expired');
+            }
+          } else {
+            throw new Error('Session expired');
+          }
+        }
+        throw err;
+      }
     },
     onSuccess: (data) => {
       if (relatedQueryKeys) {
@@ -256,9 +260,6 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
       }
     },
     onError: (error) => {
-      if (axios.isAxiosError(error)) {
-        handleApiError(error);
-      }
       if (onError) {
         const errorMessage = axios.isAxiosError(error)
           ? (error.response?.data as { error?: string })?.error || error.message
@@ -275,27 +276,74 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
   props?: ApiMutationCallProps<TData>
 ) {
   const queryClient = useQueryClient();
+  const { refreshAuth, loading, refreshing, authReady } = useAuthContext();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
   const callingUserId = getUserIdFromToken();
-  // Helper to build query key for invalidation, matching useApiGet
   const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
     const arr = [key];
     if (callingUserId) arr.push(`UserId:${callingUserId}`);
     if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
     return arr;
   };
-
   const mutation = useMutation<TData, Error, { url: string; data?: TVariables }>({
     mutationFn: async ({ url, data }) => {
-      const headers = await buildHeaders();
-      const response = await axios.put<TData | { error: string }>(`${API_BASE}/${url}`, data, {
-        headers,
-      });
-      const responseData = response.data;
-      if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
-        throw new Error(responseData.error);
+      if (!authReady) {
+        return new Promise<TData>(() => {});
       }
-      return responseData as TData;
+      let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (!token && authReady) {
+        const refreshed = await refreshAuth();
+        if (refreshed) {
+          token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+        }
+      }
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      try {
+        const response = await axios.put<TData | { error: string }>(`${API_BASE}/${url}`, data, {
+          headers,
+        });
+        const responseData = response.data;
+        if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
+          throw new Error(responseData.error);
+        }
+        return responseData as TData;
+      } catch (err: any) {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          if (authReady) {
+            const refreshed = await refreshAuth();
+            if (refreshed) {
+              const retryToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+              const retryHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+              };
+              if (retryToken) retryHeaders['Authorization'] = `Bearer ${retryToken}`;
+              try {
+                const retryResponse = await axios.put<TData | { error: string }>(`${API_BASE}/${url}`, data, {
+                  headers: retryHeaders,
+                });
+                const retryData = retryResponse.data;
+                if (typeof retryData === 'object' && retryData !== null && 'error' in retryData) {
+                  throw new Error(retryData.error);
+                }
+                return retryData as TData;
+              } catch (retryErr: any) {
+                if (axios.isAxiosError(retryErr) && retryErr.response?.status === 401) {
+                  throw new Error('Session expired');
+                }
+                throw retryErr;
+              }
+            } else {
+              throw new Error('Session expired');
+            }
+          } else {
+            throw new Error('Session expired');
+          }
+        }
+        throw err;
+      }
     },
     onSuccess: (data) => {
       if (relatedQueryKeys) {
@@ -308,9 +356,6 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
       }
     },
     onError: (error) => {
-      if (axios.isAxiosError(error)) {
-        handleApiError(error);
-      }
       if (onError) {
         const errorMessage = axios.isAxiosError(error)
           ? (error.response?.data as { error?: string })?.error || error.message
@@ -327,27 +372,74 @@ export function useApiDelete<TData = unknown>(
   props?: ApiMutationCallProps<TData>
 ) {
   const queryClient = useQueryClient();
+  const { refreshAuth, loading, refreshing, authReady } = useAuthContext();
   const { relatedQueryKeys, onSuccess, onError } = props || {};
   const callingUserId = getUserIdFromToken();
-  // Helper to build query key for invalidation, matching useApiGet
   const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
     const arr = [key];
     if (callingUserId) arr.push(`UserId:${callingUserId}`);
     if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
     return arr;
   };
-
   const mutation = useMutation<TData, Error, { url: string }>({
     mutationFn: async ({ url }) => {
-      const headers = await buildHeaders();
-      const response = await axios.delete<TData | { error: string }>(`${API_BASE}/${url}`, {
-        headers,
-      });
-      const responseData = response.data;
-      if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
-        throw new Error(responseData.error);
+      if (!authReady) {
+        return new Promise<TData>(() => {});
       }
-      return responseData as TData;
+      let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (!token && authReady) {
+        const refreshed = await refreshAuth();
+        if (refreshed) {
+          token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+        }
+      }
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      try {
+        const response = await axios.delete<TData | { error: string }>(`${API_BASE}/${url}`, {
+          headers,
+        });
+        const responseData = response.data;
+        if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
+          throw new Error(responseData.error);
+        }
+        return responseData as TData;
+      } catch (err: any) {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          if (authReady) {
+            const refreshed = await refreshAuth();
+            if (refreshed) {
+              const retryToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : undefined;
+              const retryHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+              };
+              if (retryToken) retryHeaders['Authorization'] = `Bearer ${retryToken}`;
+              try {
+                const retryResponse = await axios.delete<TData | { error: string }>(`${API_BASE}/${url}`, {
+                  headers: retryHeaders,
+                });
+                const retryData = retryResponse.data;
+                if (typeof retryData === 'object' && retryData !== null && 'error' in retryData) {
+                  throw new Error(retryData.error);
+                }
+                return retryData as TData;
+              } catch (retryErr: any) {
+                if (axios.isAxiosError(retryErr) && retryErr.response?.status === 401) {
+                  throw new Error('Session expired');
+                }
+                throw retryErr;
+              }
+            } else {
+              throw new Error('Session expired');
+            }
+          } else {
+            throw new Error('Session expired');
+          }
+        }
+        throw err;
+      }
     },
     onSuccess: (data) => {
       if (relatedQueryKeys) {
@@ -360,9 +452,6 @@ export function useApiDelete<TData = unknown>(
       }
     },
     onError: (error) => {
-      if (axios.isAxiosError(error)) {
-        handleApiError(error);
-      }
       if (onError) {
         const errorMessage = axios.isAxiosError(error)
           ? (error.response?.data as { error?: string })?.error || error.message
@@ -374,3 +463,5 @@ export function useApiDelete<TData = unknown>(
 
   return mutation;
 }
+
+
