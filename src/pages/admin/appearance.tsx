@@ -18,8 +18,10 @@ import {
   Grid,
   Paper,
   TextField,
+  Avatar,
+  Divider,
 } from '@mui/material';
-import { Save as SaveIcon } from '@mui/icons-material';
+import { Save as SaveIcon, Visibility as PreviewIcon } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
 
@@ -72,6 +74,36 @@ interface AppearanceData {
 interface AppearanceResponse {
   appearance: AppearanceData;
 }
+
+// Helper function to get background gradient for preview
+const getPreviewBackgroundGradient = (theme: string, customGradient: { start: string; end: string }) => {
+  if (theme === 'custom') {
+    return `linear-gradient(135deg, ${customGradient.start} 0%, ${customGradient.end} 100%)`;
+  }
+  
+  const themeGradients: Record<string, string> = {
+    light: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    dark: 'linear-gradient(135deg, #434343 0%, #000000 100%)',
+    sunset: 'linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)',
+    ocean: 'linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%)',
+    forest: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
+  };
+  
+  return themeGradients[theme] || themeGradients.light;
+};
+
+// Helper function to get font family for preview
+const getPreviewFontFamily = (fontFamily: string) => {
+  const fontFamilies: Record<string, string> = {
+    default: 'Inter, sans-serif',
+    serif: 'Georgia, serif',
+    mono: 'Courier New, monospace',
+    poppins: 'Poppins, sans-serif',
+    roboto: 'Roboto, sans-serif',
+  };
+  
+  return fontFamilies[fontFamily] || fontFamilies.default;
+};
 
 export default function AppearancePage() {
   const router = useRouter();
@@ -190,6 +222,161 @@ export default function AppearancePage() {
               {success}
             </Alert>
           )}
+
+          {/* Live Preview */}
+          <Card sx={{ mt: 3, mb: 3 }}>
+            <CardContent sx={{ p: 4 }}>
+              <Box display="flex" alignItems="center" gap={1} mb={3}>
+                <PreviewIcon />
+                <Typography variant="h6" fontWeight={600}>
+                  Live Preview
+                </Typography>
+              </Box>
+              
+              <Box
+                sx={{
+                  minHeight: 400,
+                  borderRadius: 2,
+                  background: getPreviewBackgroundGradient(formData.theme, formData.customGradient),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  p: 4,
+                  fontFamily: getPreviewFontFamily(formData.fontFamily),
+                }}
+              >
+                <Box sx={{ width: '100%', maxWidth: 400 }}>
+                  {formData.layoutStyle === 'card' ? (
+                    <Card elevation={4}>
+                      <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                        <Avatar
+                          sx={{ 
+                            width: 100, 
+                            height: 100, 
+                            mx: 'auto', 
+                            mb: 2,
+                            bgcolor: 'grey.300',
+                          }}
+                        >
+                          <Typography variant="h4" color="text.secondary">U</Typography>
+                        </Avatar>
+                        
+                        <Typography variant="h5" fontWeight={700} gutterBottom>
+                          Your Name
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          @username
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
+                          Your bio will appear here
+                        </Typography>
+                        
+                        <Stack spacing={2}>
+                          <Button
+                            variant="contained"
+                            size="large"
+                            fullWidth
+                            sx={{
+                              borderRadius: buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px',
+                              bgcolor: formData.colors.buttonBackground,
+                              color: formData.colors.buttonText,
+                              '&:hover': {
+                                bgcolor: formData.colors.buttonBackground,
+                                opacity: 0.9,
+                              },
+                            }}
+                          >
+                            Sample Link 1
+                          </Button>
+                          <Button
+                            variant="contained"
+                            size="large"
+                            fullWidth
+                            sx={{
+                              borderRadius: buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px',
+                              bgcolor: formData.colors.buttonBackground,
+                              color: formData.colors.buttonText,
+                              '&:hover': {
+                                bgcolor: formData.colors.buttonBackground,
+                                opacity: 0.9,
+                              },
+                            }}
+                          >
+                            Sample Link 2
+                          </Button>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Avatar
+                        sx={{ 
+                          width: 100, 
+                          height: 100, 
+                          mx: 'auto', 
+                          mb: 2,
+                          bgcolor: 'rgba(255,255,255,0.9)',
+                          border: 3,
+                          borderColor: '#ffffff',
+                        }}
+                      >
+                        <Typography variant="h4" color="text.secondary">U</Typography>
+                      </Avatar>
+                      
+                      <Typography variant="h5" fontWeight={700} gutterBottom sx={{ color: '#ffffff' }}>
+                        Your Name
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }} gutterBottom>
+                        @username
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 1, mb: 3 }}>
+                        Your bio will appear here
+                      </Typography>
+                      
+                      <Stack spacing={2}>
+                        <Button
+                          variant="contained"
+                          size="large"
+                          fullWidth
+                          sx={{
+                            borderRadius: buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px',
+                            bgcolor: formData.colors.buttonBackground,
+                            color: formData.colors.buttonText,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                            '&:hover': {
+                              bgcolor: formData.colors.buttonBackground,
+                              opacity: 0.9,
+                            },
+                          }}
+                        >
+                          Sample Link 1
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="large"
+                          fullWidth
+                          sx={{
+                            borderRadius: buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px',
+                            bgcolor: formData.colors.buttonBackground,
+                            color: formData.colors.buttonText,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                            '&:hover': {
+                              bgcolor: formData.colors.buttonBackground,
+                              opacity: 0.9,
+                            },
+                          }}
+                        >
+                          Sample Link 2
+                        </Button>
+                      </Stack>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Divider sx={{ my: 4 }} />
 
           <Card sx={{ mt: 3 }}>
             <CardContent sx={{ p: 4 }}>
