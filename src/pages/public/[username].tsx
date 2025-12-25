@@ -169,6 +169,16 @@ export default function PublicProfile() {
       <Head>
         <title>{profile.displayName} - LinkToMe</title>
         <meta name="description" content={profile.bio} />
+        {/* Prevent background flash by setting background before React hydrates */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            body {
+              background: ${getBackgroundGradient(profile.appearance)};
+              margin: 0;
+              min-height: 100vh;
+            }
+          `
+        }} />
       </Head>
       
       <Fade in={true} timeout={300}>
