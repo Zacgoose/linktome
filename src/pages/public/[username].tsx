@@ -125,6 +125,9 @@ export default function PublicProfile() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  // Filter to show only active links
+  const activeLinks = profile?.links?.filter(link => link.active !== false) || [];
+
   if (isLoading) {
     return (
       <Box
@@ -218,7 +221,7 @@ export default function PublicProfile() {
                 )}
                 
                 <Stack spacing={2}>
-                  {profile.links && profile.links.filter(link => link.active !== false).map((link, index) => (
+                  {activeLinks.map((link, index) => (
                     <Button
                       key={link.id || index}
                       variant="contained"
@@ -280,7 +283,7 @@ export default function PublicProfile() {
               )}
               
               <Stack spacing={2}>
-                {profile.links && profile.links.filter(link => link.active !== false).map((link, index) => (
+                {activeLinks.map((link, index) => (
                   <Button
                     key={link.id || index}
                     variant="contained"

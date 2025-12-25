@@ -119,10 +119,10 @@ export default function AppearancePage() {
   const appearance = data?.appearance;
 
   const [formData, setFormData] = useState({
-    theme: (appearance?.theme || 'light') as string,
-    buttonStyle: (appearance?.buttonStyle || 'rounded') as string,
-    fontFamily: (appearance?.fontFamily || 'default') as string,
-    layoutStyle: (appearance?.layoutStyle || 'centered') as string,
+    theme: appearance?.theme || 'light',
+    buttonStyle: appearance?.buttonStyle || 'rounded',
+    fontFamily: appearance?.fontFamily || 'default',
+    layoutStyle: appearance?.layoutStyle || 'centered',
     colors: {
       primary: appearance?.colors?.primary || '#667eea',
       secondary: appearance?.colors?.secondary || '#764ba2',
@@ -143,10 +143,10 @@ export default function AppearancePage() {
     if (appearance && !dataLoadedRef.current) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
-        theme: (appearance.theme || 'light') as string,
-        buttonStyle: (appearance.buttonStyle || 'rounded') as string,
-        fontFamily: (appearance.fontFamily || 'default') as string,
-        layoutStyle: (appearance.layoutStyle || 'centered') as string,
+        theme: appearance.theme || 'light',
+        buttonStyle: appearance.buttonStyle || 'rounded',
+        fontFamily: appearance.fontFamily || 'default',
+        layoutStyle: appearance.layoutStyle || 'centered',
         colors: {
           primary: appearance.colors?.primary || '#667eea',
           secondary: appearance.colors?.secondary || '#764ba2',
@@ -162,6 +162,9 @@ export default function AppearancePage() {
       dataLoadedRef.current = true;
     }
   }, [appearance]);
+
+  // Memoized button border radius for preview
+  const previewButtonBorderRadius = buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px';
 
   const updateAppearance = useApiPut({
     relatedQueryKeys: ['admin-appearance'],
@@ -277,7 +280,7 @@ export default function AppearancePage() {
                             size="large"
                             fullWidth
                             sx={{
-                              borderRadius: buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px',
+                              borderRadius: previewButtonBorderRadius,
                               bgcolor: formData.colors.buttonBackground,
                               color: formData.colors.buttonText,
                               '&:hover': {
@@ -293,7 +296,7 @@ export default function AppearancePage() {
                             size="large"
                             fullWidth
                             sx={{
-                              borderRadius: buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px',
+                              borderRadius: previewButtonBorderRadius,
                               bgcolor: formData.colors.buttonBackground,
                               color: formData.colors.buttonText,
                               '&:hover': {
@@ -339,7 +342,7 @@ export default function AppearancePage() {
                           size="large"
                           fullWidth
                           sx={{
-                            borderRadius: buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px',
+                            borderRadius: previewButtonBorderRadius,
                             bgcolor: formData.colors.buttonBackground,
                             color: formData.colors.buttonText,
                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -356,7 +359,7 @@ export default function AppearancePage() {
                           size="large"
                           fullWidth
                           sx={{
-                            borderRadius: buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px',
+                            borderRadius: previewButtonBorderRadius,
                             bgcolor: formData.colors.buttonBackground,
                             color: formData.colors.buttonText,
                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',

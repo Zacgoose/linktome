@@ -42,7 +42,7 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
       url,
       active,
       ...(icon && { icon }),
-      ...(link?.order !== undefined && { order: link.order }),
+      ...(link?.order != null && { order: link.order }),
     };
     
     onSave(linkData);

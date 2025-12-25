@@ -15,6 +15,8 @@ import LinkCard from '@/components/LinkCard';
 import LinkForm from '@/components/LinkForm';
 import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
 
+// Using operation-based bulk updates (add, update, remove) to match backend API structure
+
 interface Link {
   id: string;
   title: string;
@@ -82,8 +84,10 @@ export default function LinksPage() {
   const links = data?.links || [];
 
   const handleSaveLink = (link: { id?: string; title: string; url: string; order?: number; active?: boolean; icon?: string }) => {
-    // Determine the next order if not provided
-    const nextOrder = link.order !== undefined ? link.order : links.length;
+    // Determine the next order - use max existing order + 1 to avoid gaps
+    const nextOrder = link.order !== undefined 
+      ? link.order 
+      : Math.max(...links.map(l => l.order || 0), 0) + 1;
     
     if (link.id) {
       // Update existing link
