@@ -186,7 +186,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {/* Context Switcher: Show if user has company memberships or managed users */}
           {user && ((user.companyMemberships && user.companyMemberships.length > 0) || (managedUsers && managedUsers.length > 0)) && (
             <FormControl size="small" sx={{ minWidth: 220, mr: 2 }}>
-              <InputLabel id="context-switch-label">Context</InputLabel>
+              <InputLabel id="context-switch-label">Accounts</InputLabel>
               <Select
                 labelId="context-switch-label"
                 value={selectedContext}
