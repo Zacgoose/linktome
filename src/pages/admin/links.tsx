@@ -13,13 +13,17 @@ import { Add as AddIcon } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import LinkCard from '@/components/LinkCard';
 import LinkForm from '@/components/LinkForm';
-import { useApiGet, useApiPost, useApiPut, useApiDelete } from '@/hooks/useApiQuery';
+import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
+
+// Using operation-based bulk updates (add, update, remove) to match backend API structure
 
 interface Link {
   id: string;
   title: string;
   url: string;
   order: number;
+  active: boolean;
+  icon?: string;
 }
 
 interface LinksResponse {
@@ -42,38 +46,94 @@ export default function LinksPage() {
     onSuccess: () => {
       setSuccess('Link created successfully');
       setTimeout(() => setSuccess(''), 3000);
+      setFormOpen(false);
+      setEditingLink(null);
+    },
+    onError: (error) => {
+      setError(error);
+      setTimeout(() => setError(''), 5000);
     },
   });
 
-  const updateLink = useApiPut({
+  const updateLink = useApiPost({
     relatedQueryKeys: ['admin-links'],
     onSuccess: () => {
       setSuccess('Link updated successfully');
       setTimeout(() => setSuccess(''), 3000);
+      setFormOpen(false);
+      setEditingLink(null);
+    },
+    onError: (error) => {
+      setError(error);
+      setTimeout(() => setError(''), 5000);
     },
   });
 
-  const deleteLink = useApiDelete({
+  const deleteLink = useApiPost({
     relatedQueryKeys: ['admin-links'],
     onSuccess: () => {
       setSuccess('Link deleted successfully');
       setTimeout(() => setSuccess(''), 3000);
     },
+    onError: (error) => {
+      setError(error);
+      setTimeout(() => setError(''), 5000);
+    },
   });
 
   const links = data?.links || [];
 
-  const handleSaveLink = (link: { id?: string; title: string; url: string; order?: number }) => {
+  const handleSaveLink = (link: { id?: string; title: string; url: string; order?: number; active?: boolean; icon?: string }) => {
+    // Determine the next order - use max existing order + 1 to avoid gaps
+    const nextOrder = link.order !== undefined 
+      ? link.order 
+      : Math.max(...links.map(l => l.order || 0), 0) + 1;
+    
     if (link.id) {
-      updateLink.mutate({ url: `admin/UpdateLink?id=${link.id}`, data: link });
+      // Update existing link
+      updateLink.mutate({ 
+        url: 'admin/UpdateLinks', 
+        data: { 
+          links: [{
+            operation: 'update',
+            id: link.id,
+            title: link.title,
+            url: link.url,
+            order: nextOrder,
+            active: link.active !== undefined ? link.active : true,
+            ...(link.icon && { icon: link.icon }),
+          }]
+        } 
+      });
     } else {
-      createLink.mutate({ url: 'admin/UpdateLinks', data: link });
+      // Add new link
+      createLink.mutate({ 
+        url: 'admin/UpdateLinks', 
+        data: { 
+          links: [{
+            operation: 'add',
+            title: link.title,
+            url: link.url,
+            order: nextOrder,
+            active: true,
+            ...(link.icon && { icon: link.icon }),
+          }]
+        } 
+      });
     }
   };
 
   const handleDeleteLink = (linkId: string) => {
     if (!confirm('Are you sure you want to delete this link?')) return;
-    deleteLink.mutate({ url: `admin/DeleteLink?id=${linkId}` });
+    deleteLink.mutate({ 
+      url: 'admin/UpdateLinks', 
+      data: { 
+        links: [{
+          operation: 'remove',
+          id: linkId,
+        }]
+      } 
+    });
   };
 
   const handleEditClick = (link: Link) => {

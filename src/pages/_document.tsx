@@ -8,6 +8,21 @@ export default function Document() {
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
         />
+        {/* Prevent white flash on page load - override all default backgrounds */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            html, body, #__next {
+              background: #fff !important;
+              background-attachment: fixed !important;
+              margin: 0;
+              padding: 0;
+            }
+            /* Override globals.css background variables */
+            :root {
+              --background: transparent !important;
+            }
+          `
+        }} />
       </Head>
       <body>
         <Main />
