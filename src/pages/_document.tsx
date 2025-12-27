@@ -12,7 +12,7 @@ export default function Document() {
         <style dangerouslySetInnerHTML={{
           __html: `
             html, body, #__next {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+              background: #fff !important;
               background-attachment: fixed !important;
               margin: 0;
               padding: 0;
