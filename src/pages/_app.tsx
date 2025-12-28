@@ -14,13 +14,13 @@ import { RbacProvider } from '@/context/RbacContext';
 import '@/styles/globals.css';
 
 import { createContext, useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/router';
 
 // UI Theme Context for admin UI
 export const UiThemeContext = createContext({
   uiTheme: 'light',
   setUiTheme: (_: 'light' | 'dark') => {},
 });
-
 
 const clientSideEmotionCache = createEmotionCache();
 const queryClient = new QueryClient();
@@ -29,9 +29,8 @@ interface MyAppProps extends AppProps {
   emotionCache?: EmotionCache;
 }
 
-export default function App(props: MyAppProps) {
-  const { Component, emotionCache = clientSideEmotionCache, pageProps } = props;
-
+function ThemeWrapper({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   // UI theme state (sync with localStorage)
   const [uiTheme, setUiTheme] = useState<'light' | 'dark'>(
     typeof window !== 'undefined' && localStorage.getItem('uiTheme') === 'dark' ? 'dark' : 'light'
@@ -43,13 +42,29 @@ export default function App(props: MyAppProps) {
     }
   }, [uiTheme]);
 
-  // Memoize theme to avoid recreation on every render
+  // Determine if current route is admin (user pages)
+  const isAdminRoute = router.pathname.startsWith('/admin');
+
+  // Only apply user-selected theme to admin pages, otherwise always use light
   const theme = useMemo(() => createTheme({
     direction: 'ltr',
-    paletteMode: uiTheme,
+    paletteMode: isAdminRoute ? uiTheme : 'light',
     colorPreset: 'purple',
     contrast: 'normal',
-  }), [uiTheme]);
+  }), [uiTheme, isAdminRoute]);
+
+  return (
+    <UiThemeContext.Provider value={{ uiTheme, setUiTheme }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
+    </UiThemeContext.Provider>
+  );
+}
+
+export default function App(props: MyAppProps) {
+  const { Component, emotionCache = clientSideEmotionCache, pageProps } = props;
 
   return (
     <CacheProvider value={emotionCache}>
@@ -58,16 +73,13 @@ export default function App(props: MyAppProps) {
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
       <QueryClientProvider client={queryClient}>
-        <UiThemeContext.Provider value={{ uiTheme, setUiTheme }}>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <AuthProvider>
-              <RbacProvider>
-                <Component {...pageProps} />
-              </RbacProvider>
-            </AuthProvider>
-          </ThemeProvider>
-        </UiThemeContext.Provider>
+        <ThemeWrapper>
+          <AuthProvider>
+            <RbacProvider>
+              <Component {...pageProps} />
+            </RbacProvider>
+          </AuthProvider>
+        </ThemeWrapper>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </CacheProvider>

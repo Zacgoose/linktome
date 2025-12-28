@@ -13,13 +13,6 @@ export default function Document() {
           __html: `
             html, body, #__next {
               background: #fff !important;
-              background-attachment: fixed !important;
-              margin: 0;
-              padding: 0;
-            }
-            /* Override globals.css background variables */
-            :root {
-              --background: transparent !important;
             }
           `
         }} />

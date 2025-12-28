@@ -275,14 +275,13 @@ export default function Home() {
                       LT
                     </Typography>
                   </Avatar>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                  <Typography variant="h6" fontWeight={700} gutterBottom sx={{ color: '#222' }}>
                     @yourname
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#444' }}>
                     Content Creator & Influencer
                   </Typography>
                 </Box>
-                
                 <Stack spacing={2}>
                   {['🌐 My Website', '📱 Instagram', '🎥 YouTube', '💼 LinkedIn'].map((link, index) => (
                     <Box
@@ -293,9 +292,14 @@ export default function Home() {
                         bgcolor: 'grey.100',
                         textAlign: 'center',
                         fontWeight: 600,
+                        color: '#222',
+                        letterSpacing: 0.1,
+                        fontSize: '1.08rem',
                         transition: 'all 0.2s ease',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
                         '&:hover': {
                           bgcolor: 'grey.200',
+                          color: '#111',
                           transform: 'scale(1.02)',
                         },
                       }}
@@ -316,13 +320,13 @@ export default function Home() {
           <Box textAlign="center" mb={8}>
             <Typography 
               variant="h2" 
-              fontWeight={700} 
+              fontWeight={800} 
               gutterBottom
-              sx={{ fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}
+              sx={{ fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }, color: '#222' }}
             >
               Everything You Need
             </Typography>
-            <Typography variant="h6" color="text.secondary" maxWidth="md" mx="auto">
+            <Typography variant="h6" sx={{ color: '#444' }} maxWidth="md" mx="auto">
               Powerful features to help you share your links and grow your online presence
             </Typography>
           </Box>
@@ -337,6 +341,7 @@ export default function Home() {
                     transition: 'all 0.3s ease',
                     border: '1px solid',
                     borderColor: 'grey.200',
+                    bgcolor: 'white',
                     '&:hover': {
                       transform: 'translateY(-8px)',
                       boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
@@ -358,10 +363,10 @@ export default function Home() {
                     >
                       <feature.icon sx={{ color: 'white', fontSize: 28 }} />
                     </Box>
-                    <Typography variant="h6" fontWeight={700} gutterBottom>
+                    <Typography variant="h6" fontWeight={700} gutterBottom sx={{ color: '#222' }}>
                       {feature.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: '#444' }}>
                       {feature.description}
                     </Typography>
                   </CardContent>
