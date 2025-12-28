@@ -204,7 +204,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <ListSubheader key="company-header">Companies</ListSubheader>,
                   ...user.companyMemberships.map((company) => (
                     <MuiMenuItem key={company.companyId} value={company.companyId}>
-                      {company.companyName || company.companyId}
+                      {company.companyName}
                     </MuiMenuItem>
                   )),
                 ]}
@@ -212,7 +212,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <ListSubheader key="managed-header">Accounts I Manage</ListSubheader>,
                   ...managedUsers.map((um) => (
                     <MuiMenuItem key={um.UserId} value={um.UserId}>
-                      Managed User: {um.UserId} ({um.role})
+                      Managed User: {um.DisplayName}
                     </MuiMenuItem>
                   )),
                 ]}

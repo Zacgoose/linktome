@@ -30,6 +30,8 @@ export interface CompanyMembership {
 
 export interface UserManagement {
   UserId: string;
+  DisplayName: string;
+  Email: string;
   role: string;
   state: string;
   direction: 'manager' | 'managed';
@@ -81,6 +83,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       userManagements: Array.isArray(user.userManagements)
         ? user.userManagements.map((um: any) => ({
             UserId: String(um.UserId),
+            DisplayName: String(um.DisplayName),
+            Email: String(um.Email),
             role: um.role,
             state: um.state,
             direction: um.direction,
