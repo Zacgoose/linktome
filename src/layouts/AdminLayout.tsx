@@ -182,11 +182,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 labelId="context-switch-label"
                 value={selectedContext}
                 label="Context"
-                onChange={async (e) => {
+                onChange={(e) => {
                   setSelectedContext(e.target.value);
-                  if (typeof refreshAuth === 'function') {
-                    await refreshAuth();
-                  }
                 }}
                 MenuProps={{ PaperProps: { style: { maxHeight: 350 } } }}
               >
