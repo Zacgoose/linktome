@@ -10,7 +10,6 @@ import {
   Box,
   Alert,
   CircularProgress,
-  Stack,
   Table,
   TableHead,
   TableRow,
@@ -22,25 +21,12 @@ import { useAuthContext } from '@/providers/AuthProvider';
 import { useState as useReactState } from 'react';
 
 
-interface CompanyUser {
-  companyDisplayName: string;
-  companyEmail: string;
-  companyRole: string;
-  UserId: string;
-  // Add any company-specific properties if needed
-}
-
-
 interface UserManagerRelationship {
   UserId: string;
   role: string;
   state: string;
   created: string;
   updated: string;
-}
-
-interface CompanyUsersResponse {
-  users: CompanyUser[];
 }
 
 interface UserManagerListResponse {
@@ -50,14 +36,8 @@ interface UserManagerListResponse {
 
 
 export default function UsersPage() {
-  const { data: companyData, isLoading } = useApiGet<CompanyUsersResponse>({
-    url: 'admin/GetCompanyUsers',
-    queryKey: 'admin-company-users',
-  });
-  const users = companyData?.users || [];
-
   // Fetch user manager relationships
-  const { data: userManagerList } = useApiGet<UserManagerListResponse>({
+  const { data: userManagerList, isLoading } = useApiGet<UserManagerListResponse>({
     url: 'admin/UserManagerList',
     queryKey: 'admin-user-manager-list',
   });
@@ -80,10 +60,7 @@ export default function UsersPage() {
       else setError('Failed to send invite');
     },
   });
-  const { companyMemberships, refreshAuth } = useAuthContext();
-  // Assume only one company for now; otherwise, select active companyId from route or context
-  const myCompany = companyMemberships && companyMemberships.length > 0 ? companyMemberships[0] : undefined;
-  const isAdminOrOwner = myCompany?.role === 'company_owner' || myCompany?.role === 'admin';
+  const { refreshAuth } = useAuthContext();
 
 
   const userManagerAction = useApiPost({
@@ -136,12 +113,12 @@ export default function UsersPage() {
   return (
     <>
       <Head>
-        <title>Company Members - LinkToMe</title>
+        <title>User Management - LinkToMe</title>
       </Head>
       <AdminLayout>
         <Container maxWidth="md" sx={{ py: 4 }}>
           <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
-            Company Members
+            User Management
           </Typography>
 
           {error && (
@@ -156,50 +133,7 @@ export default function UsersPage() {
             </Alert>
           )}
 
-          {/* Company Members Table (existing) */}
-          <Card sx={{ mt: 3 }}>
-            <CardContent sx={{ p: 4 }}>
-              <Box mb={2}>
-                {isAdminOrOwner && (
-                  <Button variant="contained" onClick={() => {}} disabled>
-                    Invite Member
-                  </Button>
-                )}
-              </Box>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Company Role</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.UserId}>
-                      <TableCell>{user.companyDisplayName}</TableCell>
-                      <TableCell>{user.companyEmail}</TableCell>
-                      <TableCell>{user.companyRole}</TableCell>
-                      <TableCell>
-                        {isAdminOrOwner && user.companyRole !== 'company_owner' && (
-                          <Stack direction="row" spacing={1}>
-                            <Button variant="outlined" size="small">Change Role</Button>
-                            <Button variant="outlined" size="small" color="error">Remove</Button>
-                          </Stack>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {/* --- User Management Section --- */}
-          <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary" sx={{ mt: 6 }}>
-            User Management
-          </Typography>
+          {/* User Management Section */}
           <Card sx={{ mt: 2 }}>
             <CardContent sx={{ p: 4 }}>
               <Box mb={2} display="flex" gap={2} alignItems="center">

@@ -7,7 +7,7 @@ export interface RoutePermission {
   path: string;
   requiredRoles?: string[];
   requiredPermissions?: string[];
-  allowedFor?: 'public' | 'authenticated' | 'admin' | 'company_owner';
+  allowedFor?: 'public' | 'authenticated' | 'admin';
   children?: RoutePermission[];
 }
 
@@ -70,40 +70,20 @@ export const ROUTE_CONFIG: RoutePermission[] = [
   {
     path: '/admin/users',
     allowedFor: 'admin',
-    requiredRoles: ['admin', 'company_owner'],
+    requiredRoles: ['admin'],
     requiredPermissions: ['read:users', 'manage:users'],
   },
   {
     path: '/admin/users/create',
     allowedFor: 'admin',
-    requiredRoles: ['admin', 'company_owner'],
+    requiredRoles: ['admin'],
     requiredPermissions: ['write:users'],
   },
   {
     path: '/admin/users/:UserId/edit',
     allowedFor: 'admin',
-    requiredRoles: ['admin', 'company_owner'],
+    requiredRoles: ['admin'],
     requiredPermissions: ['write:users'],
-  },
-
-  // Company owner routes
-  {
-    path: '/admin/company',
-    allowedFor: 'company_owner',
-    requiredRoles: ['company_owner'],
-    requiredPermissions: ['read:company', 'manage:company'],
-  },
-  {
-    path: '/admin/company/members',
-    allowedFor: 'company_owner',
-    requiredRoles: ['company_owner'],
-    requiredPermissions: ['read:company_members', 'manage:company_members'],
-  },
-  {
-    path: '/admin/company/settings',
-    allowedFor: 'company_owner',
-    requiredRoles: ['company_owner'],
-    requiredPermissions: ['write:company_settings'],
   },
 ];
 
@@ -141,19 +121,6 @@ export const PERMISSIONS = {
   'list:user_manager': 'List user managers and managed users',
   'remove:user_manager': 'Remove a user manager or managed user',
   'respond:user_manager': 'Accept or reject a user manager invitation',
-
-  // Company permissions
-  'read:company': 'View company information',
-  'write:company': 'Edit company information',
-  'manage:company': 'Full company management',
-  'read:company_members': 'View company members',
-  'manage:company_members': 'Manage company members',
-  'write:company_settings': 'Edit company settings',
-  'manage:billing': 'Manage company billing and subscriptions',
-  'assign:company_admin': 'Assign company admin role',
-  'revoke:company_admin': 'Revoke company admin role',
-  'assign:company_owner': 'Assign company owner role',
-  'revoke:company_owner': 'Revoke company owner role',
 } as const;
 
 /**
@@ -193,58 +160,6 @@ export const ROLES = {
       'read:appearance',
       'write:appearance',
       'read:analytics'
-    ],
-  },
-  company_admin: {
-    name: 'Company Admin',
-    description: 'Company administrator with elevated permissions',
-    defaultPermissions: [
-      'read:dashboard',
-      'read:profile',
-      'write:profile',
-      'read:links',
-      'write:links',
-      'read:appearance',
-      'write:appearance',
-      'read:analytics',
-      'read:users',
-      'manage:users',
-      'read:company_members',
-      'manage:company_members',
-      'invite:user_manager',
-      'list:user_manager',
-      'remove:user_manager',
-      'respond:user_manager'
-    ],
-  },
-  company_owner: {
-    name: 'Company Owner',
-    description: 'Company owner who can manage multiple all aspect of the company',
-    defaultPermissions: [
-      'read:dashboard',
-      'read:profile',
-      'write:profile',
-      'read:links',
-      'write:links',
-      'read:appearance',
-      'write:appearance',
-      'read:analytics',
-      'read:users',
-      'manage:users',
-      'read:company',
-      'write:company',
-      'read:company_members',
-      'manage:company_members',
-      'manage:billing',
-      'manage:company_settings',
-      'assign:company_admin',
-      'revoke:company_admin',
-      'assign:company_owner',
-      'revoke:company_owner',
-      'invite:user_manager',
-      'list:user_manager',
-      'remove:user_manager',
-      'respond:user_manager'
     ],
   },
 } as const;

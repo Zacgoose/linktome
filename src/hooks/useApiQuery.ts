@@ -31,19 +31,13 @@ const buildMergedParams = (
 ): Record<string, any> => {
   let contextKey: Record<string, string> | undefined = undefined;
   if (selectedContext !== 'user' && user) {
-    const company = user.companyMemberships?.find((c: { companyId: string }) => c.companyId === selectedContext);
-    if (company) {
-      contextKey = { companyId: selectedContext };
-    } else if (user.userManagements?.find((um: { UserId: string; state: string }) => um.UserId === selectedContext && um.state === 'accepted')) {
+    if (user.userManagements?.find((um: { UserId: string; state: string }) => um.UserId === selectedContext && um.state === 'accepted')) {
       contextKey = { UserId: selectedContext };
     }
   }
 
   const mergedParams = params ? { ...params } : {};
   if (contextKey) {
-    if (contextKey.companyId && !mergedParams.companyId) {
-      mergedParams.companyId = contextKey.companyId;
-    }
     if (contextKey.UserId && !mergedParams.UserId) {
       mergedParams.UserId = contextKey.UserId;
     }

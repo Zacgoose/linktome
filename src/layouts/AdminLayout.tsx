@@ -29,7 +29,6 @@ import {
   Palette as PaletteIcon,
   BarChart as AnalyticsIcon,
   People as PeopleIcon,
-  Business as BusinessIcon,
 } from '@mui/icons-material';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useRbacContext } from '@/context/RbacContext';
@@ -85,13 +84,6 @@ const menuItems: MenuItem[] = [
     path: '/admin/users',
     requiredPermissions: ['read:users']
   },
-  { 
-    text: 'Company', 
-    icon: <BusinessIcon />, 
-    path: '/admin/company',
-    requiredPermissions: ['read:company'],
-    requiredRoles: ['company_owner'],
-  },
 ];
 
 
@@ -103,11 +95,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // managedUsers are already filtered for state === 'accepted' in AuthProvider
   const managedUsers = allManagedUsers || [];
 
-  // If user has no company memberships AND no managed users, ensure context is 'user'
+  // If user has no managed users, ensure context is 'user'
   useEffect(() => {
     if (
       user &&
-      (!user.companyMemberships || user.companyMemberships.length === 0) &&
       (!managedUsers || managedUsers.length === 0) &&
       selectedContext !== 'user'
     ) {
@@ -183,8 +174,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <IconButton sx={{ mr: 1 }} onClick={() => setUiTheme(uiTheme === 'light' ? 'dark' : 'light')} color="inherit" aria-label="Toggle UI theme">
             {uiTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
           </IconButton>
-          {/* Context Switcher: Show if user has company memberships or managed users */}
-          {user && ((user.companyMemberships && user.companyMemberships.length > 0) || (managedUsers && managedUsers.length > 0)) && (
+          {/* Context Switcher: Show if user has managed users */}
+          {user && (managedUsers && managedUsers.length > 0) && (
             <FormControl size="small" sx={{ minWidth: 220, mr: 2 }}>
               <InputLabel id="context-switch-label">Accounts</InputLabel>
               <Select
@@ -200,14 +191,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 MenuProps={{ PaperProps: { style: { maxHeight: 350 } } }}
               >
                 <MuiMenuItem value="user">My Account</MuiMenuItem>
-                {user.companyMemberships && user.companyMemberships.length > 0 && [
-                  <ListSubheader key="company-header">Companies</ListSubheader>,
-                  ...user.companyMemberships.map((company) => (
-                    <MuiMenuItem key={company.companyId} value={company.companyId}>
-                      {company.companyName}
-                    </MuiMenuItem>
-                  )),
-                ]}
                 {managedUsers && managedUsers.length > 0 && [
                   <ListSubheader key="managed-header">Accounts I Manage</ListSubheader>,
                   ...managedUsers.map((um) => (
