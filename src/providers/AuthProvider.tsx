@@ -8,7 +8,6 @@ import { apiPost } from '@/utils/api';
 interface AuthContextType {
   user: UserAuth | null;
   userRole: string | null;
-  companyMemberships: CompanyMembership[];
   userManagements: UserManagement[];
   managedUsers: UserManagement[];
   managers: UserManagement[];
@@ -19,13 +18,6 @@ interface AuthContextType {
   canAccessRoute: (path: string) => boolean;
   setUser: (user: UserAuth | null) => void;
   refreshAuth: () => Promise<boolean>;
-}
-
-export interface CompanyMembership {
-  companyId: string;
-  companyName?: string;
-  role: string;
-  permissions: string[];
 }
 
 export interface UserManagement {
@@ -47,7 +39,6 @@ export interface UserAuth {
   userRole: string;
   roles: string[];
   permissions: string[];
-  companyMemberships?: CompanyMembership[];
   userManagements?: UserManagement[];
 }
 
@@ -72,14 +63,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       userRole: String(userRole),
       roles: Array.isArray(user.roles) ? user.roles : [userRole],
       permissions: Array.isArray(user.permissions) ? user.permissions : [],
-      companyMemberships: Array.isArray(user.companyMemberships)
-        ? user.companyMemberships.map((cm: any) => ({
-            companyId: String(cm.companyId),
-            companyName: cm.companyName,
-            role: cm.role,
-            permissions: Array.isArray(cm.permissions) ? cm.permissions : [],
-          }))
-        : [],
       userManagements: Array.isArray(user.userManagements)
         ? user.userManagements.map((um: any) => ({
             UserId: String(um.UserId),
@@ -223,7 +206,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider value={{
       user: effectiveUser,
       userRole: effectiveUser?.userRole || null,
-      companyMemberships: effectiveUser?.companyMemberships || [],
       userManagements,
       managedUsers,
       managers,
