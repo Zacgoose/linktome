@@ -3,6 +3,7 @@ import { useAuthContext } from '@/providers/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
 import type { ApiError } from '@/types/api';
+import { useToast } from '@/context/ToastContext';
 
 const API_BASE = '/api';
 
@@ -147,6 +148,7 @@ interface ApiGetCallProps {
 export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   const { selectedContext } = useRbacContext();
   const { refreshAuth, user, authReady } = useAuthContext();
+  const { showToast } = useToast();
   const {
     url,
     queryKey,
@@ -189,8 +191,10 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
         if (onSuccess) onSuccess(data);
         return data;
       } catch (err: any) {
+        const errorMessage = extractErrorMessage(err);
+        // Auto-toast all errors (Option A)
+        showToast(errorMessage, 'error');
         if (onError) {
-          const errorMessage = extractErrorMessage(err);
           onError(errorMessage);
         }
         throw err;
@@ -203,9 +207,13 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   });
 
   // Handle errors from the query result
-  if (queryInfo.error && onError) {
+  if (queryInfo.error) {
     const errorMessage = extractErrorMessage(queryInfo.error);
-    onError(errorMessage);
+    // Auto-toast all errors (Option A)
+    showToast(errorMessage, 'error');
+    if (onError) {
+      onError(errorMessage);
+    }
   }
 
   return queryInfo;
@@ -226,6 +234,7 @@ function createMutationHook(method: 'post' | 'put' | 'delete') {
     const queryClient = useQueryClient();
     const { selectedContext } = useRbacContext();
     const { refreshAuth, user, authReady } = useAuthContext();
+    const { showToast } = useToast();
     const { relatedQueryKeys, params, onSuccess, onError } = props || {};
     const callingUserId = getUserIdFromToken();
 
@@ -258,8 +267,10 @@ function createMutationHook(method: 'post' | 'put' | 'delete') {
         }
       },
       onError: (error) => {
+        const errorMessage = extractErrorMessage(error);
+        // Auto-toast all errors (Option A)
+        showToast(errorMessage, 'error');
         if (onError) {
-          const errorMessage = extractErrorMessage(error);
           onError(errorMessage);
         }
       },

@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useRbacContext } from '@/context/RbacContext';
+import { ToastProvider } from '@/context/ToastContext';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -155,7 +156,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   // Navigation bar and context switcher
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <ToastProvider>
+      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Navigation Bar */}
       <AppBar 
         position="fixed" 
@@ -253,6 +255,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <Toolbar />
         {children}
       </Box>
-    </Box>
+      </Box>
+    </ToastProvider>
   );
 }
