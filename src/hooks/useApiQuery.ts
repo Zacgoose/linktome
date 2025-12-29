@@ -60,17 +60,15 @@ const buildMergedParams = (
   selectedContext: string,
   user: any
 ): Record<string, any> => {
-  let contextKey: Record<string, string> | undefined = undefined;
+  const mergedParams = params ? { ...params } : {};
+  
+  // Add UserId to params when context is not 'user' and user has permission
   if (selectedContext !== 'user' && user) {
     if (user.userManagements?.find((um: { UserId: string; state: string }) => um.UserId === selectedContext && um.state === 'accepted')) {
-      contextKey = { UserId: selectedContext };
-    }
-  }
-
-  const mergedParams = params ? { ...params } : {};
-  if (contextKey) {
-    if (contextKey.UserId && !mergedParams.UserId) {
-      mergedParams.UserId = contextKey.UserId;
+      // Only add to params if not already present
+      if (!mergedParams.UserId) {
+        mergedParams.UserId = selectedContext;
+      }
     }
   }
 
@@ -183,8 +181,15 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   if (selectedContext !== 'user' && selectedContext) {
     queryKeyArr.push(`Context:${selectedContext}`);
   }
-  if (Object.keys(mergedParams).length > 0) {
-    queryKeyArr.push(JSON.stringify(mergedParams));
+  
+  // Only add params to query key if there are additional params beyond UserId
+  // (Context already represents the UserId when using a context)
+  const paramsForKey = { ...mergedParams };
+  if (selectedContext !== 'user' && paramsForKey.UserId === selectedContext) {
+    delete paramsForKey.UserId;
+  }
+  if (Object.keys(paramsForKey).length > 0) {
+    queryKeyArr.push(JSON.stringify(paramsForKey));
   }
 
   const queryInfo = useQuery<TData, AxiosError>({
@@ -252,7 +257,18 @@ function createMutationHook(method: 'post' | 'put' | 'delete') {
       const arr = [key];
       if (callingUserId) arr.push(`UserId:${callingUserId}`);
       if (selectedContext !== 'user' && selectedContext) arr.push(`Context:${selectedContext}`);
-      if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
+      
+      // Only add params to query key if there are additional params beyond UserId
+      // (Context already represents the UserId when using a context)
+      if (params && Object.keys(params).length > 0) {
+        const paramsForKey = { ...params };
+        if (selectedContext !== 'user' && paramsForKey.UserId === selectedContext) {
+          delete paramsForKey.UserId;
+        }
+        if (Object.keys(paramsForKey).length > 0) {
+          arr.push(JSON.stringify(paramsForKey));
+        }
+      }
       return arr;
     };
 
