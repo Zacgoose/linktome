@@ -95,6 +95,23 @@ This approach monetizes API integrations while keeping the web experience unrest
 
 **Key Point**: This approach ensures web app users have unlimited access while programmatic/integration users are subject to tier limits.
 
+### [PREVENTING_COOKIE_BYPASS.md](./PREVENTING_COOKIE_BYPASS.md)
+**🔒 NEW - Security: Preventing Cookie-Based API Access Bypass** - How to stop users from using curl with JWT cookies
+
+**Contents:**
+- Multi-layered security approach
+- SameSite cookie protection (primary defense)
+- Origin/Referer validation (secondary defense)
+- User agent detection (tertiary defense)
+- CSRF token protection
+- Complete implementation examples
+- Testing strategies
+- Monitoring suspicious activity
+
+**Who should read this:** Backend developers, security engineers, anyone concerned about API access control
+
+**Key Point**: Prevents users from bypassing API key requirements by using curl/Postman with their JWT cookies. Uses `SameSite=Strict` cookies + origin validation as the primary defense.
+
 ## 🎯 Quick Start Guide
 
 ### For Project Managers
