@@ -11,6 +11,7 @@ import { createEmotionCache } from '@/utils/create-emotion-cache';
 
 import { AuthProvider } from '@/providers/AuthProvider';
 import { RbacProvider } from '@/context/RbacContext';
+import { ToastProvider } from '@/context/ToastContext';
 import '@/styles/globals.css';
 
 import { createContext, useEffect, useState, useMemo } from 'react';
@@ -74,11 +75,13 @@ export default function App(props: MyAppProps) {
       </Head>
       <QueryClientProvider client={queryClient}>
         <ThemeWrapper>
-          <AuthProvider>
-            <RbacProvider>
-              <Component {...pageProps} />
-            </RbacProvider>
-          </AuthProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <RbacProvider>
+                <Component {...pageProps} />
+              </RbacProvider>
+            </AuthProvider>
+          </ToastProvider>
         </ThemeWrapper>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
