@@ -4,6 +4,7 @@ import { CircularProgress, Box } from '@mui/material';
 import { useRouter } from 'next/router';
 import { checkRouteAccess } from '@/config/routes';
 import { apiPost } from '@/utils/api';
+import type { UserAuth, UserManagement, LoginResponse } from '@/types/api';
 
 interface AuthContextType {
   user: UserAuth | null;
@@ -20,34 +21,17 @@ interface AuthContextType {
   refreshAuth: () => Promise<boolean>;
 }
 
-export interface UserManagement {
-  UserId: string;
-  DisplayName: string;
-  Email: string;
-  role: string;
-  state: string;
-  direction: 'manager' | 'managed';
-  permissions: string[];
-  created?: string;
-  updated?: string;
-}
-
-export interface UserAuth {
-  UserId: string;
-  username: string;
-  email: string;
-  userRole: string;
-  roles: string[];
-  permissions: string[];
-  userManagements?: UserManagement[];
-}
+// Re-export types for backward compatibility
+export type { UserAuth, UserManagement };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserAuth | null>(null);
-  // Ref to preserve last valid user during refresh
-  const lastValidUser = useRef<UserAuth | null>(null);
+  // State to preserve last valid user during refresh (for display continuity)
+  const [lastValidUser, setLastValidUser] = useState<UserAuth | null>(null);
+  // Ref to prevent concurrent refresh calls
+  const refreshPromise = useRef<Promise<boolean> | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const authReady = !loading && !refreshing;
@@ -96,25 +80,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
         return;
       }
-      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      // Check if user data exists in localStorage (non-sensitive UI state)
       const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-      if (accessToken && userStr) {
+      if (userStr) {
         try {
           const user = normalizeUser(JSON.parse(userStr));
           setUser(user);
           setLoading(false);
           return;
-        } catch (e) {
-          // If parsing fails, clear invalid data and set user to null
-          localStorage.removeItem('accessToken');
+        } catch {
+          // If parsing fails, clear invalid data
           localStorage.removeItem('user');
           setUser(null);
           setLoading(false);
           return;
         }
       }
-      // If no token in localStorage, don't try to fetch from API
-      // The user is not authenticated, let the pages handle the redirect
+      // If no user data, the user is not authenticated
+      // Tokens are in HTTP-only cookies managed by the browser
       setUser(null);
       setLoading(false);
     }
@@ -123,60 +106,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
+      // Backend will clear the HTTP-only cookies
       await apiPost('public/Logout');
     } catch {}
     setUser(null);
-    localStorage.removeItem('accessToken');
+    // Only clear user profile, tokens are in HTTP-only cookies
     localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
     router.push('/login');
   };
 
   // Add refreshAuth function for token refresh
   // Prevent concurrent refreshAuth calls
-  let refreshPromise: Promise<boolean> | null = null;
   const refreshAuth = async () => {
-    if (refreshPromise) {
-      return refreshPromise;
+    if (refreshPromise.current) {
+      return refreshPromise.current;
     }
     setRefreshing(true);
     // Preserve last valid user before refresh
-    lastValidUser.current = user;
-    refreshPromise = (async () => {
+    setLastValidUser(user);
+    refreshPromise.current = (async () => {
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          setRefreshing(false);
-          refreshPromise = null;
-          return false;
-        }
-        const response = await apiPost('public/RefreshToken', { refreshToken });
-        if (response && response.accessToken && response.user) {
+        // Refresh token is in HTTP-only cookie, backend will read it
+        // No need to send it in the request body
+        const response = await apiPost('public/RefreshToken', {}) as LoginResponse;
+        if (response && response.user) {
           const newUser = normalizeUser(response.user);
-          localStorage.setItem('accessToken', response.accessToken);
-          localStorage.setItem('refreshToken', response.refreshToken);
+          // Backend sets new cookies with refreshed tokens
+          // We only store non-sensitive user profile for UI
           localStorage.setItem('user', JSON.stringify(newUser));
           setUser(newUser);
-          lastValidUser.current = newUser;
+          setLastValidUser(newUser);
           setRefreshing(false);
-          refreshPromise = null;
+          refreshPromise.current = null;
           return true;
         }
         setRefreshing(false);
-        refreshPromise = null;
+        refreshPromise.current = null;
         return false;
-      } catch (e) {
+      } catch {
         setUser(null);
-        lastValidUser.current = null;
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        setLastValidUser(null);
+        // Clear user profile, backend will clear cookies
         localStorage.removeItem('user');
         setRefreshing(false);
-        refreshPromise = null;
+        refreshPromise.current = null;
         return false;
       }
     })();
-    return refreshPromise;
+    return refreshPromise.current;
   };
 
   const canAccessRoute = (path: string) => {
@@ -186,7 +163,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Use last valid user during refresh
-  const effectiveUser = refreshing ? lastValidUser.current : user;
+  const effectiveUser = refreshing ? lastValidUser : user;
 
   // Show spinner only during initial auth check
   if (loading) {

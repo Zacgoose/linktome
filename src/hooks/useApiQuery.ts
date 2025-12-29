@@ -2,25 +2,56 @@ import { useRbacContext } from '@/context/RbacContext';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
+import type { ApiError } from '@/types/api';
+import { useToast } from '@/context/ToastContext';
 
 const API_BASE = '/api';
 
-// Helper to get access token from localStorage
-const getAccessToken = (): string | undefined => {
-  if (typeof window === 'undefined') return undefined;
-  return localStorage.getItem('accessToken') ?? undefined;
+// Configure axios to send cookies with all requests
+// Access tokens are now in HTTP-only cookies, not localStorage
+axios.defaults.withCredentials = true;
+
+// Helper to extract UserId from user object
+// Tokens are now in HTTP-only cookies (security improvement!)
+// We use the UserId from the user profile instead
+const getUserId = (user: any): string | undefined => {
+  return user?.UserId;
 };
 
-// Helper to extract UserId from JWT access token
-const getUserIdFromToken = (): string | undefined => {
-  const accessToken = getAccessToken();
-  if (!accessToken) return undefined;
-  try {
-    const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload.sub;
-  } catch {
-    return undefined;
+/**
+ * Check if an error is a request cancellation
+ */
+const isRequestCancelled = (error: unknown): boolean => {
+  if (axios.isAxiosError(error)) {
+    return axios.isCancel(error) || error.code === 'ERR_CANCELED' || error.message === 'canceled';
   }
+  if (error instanceof Error) {
+    return error.name === 'CanceledError' || error.message === 'canceled';
+  }
+  return false;
+};
+
+/**
+ * Extract error message from standardized API error response
+ * Following LinkToMe API Response Format specification
+ */
+const extractErrorMessage = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    // Try to extract error message from response body (standardized format)
+    const errorData = error.response?.data as ApiError | undefined;
+    if (errorData?.error) {
+      return errorData.error;
+    }
+    
+    // Fallback to status text or generic message
+    return error.response?.statusText || error.message || 'An error occurred';
+  }
+  
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  return 'An unknown error occurred';
 };
 
 // Helper to build merged params with context
@@ -29,17 +60,15 @@ const buildMergedParams = (
   selectedContext: string,
   user: any
 ): Record<string, any> => {
-  let contextKey: Record<string, string> | undefined = undefined;
+  const mergedParams = params ? { ...params } : {};
+  
+  // Add UserId to params when context is not 'user' and user has permission
   if (selectedContext !== 'user' && user) {
     if (user.userManagements?.find((um: { UserId: string; state: string }) => um.UserId === selectedContext && um.state === 'accepted')) {
-      contextKey = { UserId: selectedContext };
-    }
-  }
-
-  const mergedParams = params ? { ...params } : {};
-  if (contextKey) {
-    if (contextKey.UserId && !mergedParams.UserId) {
-      mergedParams.UserId = contextKey.UserId;
+      // Only add to params if not already present
+      if (!mergedParams.UserId) {
+        mergedParams.UserId = selectedContext;
+      }
     }
   }
 
@@ -62,11 +91,11 @@ const makeAuthenticatedRequest = async <TData,>(
     return new Promise<TData>(() => {});
   }
 
-  const executeRequest = async (token: string | undefined): Promise<TData> => {
+  const executeRequest = async (): Promise<TData> => {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    // Tokens are in HTTP-only cookies, browser automatically sends them
 
     const config: any = {
       headers,
@@ -74,48 +103,40 @@ const makeAuthenticatedRequest = async <TData,>(
       ...(options.params && { params: options.params }),
     };
 
-    const response = await axios[method]<TData | { error: string }>(
+    const response = await axios[method]<TData>(
       `${API_BASE}/${url}`,
       method === 'get' || method === 'delete' ? config : options.data,
       method === 'get' || method === 'delete' ? undefined : config
     );
 
-    const responseData = response.data;
-    if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
-      throw new Error(responseData.error);
-    }
-    return responseData as TData;
+    // API now uses HTTP status codes to indicate success/failure
+    // Success responses (2xx) contain data directly
+    // Error responses (4xx/5xx) contain { error: "message" }
+    return response.data;
   };
 
-  let token = getAccessToken();
-  
-  if (!token && authReady) {
-    const refreshed = await refreshAuth();
-    if (refreshed) {
-      token = getAccessToken();
-    }
-  }
-
   try {
-    return await executeRequest(token);
+    return await executeRequest();
   } catch (err: any) {
     if (axios.isAxiosError(err) && err.response?.status === 401 && authReady) {
+      // Try to refresh the token (cookies will be updated by the backend)
       const refreshed = await refreshAuth();
       if (refreshed) {
-        const retryToken = getAccessToken();
         try {
-          return await executeRequest(retryToken);
+          return await executeRequest();
         } catch (retryErr: any) {
           if (axios.isAxiosError(retryErr) && retryErr.response?.status === 401) {
-            throw new Error('Session expired');
+            const errorMessage = extractErrorMessage(retryErr);
+            throw new Error(errorMessage || 'Session expired');
           }
-          throw retryErr;
+          throw new Error(extractErrorMessage(retryErr));
         }
       } else {
         throw new Error('Session expired');
       }
     }
-    throw err;
+    // Extract and throw standardized error message
+    throw new Error(extractErrorMessage(err));
   }
 };
 
@@ -136,6 +157,7 @@ interface ApiGetCallProps {
 export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   const { selectedContext } = useRbacContext();
   const { refreshAuth, user, authReady } = useAuthContext();
+  const { showToast } = useToast();
   const {
     url,
     queryKey,
@@ -151,13 +173,23 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   const shouldEnable = enabled && authReady;
   const mergedParams = buildMergedParams(params, selectedContext, user);
 
-  const callingUserId = getUserIdFromToken();
+  const callingUserId = getUserId(user);
   const queryKeyArr: string[] = [queryKey];
   if (callingUserId) {
     queryKeyArr.push(`UserId:${callingUserId}`);
   }
-  if (Object.keys(mergedParams).length > 0) {
-    queryKeyArr.push(JSON.stringify(mergedParams));
+  if (selectedContext !== 'user' && selectedContext) {
+    queryKeyArr.push(`Context:${selectedContext}`);
+  }
+  
+  // Only add params to query key if there are additional params beyond UserId
+  // (Context already represents the UserId when using a context)
+  const paramsForKey = { ...mergedParams };
+  if (selectedContext !== 'user' && paramsForKey.UserId === selectedContext) {
+    delete paramsForKey.UserId;
+  }
+  if (Object.keys(paramsForKey).length > 0) {
+    queryKeyArr.push(JSON.stringify(paramsForKey));
   }
 
   const queryInfo = useQuery<TData, AxiosError>({
@@ -178,9 +210,14 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
         if (onSuccess) onSuccess(data);
         return data;
       } catch (err: any) {
-        if (onError) {
-          const errorMessage = err.message || 'An error occurred';
-          onError(errorMessage);
+        // Don't show toast for cancelled requests (user navigation/context switch)
+        if (!isRequestCancelled(err)) {
+          const errorMessage = extractErrorMessage(err);
+          // Auto-toast all errors (Option A)
+          showToast(errorMessage, 'error');
+          if (onError) {
+            onError(errorMessage);
+          }
         }
         throw err;
       }
@@ -191,13 +228,8 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     retry: false,
   });
 
-  if (queryInfo.error && onError && axios.isAxiosError(queryInfo.error)) {
-    const errorMessage =
-      (queryInfo.error.response?.data as { error?: string })?.error ||
-      queryInfo.error.message ||
-      'An error occurred';
-    onError(errorMessage);
-  }
+  // Handle errors from the query result
+  // Note: Cancelled requests are already handled in queryFn, no need to duplicate here
 
   return queryInfo;
 }
@@ -210,20 +242,33 @@ interface ApiMutationCallProps<TData = unknown> {
 }
 
 // Generic mutation hook factory
-function createMutationHook<TData = unknown, TVariables = Record<string, unknown>>(
-  method: 'post' | 'put' | 'delete'
-) {
-  return (props?: ApiMutationCallProps<TData>) => {
+function createMutationHook(method: 'post' | 'put' | 'delete') {
+  return function useApiMutation<TData = unknown, TVariables = Record<string, unknown>>(
+    props?: ApiMutationCallProps<TData>
+  ) {
     const queryClient = useQueryClient();
     const { selectedContext } = useRbacContext();
     const { refreshAuth, user, authReady } = useAuthContext();
+    const { showToast } = useToast();
     const { relatedQueryKeys, params, onSuccess, onError } = props || {};
-    const callingUserId = getUserIdFromToken();
+    const callingUserId = getUserId(user);
 
     const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
       const arr = [key];
       if (callingUserId) arr.push(`UserId:${callingUserId}`);
-      if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
+      if (selectedContext !== 'user' && selectedContext) arr.push(`Context:${selectedContext}`);
+      
+      // Only add params to query key if there are additional params beyond UserId
+      // (Context already represents the UserId when using a context)
+      if (params && Object.keys(params).length > 0) {
+        const paramsForKey = { ...params };
+        if (selectedContext !== 'user' && paramsForKey.UserId === selectedContext) {
+          delete paramsForKey.UserId;
+        }
+        if (Object.keys(paramsForKey).length > 0) {
+          arr.push(JSON.stringify(paramsForKey));
+        }
+      }
       return arr;
     };
 
@@ -249,11 +294,14 @@ function createMutationHook<TData = unknown, TVariables = Record<string, unknown
         }
       },
       onError: (error) => {
-        if (onError) {
-          const errorMessage = axios.isAxiosError(error)
-            ? (error.response?.data as { error?: string })?.error || error.message
-            : error.message;
-          onError(errorMessage);
+        // Don't show toast for cancelled requests (user navigation/context switch)
+        if (!isRequestCancelled(error)) {
+          const errorMessage = extractErrorMessage(error);
+          // Auto-toast all errors (Option A)
+          showToast(errorMessage, 'error');
+          if (onError) {
+            onError(errorMessage);
+          }
         }
       },
     });

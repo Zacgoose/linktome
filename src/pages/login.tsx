@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -14,21 +13,11 @@ import {
   Link as MuiLink
 } from '@mui/material';
 import { useApiPost } from '@/hooks/useApiQuery';
-import { useAuthContext, UserAuth } from '@/providers/AuthProvider';
+import { useAuthContext } from '@/providers/AuthProvider';
+import type { LoginResponse, UserAuth } from '@/types/api';
 
 
 export default function LoginPage() {
-  interface LoginResponse {
-    accessToken: string;
-    refreshToken?: string;
-    user: UserAuth;
-  }
-  interface SignupResponse {
-    accessToken?: string;
-    refreshToken?: string;
-    user: UserAuth;
-  }
-
   const router = useRouter();
   const { setUser } = useAuthContext();
   const isSignup = router.query.signup === 'true';
@@ -48,10 +37,9 @@ export default function LoginPage() {
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
-      if (data.accessToken && data.user) {
-        // Use AuthProvider's setUser and let AuthProvider handle token storage
-        localStorage.setItem('accessToken', data.accessToken);
-        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+      if (data.user) {
+        // Backend sets access and refresh tokens as HTTP-only cookies
+        // We only store non-sensitive user profile for UI state
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
@@ -63,18 +51,14 @@ export default function LoginPage() {
     },
   });
 
-  const signupMutation = useApiPost<SignupResponse>({
-    onSuccess: (data: SignupResponse) => {
-      if (data.accessToken && data.user) {
-        localStorage.setItem('accessToken', data.accessToken);
-        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+  const signupMutation = useApiPost<LoginResponse>({
+    onSuccess: (data: LoginResponse) => {
+      if (data.user) {
+        // Backend sets access and refresh tokens as HTTP-only cookies
+        // We only store non-sensitive user profile for UI state
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
-      } else {
-        setError('');
-        setPassword('');
-        alert(`Account created successfully! Welcome, ${data.user.username}. Please log in.`);
       }
     },
     onError: (error: string) => {
