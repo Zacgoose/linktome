@@ -6,10 +6,18 @@ This folder contains comprehensive documentation for implementing API access res
 
 The proposed architecture extends LinkToMe's existing Role-Based Access Control (RBAC) system with tier-based restrictions that control:
 
-- **API Rate Limits**: Hourly and daily request quotas per tier
+- **Direct API Access Limits**: Hourly and daily request quotas for programmatic/external API calls
+- **UI Access**: Web application access remains UNLIMITED for all users
 - **Feature Access**: Endpoint-level access control based on subscription level
 - **Resource Limits**: Maximum links, custom domains, analytics retention, etc.
 - **Usage Tracking**: Comprehensive API usage monitoring and analytics
+
+### Important Distinction
+
+**UI Access (Unlimited)**: Users accessing through the web application have NO rate limits
+**Direct API Access (Limited)**: Programmatic access via API keys is subject to tier-based rate limits
+
+This approach monetizes API integrations while keeping the web experience unrestricted.
 
 ## 📚 Documentation Files
 
@@ -69,6 +77,23 @@ The proposed architecture extends LinkToMe's existing Role-Based Access Control 
 - User usage dashboard mockup
 
 **Who should read this:** All team members for quick reference, especially useful for visual learners
+
+### [UI_VS_API_ACCESS.md](./UI_VS_API_ACCESS.md)
+**🆕 NEW - Distinguishing UI from Direct API Access** - How to detect and limit programmatic access only
+
+**Contents:**
+- Clarification of requirement: UI unlimited, direct API limited
+- API Key authentication system (recommended approach)
+- Database schema for API keys
+- Enhanced middleware for detecting access type
+- Frontend API key management UI
+- Rate limiting logic for API keys only
+- API documentation for users
+- Alternative detection strategies (origin, user-agent)
+
+**Who should read this:** Everyone - this is a critical design decision that affects the entire system
+
+**Key Point**: This approach ensures web app users have unlimited access while programmatic/integration users are subject to tier limits.
 
 ## 🎯 Quick Start Guide
 
