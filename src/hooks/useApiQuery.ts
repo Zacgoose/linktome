@@ -65,7 +65,6 @@ const makeAuthenticatedRequest = async <TData,>(
 
     const config: any = {
       headers,
-      withCredentials: true,
       ...(options.signal && { signal: options.signal }),
       ...(options.params && { params: options.params }),
     };

@@ -21,7 +21,6 @@ export const apiGet = async (endpoint: string, params?: Record<string, string | 
     const response = await axios.get(`${API_BASE}/${endpoint}`, {
       params,
       headers: buildHeaders(),
-      withCredentials: true,
     });
     return response.data;
   } catch (error) {
@@ -34,7 +33,6 @@ export const apiPost = async (endpoint: string, data?: Record<string, unknown>) 
   try {
     const response = await axios.post(`${API_BASE}/${endpoint}`, data, {
       headers: buildHeaders(),
-      withCredentials: true,
     });
     return response.data;
   } catch (error) {
@@ -47,7 +45,6 @@ export const apiPut = async (endpoint: string, data?: Record<string, unknown>) =
   try {
     const response = await axios.put(`${API_BASE}/${endpoint}`, data, {
       headers: buildHeaders(),
-      withCredentials: true,
     });
     return response.data;
   } catch (error) {
@@ -60,7 +57,6 @@ export const apiDelete = async (endpoint: string) => {
   try {
     const response = await axios.delete(`${API_BASE}/${endpoint}`, {
       headers: buildHeaders(),
-      withCredentials: true,
     });
     return response.data;
   } catch (error) {
