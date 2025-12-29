@@ -11,13 +11,11 @@ const API_BASE = '/api';
 // Access tokens are now in HTTP-only cookies, not localStorage
 axios.defaults.withCredentials = true;
 
-// Helper to extract UserId from JWT access token stored in HTTP-only cookie
-// Note: We cannot access the token directly anymore (security improvement!)
-// The backend must include UserId in the user profile response
-const getUserIdFromToken = (): string | undefined => {
-  // Tokens are now in HTTP-only cookies and cannot be accessed by JavaScript
-  // This is a security improvement! We'll rely on the user object from the API instead
-  return undefined;
+// Helper to extract UserId from user object
+// Tokens are now in HTTP-only cookies (security improvement!)
+// We use the UserId from the user profile instead
+const getUserId = (user: any): string | undefined => {
+  return user?.UserId;
 };
 
 /**
@@ -177,10 +175,13 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   const shouldEnable = enabled && authReady;
   const mergedParams = buildMergedParams(params, selectedContext, user);
 
-  const callingUserId = getUserIdFromToken();
+  const callingUserId = getUserId(user);
   const queryKeyArr: string[] = [queryKey];
   if (callingUserId) {
     queryKeyArr.push(`UserId:${callingUserId}`);
+  }
+  if (selectedContext !== 'user' && selectedContext) {
+    queryKeyArr.push(`Context:${selectedContext}`);
   }
   if (Object.keys(mergedParams).length > 0) {
     queryKeyArr.push(JSON.stringify(mergedParams));
@@ -245,11 +246,12 @@ function createMutationHook(method: 'post' | 'put' | 'delete') {
     const { refreshAuth, user, authReady } = useAuthContext();
     const { showToast } = useToast();
     const { relatedQueryKeys, params, onSuccess, onError } = props || {};
-    const callingUserId = getUserIdFromToken();
+    const callingUserId = getUserId(user);
 
     const buildRelatedQueryKey = (key: string, params?: Record<string, any>) => {
       const arr = [key];
       if (callingUserId) arr.push(`UserId:${callingUserId}`);
+      if (selectedContext !== 'user' && selectedContext) arr.push(`Context:${selectedContext}`);
       if (params && Object.keys(params).length > 0) arr.push(JSON.stringify(params));
       return arr;
     };
