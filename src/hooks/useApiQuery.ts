@@ -21,6 +21,19 @@ const getUserIdFromToken = (): string | undefined => {
 };
 
 /**
+ * Check if an error is a request cancellation
+ */
+const isRequestCancelled = (error: unknown): boolean => {
+  if (axios.isAxiosError(error)) {
+    return axios.isCancel(error) || error.code === 'ERR_CANCELED' || error.message === 'canceled';
+  }
+  if (error instanceof Error) {
+    return error.name === 'CanceledError' || error.message === 'canceled';
+  }
+  return false;
+};
+
+/**
  * Extract error message from standardized API error response
  * Following LinkToMe API Response Format specification
  */
@@ -191,11 +204,14 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
         if (onSuccess) onSuccess(data);
         return data;
       } catch (err: any) {
-        const errorMessage = extractErrorMessage(err);
-        // Auto-toast all errors (Option A)
-        showToast(errorMessage, 'error');
-        if (onError) {
-          onError(errorMessage);
+        // Don't show toast for cancelled requests (user navigation/context switch)
+        if (!isRequestCancelled(err)) {
+          const errorMessage = extractErrorMessage(err);
+          // Auto-toast all errors (Option A)
+          showToast(errorMessage, 'error');
+          if (onError) {
+            onError(errorMessage);
+          }
         }
         throw err;
       }
@@ -207,14 +223,7 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
   });
 
   // Handle errors from the query result
-  if (queryInfo.error) {
-    const errorMessage = extractErrorMessage(queryInfo.error);
-    // Auto-toast all errors (Option A)
-    showToast(errorMessage, 'error');
-    if (onError) {
-      onError(errorMessage);
-    }
-  }
+  // Note: Cancelled requests are already handled in queryFn, no need to duplicate here
 
   return queryInfo;
 }
@@ -267,11 +276,14 @@ function createMutationHook(method: 'post' | 'put' | 'delete') {
         }
       },
       onError: (error) => {
-        const errorMessage = extractErrorMessage(error);
-        // Auto-toast all errors (Option A)
-        showToast(errorMessage, 'error');
-        if (onError) {
-          onError(errorMessage);
+        // Don't show toast for cancelled requests (user navigation/context switch)
+        if (!isRequestCancelled(error)) {
+          const errorMessage = extractErrorMessage(error);
+          // Auto-toast all errors (Option A)
+          showToast(errorMessage, 'error');
+          if (onError) {
+            onError(errorMessage);
+          }
         }
       },
     });
