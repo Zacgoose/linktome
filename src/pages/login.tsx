@@ -19,13 +19,13 @@ import { useAuthContext, UserAuth } from '@/providers/AuthProvider';
 
 export default function LoginPage() {
   interface LoginResponse {
-    accessToken: string;
-    refreshToken?: string;
+    // Tokens are now set as HTTP-only cookies by the backend
+    // Only user profile is returned in response body
     user: UserAuth;
   }
   interface SignupResponse {
-    accessToken?: string;
-    refreshToken?: string;
+    // Tokens are now set as HTTP-only cookies by the backend
+    // Only user profile is returned in response body
     user: UserAuth;
   }
 
@@ -48,10 +48,9 @@ export default function LoginPage() {
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
-      if (data.accessToken && data.user) {
-        // Use AuthProvider's setUser and let AuthProvider handle token storage
-        localStorage.setItem('accessToken', data.accessToken);
-        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+      if (data.user) {
+        // Backend sets access and refresh tokens as HTTP-only cookies
+        // We only store non-sensitive user profile for UI state
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
@@ -65,17 +64,15 @@ export default function LoginPage() {
 
   const signupMutation = useApiPost<SignupResponse>({
     onSuccess: (data: SignupResponse) => {
-      if (data.accessToken && data.user) {
-        localStorage.setItem('accessToken', data.accessToken);
-        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+      if (data.user) {
+        // Backend sets access and refresh tokens as HTTP-only cookies
+        // We only store non-sensitive user profile for UI state
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
-      } else {
-        setError('');
-        setPassword('');
-        alert(`Account created successfully! Welcome, ${data.user.username}. Please log in.`);
       }
+      // If no user data is returned, signup succeeded but user needs to log in manually
+      // This case is handled by backend returning an appropriate message
     },
     onError: (error: string) => {
       setError(error);

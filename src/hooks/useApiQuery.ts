@@ -5,22 +5,17 @@ import axios, { AxiosError } from 'axios';
 
 const API_BASE = '/api';
 
-// Helper to get access token from localStorage
-const getAccessToken = (): string | undefined => {
-  if (typeof window === 'undefined') return undefined;
-  return localStorage.getItem('accessToken') ?? undefined;
-};
+// Configure axios to send cookies with all requests
+// Access tokens are now in HTTP-only cookies, not localStorage
+axios.defaults.withCredentials = true;
 
-// Helper to extract UserId from JWT access token
+// Helper to extract UserId from JWT access token stored in HTTP-only cookie
+// Note: We cannot access the token directly anymore (security improvement!)
+// The backend must include UserId in the user profile response
 const getUserIdFromToken = (): string | undefined => {
-  const accessToken = getAccessToken();
-  if (!accessToken) return undefined;
-  try {
-    const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload.sub;
-  } catch {
-    return undefined;
-  }
+  // Tokens are now in HTTP-only cookies and cannot be accessed by JavaScript
+  // This is a security improvement! We'll rely on the user object from the API instead
+  return undefined;
 };
 
 // Helper to build merged params with context
@@ -62,14 +57,15 @@ const makeAuthenticatedRequest = async <TData,>(
     return new Promise<TData>(() => {});
   }
 
-  const executeRequest = async (token: string | undefined): Promise<TData> => {
+  const executeRequest = async (): Promise<TData> => {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    // Tokens are in HTTP-only cookies, browser automatically sends them
 
     const config: any = {
       headers,
+      withCredentials: true,
       ...(options.signal && { signal: options.signal }),
       ...(options.params && { params: options.params }),
     };
@@ -87,24 +83,15 @@ const makeAuthenticatedRequest = async <TData,>(
     return responseData as TData;
   };
 
-  let token = getAccessToken();
-  
-  if (!token && authReady) {
-    const refreshed = await refreshAuth();
-    if (refreshed) {
-      token = getAccessToken();
-    }
-  }
-
   try {
-    return await executeRequest(token);
+    return await executeRequest();
   } catch (err: any) {
     if (axios.isAxiosError(err) && err.response?.status === 401 && authReady) {
+      // Try to refresh the token (cookies will be updated by the backend)
       const refreshed = await refreshAuth();
       if (refreshed) {
-        const retryToken = getAccessToken();
         try {
-          return await executeRequest(retryToken);
+          return await executeRequest();
         } catch (retryErr: any) {
           if (axios.isAxiosError(retryErr) && retryErr.response?.status === 401) {
             throw new Error('Session expired');
@@ -210,10 +197,10 @@ interface ApiMutationCallProps<TData = unknown> {
 }
 
 // Generic mutation hook factory
-function createMutationHook<TData = unknown, TVariables = Record<string, unknown>>(
-  method: 'post' | 'put' | 'delete'
-) {
-  return (props?: ApiMutationCallProps<TData>) => {
+function createMutationHook(method: 'post' | 'put' | 'delete') {
+  return function useApiMutation<TData = unknown, TVariables = Record<string, unknown>>(
+    props?: ApiMutationCallProps<TData>
+  ) {
     const queryClient = useQueryClient();
     const { selectedContext } = useRbacContext();
     const { refreshAuth, user, authReady } = useAuthContext();
