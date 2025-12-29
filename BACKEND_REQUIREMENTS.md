@@ -335,16 +335,12 @@ Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
 
 ## 5. Protected Endpoints - Reading Tokens
 
-All your protected endpoints need to read the access token from cookies instead of the Authorization header.
+All your protected endpoints need to read the access token from cookies.
 
-### Current Implementation (PowerShell - Azure Functions)
-```javascript
-// Example protected endpoint
-app.get('/api/protected/data', authenticateToken, async (req, res) => {
-  // Your route logic...
+### Previous Implementation (PowerShell - Azure Functions)
 ```powershell
 # Example protected endpoint
-# ❌ CURRENT: Read from Authorization header
+# ❌ OLD: Read from Authorization header
 $authHeader = $Request.Headers['Authorization']
 if ($authHeader -match 'Bearer (.+)') {
     $token = $Matches[1]
@@ -369,20 +365,12 @@ if (-not $user) {
 # Continue with protected logic...
 ```
 
-### Required Changes (PowerShell - Azure Functions)
+### ✅ Implemented (PowerShell - Azure Functions)
 ```powershell
-# ✅ NEW: Read from cookie (with Authorization header fallback)
+# ✅ CURRENT: Read from cookie only
 
-# Try cookie first (preferred)
+# Read access token from cookie
 $token = $Request.Cookies.accessToken
-
-# Fallback to Authorization header (for backward compatibility)
-if (-not $token) {
-    $authHeader = $Request.Headers['Authorization']
-    if ($authHeader -match 'Bearer (.+)') {
-        $token = $Matches[1]
-    }
-}
 
 if (-not $token) {
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
@@ -405,7 +393,7 @@ if (-not $user) {
 # Continue with protected logic...
 ```
 
-**Note**: The fallback to Authorization header is optional but recommended during migration. Once all clients are using cookies, you can remove the fallback.
+**Note**: ✅ Backend implementation complete - cookies only, no fallback to Authorization header.
 
 ---
 
@@ -480,8 +468,7 @@ Use this checklist to track your progress:
 - [ ] Clears `refreshToken` cookie (MaxAge: 0)
 
 ### Protected Endpoints
-- [ ] Authentication logic reads token from cookie first
-- [ ] Falls back to Authorization header (optional, for backward compatibility)
+- [ ] Authentication logic reads token from cookie
 - [ ] All protected routes use updated authentication logic
 
 ### Azure Configuration
