@@ -6,6 +6,15 @@ The frontend has been updated to use HTTP-only cookies for authentication tokens
 
 **Your task**: Update the backend API to set tokens as HTTP-only cookies instead of returning them in the response body.
 
+## Your Backend Setup (Azure Functions - PowerShell)
+
+✅ **Backend**: Azure Function App (PowerShell)  
+✅ **CORS**: Handled by Azure infrastructure (no manual configuration needed)  
+✅ **HTTPS**: Provided by Azure at `/api` subpath  
+✅ **Cookie Support**: Available through Azure Functions HTTP response binding
+
+**Note**: Since CORS is managed by Azure, you can skip the CORS configuration section. Focus on the endpoint changes to set and read cookies.
+
 ## Why This Change Is Important
 
 **Current Security Issue**: Tokens in localStorage can be stolen by any XSS attack
@@ -23,71 +32,99 @@ document.cookie; // HTTP-only cookies are NOT included here!
 
 ## Required Changes Overview
 
-You need to update **4 endpoints** and **1 configuration**:
+You need to update **4 endpoints** (~~and 1 configuration~~):
 
 1. ✏️ **Login Endpoint** - Set cookies, return only user profile
 2. ✏️ **Signup Endpoint** - Set cookies, return only user profile  
 3. ✏️ **Refresh Token Endpoint** - Read from cookie, set new cookies
 4. ✏️ **Logout Endpoint** - Clear cookies
-5. ⚙️ **CORS Configuration** - Enable credentials
+5. ~~⚙️ **CORS Configuration**~~ - ✅ Already handled by Azure infrastructure
 
 ---
 
 ## 1. Login Endpoint Changes
 
-### Current Implementation
-```javascript
-// POST /api/public/Login
-app.post('/api/public/Login', async (req, res) => {
-  const { email, password } = req.body;
-  
-  // Authenticate user...
-  const user = await authenticateUser(email, password);
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
-  
-  // ❌ CURRENT: Return tokens in response body
-  res.json({
-    accessToken: accessToken,
-    refreshToken: refreshToken,
-    user: user
-  });
-});
+### Current Implementation (PowerShell - Azure Functions)
+```powershell
+# POST /api/public/Login
+# Input: $Request.Body.email, $Request.Body.password
+
+# Authenticate user...
+$user = Authenticate-User -Email $Request.Body.email -Password $Request.Body.password
+$accessToken = New-AccessToken -User $user
+$refreshToken = New-RefreshToken -User $user
+
+# ❌ CURRENT: Return tokens in response body
+Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    StatusCode = [HttpStatusCode]::OK
+    Body = @{
+        accessToken = $accessToken
+        refreshToken = $refreshToken
+        user = $user
+    }
+})
 ```
 
-### Required Changes
-```javascript
-// POST /api/public/Login
-app.post('/api/public/Login', async (req, res) => {
-  const { email, password } = req.body;
-  
-  // Authenticate user...
-  const user = await authenticateUser(email, password);
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
-  
-  // ✅ NEW: Set tokens as HTTP-only cookies
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,           // ← Cannot be accessed by JavaScript
-    secure: true,             // ← Only sent over HTTPS (use false in dev)
-    sameSite: 'strict',       // ← CSRF protection
-    maxAge: 15 * 60 * 1000,  // ← 15 minutes in milliseconds
-    path: '/'                 // ← Available to all routes
-  });
-  
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,  // ← 7 days in milliseconds
-    path: '/api/public/RefreshToken'   // ← Only sent to refresh endpoint
-  });
-  
-  // ✅ Return only user profile (no tokens)
-  res.json({
-    user: user
-  });
-});
+### Required Changes (PowerShell - Azure Functions)
+```powershell
+# POST /api/public/Login
+# Input: $Request.Body.email, $Request.Body.password
+
+# Authenticate user...
+$user = Authenticate-User -Email $Request.Body.email -Password $Request.Body.password
+$accessToken = New-AccessToken -User $user
+$refreshToken = New-RefreshToken -User $user
+
+# ✅ NEW: Set tokens as HTTP-only cookies
+$cookies = @(
+    @{
+        Name = 'accessToken'
+        Value = $accessToken
+        HttpOnly = $true              # ← Cannot be accessed by JavaScript
+        Secure = $true                # ← HTTPS only (Azure provides this)
+        SameSite = 'Strict'           # ← CSRF protection
+        MaxAge = 900                  # ← 15 minutes in seconds
+        Path = '/'                    # ← Available to all routes
+    },
+    @{
+        Name = 'refreshToken'
+        Value = $refreshToken
+        HttpOnly = $true
+        Secure = $true
+        SameSite = 'Strict'
+        MaxAge = 604800               # ← 7 days in seconds
+        Path = '/api/public/RefreshToken'  # ← Only sent to refresh endpoint
+    }
+)
+
+# ✅ Return only user profile (no tokens)
+Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    StatusCode = [HttpStatusCode]::OK
+    Body = @{
+        user = $user
+    }
+    Cookies = $cookies
+})
+```
+
+### Alternative: Generic HTTP Response Format
+If your Azure Function uses a different response format, the key is to include Set-Cookie headers:
+
+```powershell
+# Generic approach using headers
+$response = @{
+    StatusCode = 200
+    Headers = @{
+        'Set-Cookie' = @(
+            "accessToken=$accessToken; HttpOnly; Secure; SameSite=Strict; Max-Age=900; Path=/"
+            "refreshToken=$refreshToken; HttpOnly; Secure; SameSite=Strict; Max-Age=604800; Path=/api/public/RefreshToken"
+        )
+        'Content-Type' = 'application/json'
+    }
+    Body = (@{ user = $user } | ConvertTo-Json)
+}
+
+Push-OutputBinding -Name Response -Value $response
 ```
 
 ### Cookie Attributes Explained
@@ -95,87 +132,65 @@ app.post('/api/public/Login', async (req, res) => {
 | Attribute | Value | Why It's Important |
 |-----------|-------|-------------------|
 | `httpOnly` | `true` | **CRITICAL**: Prevents JavaScript access. This is the main security benefit! |
-| `secure` | `true` | Ensures cookie only sent over HTTPS. Use `false` in local development, `true` in production. |
+| `secure` | `true` | Ensures cookie only sent over HTTPS. ✅ Azure provides HTTPS for `/api` |
 | `sameSite` | `'strict'` | Prevents CSRF attacks. Cookie only sent with requests from your domain. |
-| `maxAge` | milliseconds | How long cookie lasts. accessToken: 15 min, refreshToken: 7 days. |
-| `path` | `/` or specific path | Which endpoints receive this cookie. |
+| `maxAge` | seconds | How long cookie lasts. accessToken: 900s (15 min), refreshToken: 604800s (7 days). |
+| `path` | `/` or specific | Which endpoints receive this cookie. |
 
-### Development vs Production
+### Azure Functions - PowerShell Notes
 
-**Local Development** (HTTP):
-```javascript
-res.cookie('accessToken', accessToken, {
-  httpOnly: true,
-  secure: false,    // ← false for HTTP
-  sameSite: 'lax',  // ← lax for local testing (strict may cause issues)
-  maxAge: 15 * 60 * 1000,
-  path: '/'
-});
-```
+**MaxAge Format**: Azure Functions expects `MaxAge` in **seconds**, not milliseconds (unlike Node.js/Express).
+- accessToken: `900` (15 minutes)
+- refreshToken: `604800` (7 days)
 
-**Production** (HTTPS):
-```javascript
-res.cookie('accessToken', accessToken, {
-  httpOnly: true,
-  secure: true,     // ← true for HTTPS
-  sameSite: 'strict',
-  maxAge: 15 * 60 * 1000,
-  path: '/'
-});
-```
-
-**Recommended**: Use environment variable to switch:
-```javascript
-const isProduction = process.env.NODE_ENV === 'production';
-
-res.cookie('accessToken', accessToken, {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? 'strict' : 'lax',
-  maxAge: 15 * 60 * 1000,
-  path: '/'
-});
-```
+**Secure Flag**: Since Azure provides HTTPS for all `/api` requests, always use `Secure = $true` in production.
 
 ---
 
 ## 2. Signup Endpoint Changes
 
-### Required Changes
+### Required Changes (PowerShell - Azure Functions)
 Same as Login endpoint - set cookies instead of returning tokens:
 
-```javascript
-// POST /api/public/Signup
-app.post('/api/public/Signup', async (req, res) => {
-  const { email, username, password } = req.body;
-  
-  // Create user...
-  const user = await createUser(email, username, password);
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
-  
-  // ✅ Set tokens as HTTP-only cookies
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    maxAge: 15 * 60 * 1000,
-    path: '/'
-  });
-  
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/api/public/RefreshToken'
-  });
-  
-  // ✅ Return only user profile
-  res.json({
-    user: user
-  });
-});
+```powershell
+# POST /api/public/Signup
+# Input: $Request.Body.email, $Request.Body.username, $Request.Body.password
+
+# Create user...
+$user = New-User -Email $Request.Body.email -Username $Request.Body.username -Password $Request.Body.password
+$accessToken = New-AccessToken -User $user
+$refreshToken = New-RefreshToken -User $user
+
+# ✅ Set tokens as HTTP-only cookies
+$cookies = @(
+    @{
+        Name = 'accessToken'
+        Value = $accessToken
+        HttpOnly = $true
+        Secure = $true
+        SameSite = 'Strict'
+        MaxAge = 900
+        Path = '/'
+    },
+    @{
+        Name = 'refreshToken'
+        Value = $refreshToken
+        HttpOnly = $true
+        Secure = $true
+        SameSite = 'Strict'
+        MaxAge = 604800
+        Path = '/api/public/RefreshToken'
+    }
+)
+
+# ✅ Return only user profile
+Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    StatusCode = [HttpStatusCode]::OK
+    Body = @{
+        user = $user
+    }
+    Cookies = $cookies
+})
 ```
 
 ---
@@ -184,108 +199,136 @@ app.post('/api/public/Signup', async (req, res) => {
 
 This is the most important change - the endpoint must read the refresh token from cookies, not the request body.
 
-### Current Implementation
-```javascript
-// POST /api/public/RefreshToken
-app.post('/api/public/RefreshToken', async (req, res) => {
-  // ❌ CURRENT: Read from request body
-  const { refreshToken } = req.body;
-  
-  // Verify and generate new tokens...
-  const decoded = verifyRefreshToken(refreshToken);
-  const newAccessToken = generateAccessToken(decoded);
-  const newRefreshToken = generateRefreshToken(decoded);
-  
-  // ❌ CURRENT: Return in response body
-  res.json({
-    accessToken: newAccessToken,
-    refreshToken: newRefreshToken,
-    user: decoded.user
-  });
-});
+### Current Implementation (PowerShell - Azure Functions)
+```powershell
+# POST /api/public/RefreshToken
+# ❌ CURRENT: Read from request body
+$refreshToken = $Request.Body.refreshToken
+
+# Verify and generate new tokens...
+$decoded = Test-RefreshToken -Token $refreshToken
+$newAccessToken = New-AccessToken -User $decoded.user
+$newRefreshToken = New-RefreshToken -User $decoded.user
+
+# ❌ CURRENT: Return in response body
+Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    StatusCode = [HttpStatusCode]::OK
+    Body = @{
+        accessToken = $newAccessToken
+        refreshToken = $newRefreshToken
+        user = $decoded.user
+    }
+})
 ```
 
-### Required Changes
-```javascript
-// POST /api/public/RefreshToken
-app.post('/api/public/RefreshToken', async (req, res) => {
-  // ✅ NEW: Read from cookie
-  const refreshToken = req.cookies.refreshToken;
-  
-  if (!refreshToken) {
-    return res.status(401).json({ error: 'No refresh token provided' });
-  }
-  
-  try {
-    // Verify and generate new tokens...
-    const decoded = verifyRefreshToken(refreshToken);
-    const newAccessToken = generateAccessToken(decoded);
-    const newRefreshToken = generateRefreshToken(decoded);
+### Required Changes (PowerShell - Azure Functions)
+```powershell
+# POST /api/public/RefreshToken
+# ✅ NEW: Read from cookie
+$refreshToken = $Request.Cookies.refreshToken
+
+if (-not $refreshToken) {
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = [HttpStatusCode]::Unauthorized
+        Body = @{ error = 'No refresh token provided' }
+    })
+    return
+}
+
+try {
+    # Verify and generate new tokens...
+    $decoded = Test-RefreshToken -Token $refreshToken
+    $newAccessToken = New-AccessToken -User $decoded.user
+    $newRefreshToken = New-RefreshToken -User $decoded.user
     
-    // ✅ NEW: Set new tokens as cookies
-    res.cookie('accessToken', newAccessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 15 * 60 * 1000,
-      path: '/'
-    });
+    # ✅ NEW: Set new tokens as cookies
+    $cookies = @(
+        @{
+            Name = 'accessToken'
+            Value = $newAccessToken
+            HttpOnly = $true
+            Secure = $true
+            SameSite = 'Strict'
+            MaxAge = 900
+            Path = '/'
+        },
+        @{
+            Name = 'refreshToken'
+            Value = $newRefreshToken
+            HttpOnly = $true
+            Secure = $true
+            SameSite = 'Strict'
+            MaxAge = 604800
+            Path = '/api/public/RefreshToken'
+        }
+    )
     
-    res.cookie('refreshToken', newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/api/public/RefreshToken'
-    });
-    
-    // ✅ Return only user profile
-    res.json({
-      user: decoded.user
-    });
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid refresh token' });
-  }
-});
+    # ✅ Return only user profile
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = [HttpStatusCode]::OK
+        Body = @{
+            user = $decoded.user
+        }
+        Cookies = $cookies
+    })
+} catch {
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = [HttpStatusCode]::Unauthorized
+        Body = @{ error = 'Invalid refresh token' }
+    })
+}
 ```
 
-**Important**: Make sure your framework has cookie-parser middleware enabled:
-```javascript
-// Express.js example
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+### Reading Cookies in Azure Functions (PowerShell)
+
+Azure Functions provides cookies through `$Request.Cookies`:
+```powershell
+# Access cookie by name
+$accessToken = $Request.Cookies.accessToken
+$refreshToken = $Request.Cookies.refreshToken
+
+# Check if cookie exists
+if ($Request.Cookies.ContainsKey('accessToken')) {
+    # Cookie exists
 ```
 
 ---
 
 ## 4. Logout Endpoint Changes
 
-### Required Changes
-Clear both cookies by setting them with maxAge: 0:
+### Required Changes (PowerShell - Azure Functions)
+Clear both cookies by setting them with MaxAge: 0:
 
-```javascript
-// POST /api/public/Logout
-app.post('/api/public/Logout', async (req, res) => {
-  // ✅ Clear accessToken cookie
-  res.cookie('accessToken', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    maxAge: 0,
-    path: '/'
-  });
-  
-  // ✅ Clear refreshToken cookie
-  res.cookie('refreshToken', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    maxAge: 0,
-    path: '/api/public/RefreshToken'
-  });
-  
-  res.json({ message: 'Logged out successfully' });
-});
+```powershell
+# POST /api/public/Logout
+
+# ✅ Clear both cookies
+$cookies = @(
+    @{
+        Name = 'accessToken'
+        Value = ''
+        HttpOnly = $true
+        Secure = $true
+        SameSite = 'Strict'
+        MaxAge = 0
+        Path = '/'
+    },
+    @{
+        Name = 'refreshToken'
+        Value = ''
+        HttpOnly = $true
+        Secure = $true
+        SameSite = 'Strict'
+        MaxAge = 0
+        Path = '/api/public/RefreshToken'
+    }
+)
+
+Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    StatusCode = [HttpStatusCode]::OK
+    Body = @{ message = 'Logged out successfully' }
+    Cookies = $cookies
+})
 ```
 
 ---
@@ -294,119 +337,119 @@ app.post('/api/public/Logout', async (req, res) => {
 
 All your protected endpoints need to read the access token from cookies instead of the Authorization header.
 
-### Current Implementation
+### Current Implementation (PowerShell - Azure Functions)
 ```javascript
 // Example protected endpoint
 app.get('/api/protected/data', authenticateToken, async (req, res) => {
   // Your route logic...
-});
-
-// ❌ CURRENT: Middleware reads from Authorization header
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // "Bearer TOKEN"
-  
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-  
-  // Verify token...
-  jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid token' });
-    req.user = user;
-    next();
-  });
+```powershell
+# Example protected endpoint
+# ❌ CURRENT: Read from Authorization header
+$authHeader = $Request.Headers['Authorization']
+if ($authHeader -match 'Bearer (.+)') {
+    $token = $Matches[1]
+} else {
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = [HttpStatusCode]::Unauthorized
+        Body = @{ error = 'No token provided' }
+    })
+    return
 }
+
+# Verify token...
+$user = Test-AccessToken -Token $token
+if (-not $user) {
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = [HttpStatusCode]::Forbidden
+        Body = @{ error = 'Invalid token' }
+    })
+    return
+}
+
+# Continue with protected logic...
 ```
 
-### Required Changes
-```javascript
-// ✅ NEW: Middleware reads from cookie (with Authorization header fallback)
-function authenticateToken(req, res, next) {
-  // Try cookie first (preferred)
-  let token = req.cookies.accessToken;
-  
-  // Fallback to Authorization header (for backward compatibility)
-  if (!token) {
-    const authHeader = req.headers['authorization'];
-    token = authHeader && authHeader.split(' ')[1];
-  }
-  
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-  
-  // Verify token...
-  jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid token' });
-    req.user = user;
-    next();
-  });
+### Required Changes (PowerShell - Azure Functions)
+```powershell
+# ✅ NEW: Read from cookie (with Authorization header fallback)
+
+# Try cookie first (preferred)
+$token = $Request.Cookies.accessToken
+
+# Fallback to Authorization header (for backward compatibility)
+if (-not $token) {
+    $authHeader = $Request.Headers['Authorization']
+    if ($authHeader -match 'Bearer (.+)') {
+        $token = $Matches[1]
+    }
 }
+
+if (-not $token) {
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = [HttpStatusCode]::Unauthorized
+        Body = @{ error = 'No token provided' }
+    })
+    return
+}
+
+# Verify token...
+$user = Test-AccessToken -Token $token
+if (-not $user) {
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = [HttpStatusCode]::Forbidden
+        Body = @{ error = 'Invalid token' }
+    })
+    return
+}
+
+# Continue with protected logic...
 ```
 
 **Note**: The fallback to Authorization header is optional but recommended during migration. Once all clients are using cookies, you can remove the fallback.
 
 ---
 
-## 6. CORS Configuration (CRITICAL!)
+## 6. CORS Configuration
 
-When using cookies with `withCredentials: true`, CORS must be configured correctly or requests will fail.
+### ✅ CORS Handled by Azure
 
-### Current Configuration (Won't Work)
-```javascript
-// ❌ This will NOT work with cookies
-app.use(cors({
-  origin: '*',  // ← Wildcards don't work with credentials!
-  credentials: false
-}));
+**Good news!** Since your API is running as an Azure Function App, CORS is managed by Azure infrastructure. You don't need to configure CORS manually in your code.
+
+### Azure Functions CORS Settings
+
+CORS is configured in the Azure Portal or via Azure CLI:
+
+**Azure Portal:**
+1. Go to your Function App
+2. Navigate to **Settings** → **CORS**
+3. Add allowed origins (your frontend URL)
+4. Enable **Access-Control-Allow-Credentials**: This should be enabled by default for cookie support
+
+**Example CORS configuration in Azure:**
+- Allowed Origins: `https://your-frontend-domain.com`
+- Access-Control-Allow-Credentials: ✅ Enabled
+- Access-Control-Max-Age: 86400 (optional)
+
+### Verify CORS is Working
+
+After deploying your changes, test that cookies work:
+```bash
+# Test from your frontend domain
+curl -X POST https://your-function-app.azurewebsites.net/api/public/Login \
+  -H "Origin: https://your-frontend-domain.com" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password"}' \
+  -v
 ```
 
-### Required Configuration
-```javascript
-// ✅ Correct CORS configuration for cookies
-app.use(cors({
-  origin: 'https://your-frontend-domain.com',  // ← Must be specific!
-  credentials: true  // ← REQUIRED for cookies
-}));
-```
+Look for these headers in the response:
+- `Access-Control-Allow-Origin: https://your-frontend-domain.com`
+- `Access-Control-Allow-Credentials: true`
+- `Set-Cookie: accessToken=...`
 
-### Multiple Origins (if needed)
-```javascript
-const allowedOrigins = [
-  'https://your-frontend-domain.com',
-  'https://www.your-frontend-domain.com',
-  'http://localhost:3000'  // For local development
-];
+### No Code Changes Needed
 
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('Not allowed by CORS'), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true
-}));
-```
-
-### Why This Is Required
-
-| Setting | Value | Why |
-|---------|-------|-----|
-| `origin` | Specific URL | Cannot use `*` with `credentials: true`. Browser security requirement. |
-| `credentials` | `true` | Tells browser to include cookies in cross-origin requests. |
-
-**Common Error**: If you see this error in browser console, CORS is misconfigured:
-```
-Access to XMLHttpRequest at 'http://api.example.com/api/public/Login' from origin 
-'http://localhost:3000' has been blocked by CORS policy: The value of the 
-'Access-Control-Allow-Origin' header in the response must not be the wildcard '*' 
-when the request's credentials mode is 'include'.
-```
+Since Azure handles CORS configuration, **you don't need to add any CORS code** to your PowerShell functions. Just ensure the Azure CORS settings are configured correctly in the portal.
 
 ---
 
@@ -414,51 +457,45 @@ when the request's credentials mode is 'include'.
 
 Use this checklist to track your progress:
 
-### Login/Signup Endpoints
-- [ ] Login endpoint sets `accessToken` cookie (httpOnly: true)
-- [ ] Login endpoint sets `refreshToken` cookie (httpOnly: true)
+### Login/Signup Endpoints (PowerShell - Azure Functions)
+- [ ] Login endpoint sets `accessToken` cookie (HttpOnly: true, Secure: true)
+- [ ] Login endpoint sets `refreshToken` cookie (HttpOnly: true, Secure: true)
 - [ ] Login returns only user profile (no tokens in body)
-- [ ] Signup endpoint sets `accessToken` cookie (httpOnly: true)
-- [ ] Signup endpoint sets `refreshToken` cookie (httpOnly: true)
+- [ ] Signup endpoint sets `accessToken` cookie (HttpOnly: true, Secure: true)
+- [ ] Signup endpoint sets `refreshToken` cookie (HttpOnly: true, Secure: true)
 - [ ] Signup returns only user profile (no tokens in body)
-- [ ] Cookie `secure` attribute based on environment (dev/prod)
-- [ ] Cookie `sameSite` attribute set to 'strict' (or 'lax' in dev)
-- [ ] Cookie `maxAge` set correctly (15 min for access, 7 days for refresh)
-- [ ] Cookie `path` set correctly ('/' for access, '/api/public/RefreshToken' for refresh)
+- [ ] Cookie `MaxAge` set correctly (900 seconds for access, 604800 for refresh)
+- [ ] Cookie `Path` set correctly ('/' for access, '/api/public/RefreshToken' for refresh)
+- [ ] Cookie `SameSite` set to 'Strict'
 
 ### Refresh Token Endpoint
-- [ ] Reads `refreshToken` from `req.cookies.refreshToken`
+- [ ] Reads `refreshToken` from `$Request.Cookies.refreshToken`
 - [ ] Returns 401 if no refresh token in cookie
 - [ ] Sets new `accessToken` cookie
 - [ ] Sets new `refreshToken` cookie
 - [ ] Returns only user profile (no tokens in body)
 
 ### Logout Endpoint
-- [ ] Clears `accessToken` cookie (maxAge: 0)
-- [ ] Clears `refreshToken` cookie (maxAge: 0)
+- [ ] Clears `accessToken` cookie (MaxAge: 0)
+- [ ] Clears `refreshToken` cookie (MaxAge: 0)
 
 ### Protected Endpoints
-- [ ] Authentication middleware reads token from cookie first
+- [ ] Authentication logic reads token from cookie first
 - [ ] Falls back to Authorization header (optional, for backward compatibility)
-- [ ] All protected routes use updated middleware
+- [ ] All protected routes use updated authentication logic
 
-### CORS Configuration
-- [ ] `origin` set to specific domain (not '*')
-- [ ] `credentials` set to `true`
-- [ ] Handles multiple origins if needed (dev + prod)
-- [ ] Tested OPTIONS preflight requests work
-
-### Cookie Parser Middleware
-- [ ] Cookie parser middleware installed and enabled
-- [ ] Placed before route handlers
+### Azure Configuration
+- [ ] ✅ CORS configured in Azure Portal (Allowed Origins + Credentials enabled)
+- [ ] ✅ HTTPS provided by Azure for `/api` subpath (automatic)
 
 ---
 
 ## Testing Your Changes
 
-### 1. Test Login Sets Cookies
+### 1. Test Login Sets Cookies (Azure Functions)
 ```bash
-curl -X POST http://localhost:YOUR_PORT/api/public/Login \
+# Replace with your Azure Function App URL
+curl -X POST https://your-function-app.azurewebsites.net/api/public/Login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}' \
   -c cookies.txt \
@@ -467,13 +504,13 @@ curl -X POST http://localhost:YOUR_PORT/api/public/Login \
 
 **Expected**: Look for `Set-Cookie` headers in response:
 ```
-< Set-Cookie: accessToken=eyJhbG...; Path=/; HttpOnly; SameSite=Lax
-< Set-Cookie: refreshToken=eyJhbG...; Path=/api/public/RefreshToken; HttpOnly; SameSite=Lax
+< Set-Cookie: accessToken=eyJhbG...; Path=/; HttpOnly; Secure; SameSite=Strict
+< Set-Cookie: refreshToken=eyJhbG...; Path=/api/public/RefreshToken; HttpOnly; Secure; SameSite=Strict
 ```
 
 ### 2. Test Protected Endpoint with Cookie
 ```bash
-curl -X GET http://localhost:YOUR_PORT/api/protected/data \
+curl -X GET https://your-function-app.azurewebsites.net/api/protected/data \
   -b cookies.txt \
   -v
 ```
@@ -482,7 +519,7 @@ curl -X GET http://localhost:YOUR_PORT/api/protected/data \
 
 ### 3. Test Refresh Token
 ```bash
-curl -X POST http://localhost:YOUR_PORT/api/public/RefreshToken \
+curl -X POST https://your-function-app.azurewebsites.net/api/public/RefreshToken \
   -b cookies.txt \
   -c cookies_new.txt \
   -v
@@ -492,51 +529,47 @@ curl -X POST http://localhost:YOUR_PORT/api/public/RefreshToken \
 
 ### 4. Test Logout
 ```bash
-curl -X POST http://localhost:YOUR_PORT/api/public/Logout \
+curl -X POST https://your-function-app.azurewebsites.net/api/public/Logout \
   -b cookies.txt \
   -c cookies_after_logout.txt \
   -v
 ```
 
-**Expected**: Cookie values are empty or maxAge=0
+**Expected**: Cookie values are empty or MaxAge=0
 
-### 5. Test CORS with Frontend
+### 5. Test with Frontend Browser
 Open browser DevTools → Network tab and verify:
 - Response includes `Access-Control-Allow-Origin: https://your-domain.com`
 - Response includes `Access-Control-Allow-Credentials: true`
 - Cookies are visible in Application → Cookies
 - `HttpOnly` checkbox is checked
+- `Secure` checkbox is checked
 
 ---
 
-## Common Issues & Solutions
+## Common Issues & Solutions (Azure Functions)
 
 ### Issue 1: Cookies Not Being Set
 **Symptoms**: Login succeeds but no cookies in browser
 
 **Possible Causes**:
-1. Cookie parser middleware not installed/configured
-2. CORS `credentials` not set to `true`
-3. Frontend not sending `withCredentials: true` (already done)
+1. Cookie response format incorrect in PowerShell
+2. CORS credentials not enabled in Azure Portal
+3. Frontend not sending `withCredentials: true` (already done on frontend)
 
 **Solution**:
-```javascript
-// Install cookie-parser
-npm install cookie-parser
-
-// Add to your app
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
-```
+- Check cookie format matches Azure Functions requirements (see examples above)
+- Verify CORS settings in Azure Portal have credentials enabled
+- Ensure using `HttpResponseContext` with `Cookies` property
 
 ### Issue 2: CORS Error
 **Symptoms**: Browser console shows CORS error, requests fail
 
 **Solution**:
-```javascript
-// Make sure origin is specific, not '*'
-app.use(cors({
-  origin: 'http://localhost:3000',  // Your frontend URL
+- Go to Azure Portal → Your Function App → Settings → CORS
+- Add your frontend domain (e.g., `https://your-frontend.com`)
+- Remove `*` if present (doesn't work with credentials)
+- Ensure "Enable Access-Control-Allow-Credentials" is checked
   credentials: true
 }));
 ```
@@ -545,65 +578,44 @@ app.use(cors({
 **Symptoms**: Protected endpoints return 401 even after login
 
 **Possible Causes**:
-1. Domain mismatch (cookie domain doesn't match request domain)
-2. Path mismatch (cookie path doesn't include request path)
-3. `secure: true` on HTTP connection (use `false` in dev)
+1. Path mismatch (cookie path doesn't include request path)
+2. Cookie not being read correctly from `$Request.Cookies`
 
 **Solution**:
-```javascript
-// Development configuration
-res.cookie('accessToken', token, {
-  httpOnly: true,
-  secure: false,  // ← Must be false for HTTP
-  sameSite: 'lax',
-  maxAge: 15 * 60 * 1000,
-  path: '/'
-});
-```
+- Verify cookie `Path` is set correctly (`/` for accessToken, `/api/public/RefreshToken` for refreshToken)
+- Check PowerShell is reading cookies: `$Request.Cookies.accessToken`
+- Test with curl and `-v` flag to see cookies being sent
 
 ### Issue 4: Refresh Token Cookie Not Received
 **Symptoms**: Refresh endpoint says "No refresh token provided"
 
-**Solution**: Check the `path` attribute matches:
-```javascript
-// When setting cookie
-res.cookie('refreshToken', token, {
-  // ...
-  path: '/api/public/RefreshToken'  // ← Must match endpoint path
-});
+**Solution**: Check the `Path` attribute matches:
+```powershell
+# When setting cookie in Login
+Path = '/api/public/RefreshToken'  # ← Must match refresh endpoint path
 
-// Endpoint path must match
-app.post('/api/public/RefreshToken', ...)  // ← Same path
+# Refresh endpoint must be at this exact path
+# POST /api/public/RefreshToken
 ```
 
 ---
 
-## Questions for You (Backend Engineer)
+## Questions Answered (Your Backend Setup)
 
-Please answer these to help with implementation:
+Based on your comment, here's what we know:
 
-1. **What backend framework/language are you using?**
-   - Express.js (Node.js)
-   - ASP.NET Core (C#)
-   - Django/Flask (Python)
-   - Spring Boot (Java)
-   - Other: _________
+1. **Backend framework/language**: ✅ Azure Function App (PowerShell)
+2. **Token generation**: (Please confirm - JWT, custom, etc.)
+3. **API hosting**: ✅ Azure Functions at `/api` subpath
+4. **HTTPS**: ✅ Provided by Azure
+5. **CORS**: ✅ Handled by Azure infrastructure
 
-2. **What's your current token generation method?**
-   - JWT (jsonwebtoken)
-   - Custom token system
-   - Third-party auth service
+### Additional Questions
 
-3. **Where is your API hosted?**
-   - Same domain as frontend (e.g., example.com/api)
-   - Subdomain (e.g., api.example.com)
-   - Different domain (e.g., api-service.com)
-
-4. **Do you have HTTPS in production?**
-   - Yes (set `secure: true`)
-   - No (set `secure: false`, but recommend adding HTTPS)
-
-5. **Any questions or concerns about these changes?**
+If you have any questions about the implementation:
+- What token generation library are you using in PowerShell?
+- Do you have existing helper functions for token verification?
+- Any concerns about the PowerShell code examples provided?
 
 ---
 
@@ -611,24 +623,27 @@ Please answer these to help with implementation:
 
 If you have questions while implementing:
 
-1. Check `SECURITY_COOKIE_AUTH.md` for more details
+1. Check `SECURITY_COOKIE_AUTH.md` for more technical details
 2. Check `COOKIE_VS_LOCALSTORAGE.md` for security background
-3. Ask me any questions - I can provide framework-specific examples
+3. Ask if you need more PowerShell-specific examples
+4. The Azure Functions PowerShell documentation: https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference-powershell
 
 ---
 
-## Summary
+## Summary (Azure Functions - PowerShell)
 
 **What you need to do:**
-1. ✏️ Update Login to set cookies
-2. ✏️ Update Signup to set cookies
-3. ✏️ Update Refresh to read and set cookies
-4. ✏️ Update Logout to clear cookies
-5. ✏️ Update protected endpoints to read from cookies
-6. ⚙️ Update CORS to enable credentials
+1. ✏️ Update Login endpoint to set cookies (PowerShell)
+2. ✏️ Update Signup endpoint to set cookies (PowerShell)
+3. ✏️ Update Refresh endpoint to read and set cookies (PowerShell)
+4. ✏️ Update Logout endpoint to clear cookies (PowerShell)
+5. ✏️ Update protected endpoints to read from cookies (PowerShell)
+6. ~~⚙️ Update CORS~~ → ✅ Already handled by Azure
 
 **Security benefit**: Tokens cannot be stolen by XSS attacks
 
 **Frontend status**: ✅ Already updated and ready
 
-**Your turn**: Implement the 6 changes above and test!
+**Azure benefits**: CORS and HTTPS handled automatically
+
+**Your turn**: Implement the 5 PowerShell changes above and test!
