@@ -2,6 +2,7 @@ import { useRbacContext } from '@/context/RbacContext';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
+import type { ApiError } from '@/types/api';
 
 const API_BASE = '/api';
 
@@ -16,6 +17,29 @@ const getUserIdFromToken = (): string | undefined => {
   // Tokens are now in HTTP-only cookies and cannot be accessed by JavaScript
   // This is a security improvement! We'll rely on the user object from the API instead
   return undefined;
+};
+
+/**
+ * Extract error message from standardized API error response
+ * Following LinkToMe API Response Format specification
+ */
+const extractErrorMessage = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    // Try to extract error message from response body (standardized format)
+    const errorData = error.response?.data as ApiError | undefined;
+    if (errorData?.error) {
+      return errorData.error;
+    }
+    
+    // Fallback to status text or generic message
+    return error.response?.statusText || error.message || 'An error occurred';
+  }
+  
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  return 'An unknown error occurred';
 };
 
 // Helper to build merged params with context
@@ -69,17 +93,16 @@ const makeAuthenticatedRequest = async <TData,>(
       ...(options.params && { params: options.params }),
     };
 
-    const response = await axios[method]<TData | { error: string }>(
+    const response = await axios[method]<TData>(
       `${API_BASE}/${url}`,
       method === 'get' || method === 'delete' ? config : options.data,
       method === 'get' || method === 'delete' ? undefined : config
     );
 
-    const responseData = response.data;
-    if (typeof responseData === 'object' && responseData !== null && 'error' in responseData) {
-      throw new Error(responseData.error);
-    }
-    return responseData as TData;
+    // API now uses HTTP status codes to indicate success/failure
+    // Success responses (2xx) contain data directly
+    // Error responses (4xx/5xx) contain { error: "message" }
+    return response.data;
   };
 
   try {
@@ -93,15 +116,17 @@ const makeAuthenticatedRequest = async <TData,>(
           return await executeRequest();
         } catch (retryErr: any) {
           if (axios.isAxiosError(retryErr) && retryErr.response?.status === 401) {
-            throw new Error('Session expired');
+            const errorMessage = extractErrorMessage(retryErr);
+            throw new Error(errorMessage || 'Session expired');
           }
-          throw retryErr;
+          throw new Error(extractErrorMessage(retryErr));
         }
       } else {
         throw new Error('Session expired');
       }
     }
-    throw err;
+    // Extract and throw standardized error message
+    throw new Error(extractErrorMessage(err));
   }
 };
 
@@ -165,7 +190,7 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
         return data;
       } catch (err: any) {
         if (onError) {
-          const errorMessage = err.message || 'An error occurred';
+          const errorMessage = extractErrorMessage(err);
           onError(errorMessage);
         }
         throw err;
@@ -177,11 +202,9 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     retry: false,
   });
 
-  if (queryInfo.error && onError && axios.isAxiosError(queryInfo.error)) {
-    const errorMessage =
-      (queryInfo.error.response?.data as { error?: string })?.error ||
-      queryInfo.error.message ||
-      'An error occurred';
+  // Handle errors from the query result
+  if (queryInfo.error && onError) {
+    const errorMessage = extractErrorMessage(queryInfo.error);
     onError(errorMessage);
   }
 
@@ -236,9 +259,7 @@ function createMutationHook(method: 'post' | 'put' | 'delete') {
       },
       onError: (error) => {
         if (onError) {
-          const errorMessage = axios.isAxiosError(error)
-            ? (error.response?.data as { error?: string })?.error || error.message
-            : error.message;
+          const errorMessage = extractErrorMessage(error);
           onError(errorMessage);
         }
       },

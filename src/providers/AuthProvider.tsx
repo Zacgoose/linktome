@@ -4,6 +4,7 @@ import { CircularProgress, Box } from '@mui/material';
 import { useRouter } from 'next/router';
 import { checkRouteAccess } from '@/config/routes';
 import { apiPost } from '@/utils/api';
+import type { UserAuth, UserManagement, LoginResponse } from '@/types/api';
 
 interface AuthContextType {
   user: UserAuth | null;
@@ -20,27 +21,8 @@ interface AuthContextType {
   refreshAuth: () => Promise<boolean>;
 }
 
-export interface UserManagement {
-  UserId: string;
-  DisplayName: string;
-  Email: string;
-  role: string;
-  state: string;
-  direction: 'manager' | 'managed';
-  permissions: string[];
-  created?: string;
-  updated?: string;
-}
-
-export interface UserAuth {
-  UserId: string;
-  username: string;
-  email: string;
-  userRole: string;
-  roles: string[];
-  permissions: string[];
-  userManagements?: UserManagement[];
-}
+// Re-export types for backward compatibility
+export type { UserAuth, UserManagement };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -146,7 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         // Refresh token is in HTTP-only cookie, backend will read it
         // No need to send it in the request body
-        const response = await apiPost('public/RefreshToken', {});
+        const response = await apiPost('public/RefreshToken', {}) as LoginResponse;
         if (response && response.user) {
           const newUser = normalizeUser(response.user);
           // Backend sets new cookies with refreshed tokens
