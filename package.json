@@ -8,7 +8,7 @@
     "start": "next start",
     "export": "next export",
     "lint": "eslint",
-    "start-swa": "swa start --swa-config-location .vscode http://127.0.0.1:3000 --api-location http://127.0.0.1:7071 --verbose=silly"
+    "start-swa": "swa start --host 0.0.0.0 --swa-config-location .vscode http://127.0.0.1:3000 --api-location http://127.0.0.1:7071 --verbose=silly"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
