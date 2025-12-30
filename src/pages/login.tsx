@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
@@ -10,36 +10,43 @@ import {
   Button,
   Typography,
   Alert,
-  Link as MuiLink
+  Link as MuiLink,
+  CircularProgress
 } from '@mui/material';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { useApiPost } from '@/hooks/useApiQuery';
 import { useAuthContext } from '@/providers/AuthProvider';
-import type { LoginResponse, UserAuth } from '@/types/api';
+import type { LoginResponse } from '@/types/api';
 
+// Use test key in development, real key in production
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
 
 export default function LoginPage() {
   const router = useRouter();
   const { setUser } = useAuthContext();
   const isSignup = router.query.signup === 'true';
+  const derivedMode: 'login' | 'signup' = isSignup ? 'signup' : 'login';
 
-    // Remove mode state, use derivedMode everywhere
   const [email, setEmail] = useState<string>('');
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
+  
+  // Turnstile state
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileStatus, setTurnstileStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
-  // Show session expired message if redirected
   const sessionExpired = router.query.session === 'expired';
 
-  // Remove setMode from useEffect to avoid cascading renders
-  // Instead, derive mode directly from router.query.signup
-  const derivedMode: 'login' | 'signup' = isSignup ? 'signup' : 'login';
+  const resetTurnstile = () => {
+    setTurnstileToken(null);
+    turnstileRef.current?.reset();
+  };
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
       if (data.user) {
-        // Backend sets access and refresh tokens as HTTP-only cookies
-        // We only store non-sensitive user profile for UI state
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
@@ -47,6 +54,7 @@ export default function LoginPage() {
     },
     onError: (error: string) => {
       setError(error);
+      resetTurnstile(); // Reset on failure so user can retry
       setTimeout(() => setError(''), 5000);
     },
   });
@@ -54,8 +62,6 @@ export default function LoginPage() {
   const signupMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
       if (data.user) {
-        // Backend sets access and refresh tokens as HTTP-only cookies
-        // We only store non-sensitive user profile for UI state
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
@@ -63,6 +69,7 @@ export default function LoginPage() {
     },
     onError: (error: string) => {
       setError(error);
+      resetTurnstile();
       setTimeout(() => setError(''), 5000);
     },
   });
@@ -70,25 +77,32 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
-      if (derivedMode === 'login') {
+    
+    if (!turnstileToken) {
+      setError('Please complete the security verification');
+      return;
+    }
+
+    if (derivedMode === 'login') {
       loginMutation.mutate({
         url: 'public/Login',
-        data: { email, password },
+        data: { email, password, turnstileToken },
       });
     } else {
       signupMutation.mutate({
         url: 'public/Signup',
-        data: { email, username, password },
+        data: { email, username, password, turnstileToken },
       });
     }
   };
 
   const loading = loginMutation.isPending || signupMutation.isPending;
+  const canSubmit = turnstileToken && !loading && turnstileStatus === 'ready';
 
   return (
     <>
       <Head>
-          <title>{derivedMode === 'login' ? 'Login' : 'Sign Up'} - LinkToMe</title>
+        <title>{derivedMode === 'login' ? 'Login' : 'Sign Up'} - LinkToMe</title>
       </Head>
       <Box
         sx={{
@@ -102,7 +116,7 @@ export default function LoginPage() {
           <Card elevation={4}>
             <CardContent sx={{ p: 5 }}>
               <Typography variant="h4" align="center" gutterBottom fontWeight={700}>
-                  {derivedMode === 'login' ? 'Welcome Back' : 'Create Account'}
+                {derivedMode === 'login' ? 'Welcome Back' : 'Create Account'}
               </Typography>
               <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
                 <TextField
@@ -133,6 +147,40 @@ export default function LoginPage() {
                   required
                   margin="normal"
                 />
+                
+                {/* Turnstile Widget */}
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', minHeight: 65 }}>
+                  {turnstileStatus === 'loading' && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                      <CircularProgress size={20} />
+                      <Typography variant="body2">Loading security check...</Typography>
+                    </Box>
+                  )}
+                  <Turnstile
+                    ref={turnstileRef}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => {
+                      setTurnstileToken(token);
+                      setTurnstileStatus('ready');
+                    }}
+                    onError={() => {
+                      setTurnstileStatus('error');
+                      setError('Security verification failed to load. Please refresh the page.');
+                    }}
+                    onExpire={() => {
+                      setTurnstileToken(null);
+                      // Widget auto-refreshes, but we could manually reset if needed
+                    }}
+                    onLoad={() => {
+                      setTurnstileStatus('ready');
+                    }}
+                    options={{
+                      theme: 'light',
+                      size: 'normal',
+                    }}
+                  />
+                </Box>
+
                 {error && (
                   <Alert severity="error" sx={{ mt: 2 }}>
                     {error}
@@ -143,35 +191,42 @@ export default function LoginPage() {
                     Your session has expired. Please log in again.
                   </Alert>
                 )}
+                {turnstileStatus === 'error' && !error && (
+                  <Alert severity="warning" sx={{ mt: 2 }}>
+                    Security verification unavailable. Please refresh the page.
+                  </Alert>
+                )}
+                
                 <Button
                   fullWidth
                   variant="contained"
                   size="large"
                   type="submit"
-                  disabled={loading}
+                  disabled={!canSubmit}
                   sx={{ mt: 3 }}
                 >
-                    {loading ? 'Please wait...' : derivedMode === 'login' ? 'Login' : 'Sign Up'}
+                  {loading ? 'Please wait...' : derivedMode === 'login' ? 'Login' : 'Sign Up'}
                 </Button>
               </Box>
               <Box textAlign="center" mt={3}>
                 <Typography variant="body2" color="text.secondary">
-                    {derivedMode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                  {derivedMode === 'login' ? "Don't have an account? " : 'Already have an account? '}
                   <MuiLink
                     component="button"
                     variant="body2"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
-                        router.replace({
-                          pathname: router.pathname,
-                          query: {
-                            ...router.query,
-                            signup: derivedMode === 'login' ? 'true' : undefined
-                          }
-                        });
+                      resetTurnstile(); // Reset when switching modes
+                      router.replace({
+                        pathname: router.pathname,
+                        query: {
+                          ...router.query,
+                          signup: derivedMode === 'login' ? 'true' : undefined
+                        }
+                      });
                     }}
                   >
-                      {derivedMode === 'login' ? 'Sign Up' : 'Login'}
+                    {derivedMode === 'login' ? 'Sign Up' : 'Login'}
                   </MuiLink>
                 </Typography>
               </Box>
