@@ -7,186 +7,333 @@ import {
   Card,
   CardContent,
   Box,
-  Alert,
   CircularProgress,
   Stack,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  Radio,
   Button,
   Grid,
   Paper,
   TextField,
-  Avatar,
   Divider,
+  Slider,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tabs,
+  Tab,
+  IconButton,
+  Chip,
+  Collapse,
+  Switch,
 } from '@mui/material';
-import { Save as SaveIcon, Visibility as PreviewIcon } from '@mui/icons-material';
+import {
+  Save as SaveIcon,
+  PhoneIphone as PhoneIcon,
+  Palette as PaletteIcon,
+  FormatColorFill as FillIcon,
+  Gradient as GradientIcon,
+  BlurOn as BlurIcon,
+  GridOn as PatternIcon,
+  Image as ImageIcon,
+  VideoLibrary as VideoIcon,
+  TextFields as TextIcon,
+  ExpandMore as ExpandIcon,
+  ExpandLess as CollapseIcon,
+  Check as CheckIcon,
+  Lock as LockIcon,
+  Person as PersonIcon,
+  AspectRatio as LayoutIcon,
+} from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
+import PhonePreview from '@/components/PhonePreview';
+import {
+  AppearanceData,
+  WallpaperStyle,
+  ButtonStyle,
+  TextStyle,
+  HeaderStyle,
+  LinksResponse,
+  FONT_OPTIONS,
+  THEME_PRESETS,
+  PATTERN_OPTIONS,
+  DEFAULT_APPEARANCE,
+} from '@/types/links';
+import { useToast } from '@/context/ToastContext';
 
-const themes = [
-  { value: 'light', label: 'Light', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { value: 'dark', label: 'Dark', gradient: 'linear-gradient(135deg, #434343 0%, #000000 100%)' },
-  { value: 'sunset', label: 'Sunset', gradient: 'linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)' },
-  { value: 'ocean', label: 'Ocean', gradient: 'linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%)' },
-  { value: 'forest', label: 'Forest', gradient: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)' },
-  { value: 'custom', label: 'Custom', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-];
-
-const buttonStyles = [
-  { value: 'rounded', label: 'Rounded', borderRadius: '8px' },
-  { value: 'square', label: 'Square', borderRadius: '0px' },
-  { value: 'pill', label: 'Pill', borderRadius: '50px' },
-];
-
-const fonts = [
-  { value: 'default', label: 'Default (Inter)', fontFamily: 'Inter, sans-serif' },
-  { value: 'serif', label: 'Serif', fontFamily: 'Georgia, serif' },
-  { value: 'mono', label: 'Monospace', fontFamily: 'Courier New, monospace' },
-  { value: 'poppins', label: 'Poppins', fontFamily: 'Poppins, sans-serif' },
-  { value: 'roboto', label: 'Roboto', fontFamily: 'Roboto, sans-serif' },
-];
-
-const layoutStyles = [
-  { value: 'centered', label: 'Centered' },
-  { value: 'card', label: 'Card Layout' },
-];
-
-interface AppearanceData {
-  theme: string;
-  buttonStyle: string;
-  fontFamily: string;
-  layoutStyle: string;
-  colors: {
-    primary: string;
-    secondary: string;
-    background: string;
-    buttonBackground: string;
-    buttonText: string;
-  };
-  customGradient?: {
-    start: string;
-    end: string;
-  };
+interface SectionProps {
+  title: string;
+  id: string;
+  children: React.ReactNode;
+  defaultExpanded?: boolean;
 }
 
-interface AppearanceResponse {
-  appearance: AppearanceData;
+function CollapsibleSection({ title, id, children, defaultExpanded = true }: SectionProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
+  return (
+    <Box sx={{ borderBottom: 1, borderColor: 'divider', pb: 3, mb: 3 }}>
+      <Box
+        onClick={() => setExpanded(!expanded)}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          mb: expanded ? 2 : 0,
+        }}
+      >
+        <Typography variant="h6" fontWeight={600} id={id}>
+          {title}
+        </Typography>
+        <IconButton size="small">
+          {expanded ? <CollapseIcon /> : <ExpandIcon />}
+        </IconButton>
+      </Box>
+      <Collapse in={expanded}>
+        {children}
+      </Collapse>
+    </Box>
+  );
 }
 
-// Helper function to get background gradient for preview
-const getPreviewBackgroundGradient = (theme: string, customGradient: { start: string; end: string }) => {
-  if (theme === 'custom') {
-    return `linear-gradient(135deg, ${customGradient.start} 0%, ${customGradient.end} 100%)`;
-  }
-  
-  const themeGradients: Record<string, string> = {
-    light: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    dark: 'linear-gradient(135deg, #434343 0%, #000000 100%)',
-    sunset: 'linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)',
-    ocean: 'linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%)',
-    forest: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
-  };
-  
-  return themeGradients[theme] || themeGradients.light;
-};
+interface ColorPickerProps {
+  label: string;
+  value: string;
+  onChange: (color: string) => void;
+}
 
-// Helper function to get font family for preview
-const getPreviewFontFamily = (fontFamily: string) => {
-  const fontFamilies: Record<string, string> = {
-    default: 'Inter, sans-serif',
-    serif: 'Georgia, serif',
-    mono: 'Courier New, monospace',
-    poppins: 'Poppins, sans-serif',
-    roboto: 'Roboto, sans-serif',
-  };
-  
-  return fontFamilies[fontFamily] || fontFamilies.default;
-};
+function ColorPicker({ label, value, onChange }: ColorPickerProps) {
+  return (
+    <Box>
+      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+        {label}
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 1,
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+            position: 'relative',
+          }}
+        >
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '150%',
+              height: '150%',
+              cursor: 'pointer',
+              border: 'none',
+            }}
+          />
+        </Box>
+        <TextField
+          size="small"
+          value={value.toUpperCase()}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+              onChange(val);
+            }
+          }}
+          sx={{ width: 100 }}
+          inputProps={{ style: { fontFamily: 'monospace' } }}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+interface ThemeCardProps {
+  theme: typeof THEME_PRESETS[0];
+  selected: boolean;
+  onClick: () => void;
+}
+
+function ThemeCard({ theme, selected, onClick }: ThemeCardProps) {
+  return (
+    <Box
+      onClick={theme.isPro ? undefined : onClick}
+      sx={{
+        cursor: theme.isPro ? 'not-allowed' : 'pointer',
+        opacity: theme.isPro ? 0.7 : 1,
+        position: 'relative',
+      }}
+    >
+      <Paper
+        elevation={selected ? 4 : 1}
+        sx={{
+          aspectRatio: '4/5',
+          borderRadius: 2,
+          overflow: 'hidden',
+          border: selected ? 3 : 1,
+          borderColor: selected ? 'primary.main' : 'divider',
+          transition: 'all 0.2s',
+          '&:hover': {
+            borderColor: theme.isPro ? 'divider' : 'primary.light',
+            transform: theme.isPro ? 'none' : 'scale(1.02)',
+          },
+        }}
+      >
+        {theme.id === 'custom' ? (
+          <Box
+            sx={{
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'grey.100',
+            }}
+          >
+            <PaletteIcon sx={{ fontSize: 32, color: 'grey.500' }} />
+          </Box>
+        ) : theme.preview ? (
+          <Box
+            component="img"
+            src={theme.preview}
+            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <Box sx={{ height: '100%', bgcolor: 'grey.200' }} />
+        )}
+        {theme.isPro && (
+          <Chip
+            icon={<LockIcon sx={{ fontSize: 12 }} />}
+            label="Pro"
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              fontSize: 10,
+              height: 20,
+              bgcolor: 'rgba(0,0,0,0.7)',
+              color: 'white',
+              '& .MuiChip-icon': { color: 'white' },
+            }}
+          />
+        )}
+        {selected && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 8,
+              left: 8,
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              bgcolor: 'primary.main',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <CheckIcon sx={{ fontSize: 14, color: 'white' }} />
+          </Box>
+        )}
+      </Paper>
+      <Typography variant="caption" display="block" textAlign="center" sx={{ mt: 1 }}>
+        {theme.name}
+      </Typography>
+    </Box>
+  );
+}
 
 export default function AppearancePage() {
   const router = useRouter();
-  
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const { showToast } = useToast();
+  const [themeTab, setThemeTab] = useState(0);
 
-  const { data, isLoading } = useApiGet<AppearanceResponse>({
+  const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
     queryKey: 'admin-appearance',
   });
 
-  const appearance = data?.appearance;
-
-  const [formData, setFormData] = useState({
-    theme: appearance?.theme || 'light',
-    buttonStyle: appearance?.buttonStyle || 'rounded',
-    fontFamily: appearance?.fontFamily || 'default',
-    layoutStyle: appearance?.layoutStyle || 'centered',
-    colors: {
-      primary: appearance?.colors?.primary || '#667eea',
-      secondary: appearance?.colors?.secondary || '#764ba2',
-      background: appearance?.colors?.background || '#ffffff',
-      buttonBackground: appearance?.colors?.buttonBackground || '#667eea',
-      buttonText: appearance?.colors?.buttonText || '#ffffff',
-    },
-    customGradient: {
-      start: appearance?.customGradient?.start || '#667eea',
-      end: appearance?.customGradient?.end || '#764ba2',
-    },
+  const { data: linksData } = useApiGet<LinksResponse>({
+    url: 'admin/GetLinks',
+    queryKey: 'admin-links',
   });
 
-  // Only update form when data initially loads
+  const activeLinks = linksData?.links?.filter(link => link.active).sort((a, b) => a.order - b.order) || [];
+
+  const [formData, setFormData] = useState<AppearanceData>(DEFAULT_APPEARANCE);
+
   const dataLoadedRef = useRef(false);
-  
+
   useEffect(() => {
-    if (appearance && !dataLoadedRef.current) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (data && !dataLoadedRef.current) {
       setFormData({
-        theme: appearance.theme || 'light',
-        buttonStyle: appearance.buttonStyle || 'rounded',
-        fontFamily: appearance.fontFamily || 'default',
-        layoutStyle: appearance.layoutStyle || 'centered',
-        colors: {
-          primary: appearance.colors?.primary || '#667eea',
-          secondary: appearance.colors?.secondary || '#764ba2',
-          background: appearance.colors?.background || '#ffffff',
-          buttonBackground: appearance.colors?.buttonBackground || '#667eea',
-          buttonText: appearance.colors?.buttonText || '#ffffff',
-        },
-        customGradient: {
-          start: appearance.customGradient?.start || '#667eea',
-          end: appearance.customGradient?.end || '#764ba2',
-        },
+        ...DEFAULT_APPEARANCE,
+        ...data,
+        wallpaper: { ...DEFAULT_APPEARANCE.wallpaper, ...data.wallpaper },
+        buttons: { ...DEFAULT_APPEARANCE.buttons, ...data.buttons },
+        text: { ...DEFAULT_APPEARANCE.text, ...data.text },
+        header: { ...DEFAULT_APPEARANCE.header, ...data.header },
       });
       dataLoadedRef.current = true;
     }
-  }, [appearance]);
-
-  // Memoized button border radius for preview
-  const previewButtonBorderRadius = buttonStyles.find(s => s.value === formData.buttonStyle)?.borderRadius || '8px';
+  }, [data]);
 
   const updateAppearance = useApiPut({
     relatedQueryKeys: ['admin-appearance'],
     onSuccess: () => {
-      setSuccess('Appearance updated successfully');
-      setTimeout(() => setSuccess(''), 3000);
-    },
-    onError: (error) => {
-      setError(error);
-      setTimeout(() => setError(''), 3000);
+      showToast('Appearance updated successfully', 'success');
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-
     updateAppearance.mutate({
       url: 'admin/UpdateAppearance',
       data: formData,
     });
+  };
+
+  const updateWallpaper = (updates: Partial<WallpaperStyle>) => {
+    setFormData(prev => ({
+      ...prev,
+      wallpaper: { ...prev.wallpaper, ...updates },
+    }));
+  };
+
+  const updateButtons = (updates: Partial<ButtonStyle>) => {
+    setFormData(prev => ({
+      ...prev,
+      buttons: { ...prev.buttons, ...updates },
+    }));
+  };
+
+  const updateText = (updates: Partial<TextStyle>) => {
+    setFormData(prev => ({
+      ...prev,
+      text: { ...prev.text, ...updates },
+    }));
+  };
+
+  const updateHeader = (updates: Partial<HeaderStyle>) => {
+    setFormData(prev => ({
+      ...prev,
+      header: { ...prev.header, ...updates },
+    }));
+  };
+
+  const cornerRadiusValue = {
+    square: 0,
+    rounded: 1,
+    pill: 2,
+  }[formData.buttons.cornerRadius] || 1;
+
+  const handleCornerRadiusChange = (_: Event, value: number | number[]) => {
+    const val = value as number;
+    const cornerRadius = val === 0 ? 'square' : val === 1 ? 'rounded' : 'pill';
+    updateButtons({ cornerRadius });
   };
 
   if (isLoading) {
@@ -206,7 +353,7 @@ export default function AppearancePage() {
       </Head>
 
       <AdminLayout>
-        <Container maxWidth="md" sx={{ py: 4 }}>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
           <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
             Appearance
           </Typography>
@@ -214,416 +361,715 @@ export default function AppearancePage() {
             Customize how your profile looks to visitors
           </Typography>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-              {error}
-            </Alert>
-          )}
-
-          {success && (
-            <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
-              {success}
-            </Alert>
-          )}
-
-          {/* Live Preview */}
-          <Card sx={{ mt: 3, mb: 3 }}>
-            <CardContent sx={{ p: 4 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={3}>
-                <PreviewIcon />
-                <Typography variant="h6" fontWeight={600}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4 }}>
+            {/* Mobile Preview - Show at top on small screens */}
+            <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <PhoneIcon fontSize="small" color="action" />
+                <Typography variant="subtitle2" color="text.secondary">
                   Live Preview
                 </Typography>
               </Box>
-              
-              <Box
-                sx={{
-                  minHeight: 400,
-                  borderRadius: 2,
-                  background: getPreviewBackgroundGradient(formData.theme, formData.customGradient),
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  p: 4,
-                  fontFamily: getPreviewFontFamily(formData.fontFamily),
-                }}
-              >
-                <Box sx={{ width: '100%', maxWidth: 400 }}>
-                  {formData.layoutStyle === 'card' ? (
-                    <Card elevation={4}>
-                      <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                        <Avatar
-                          sx={{ 
-                            width: 100, 
-                            height: 100, 
-                            mx: 'auto', 
-                            mb: 2,
-                            bgcolor: 'grey.300',
-                          }}
-                        >
-                          <Typography variant="h4" color="text.secondary">U</Typography>
-                        </Avatar>
-                        
-                        <Typography variant="h5" fontWeight={700} gutterBottom>
-                          Your Name
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          @username
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
-                          Your bio will appear here
-                        </Typography>
-                        
-                        <Stack spacing={2}>
-                          <Button
-                            variant="contained"
-                            size="large"
-                            fullWidth
-                            sx={{
-                              borderRadius: previewButtonBorderRadius,
-                              bgcolor: formData.colors.buttonBackground,
-                              color: formData.colors.buttonText,
-                              '&:hover': {
-                                bgcolor: formData.colors.buttonBackground,
-                                opacity: 0.9,
-                              },
-                            }}
-                          >
-                            Sample Link 1
-                          </Button>
-                          <Button
-                            variant="contained"
-                            size="large"
-                            fullWidth
-                            sx={{
-                              borderRadius: previewButtonBorderRadius,
-                              bgcolor: formData.colors.buttonBackground,
-                              color: formData.colors.buttonText,
-                              '&:hover': {
-                                bgcolor: formData.colors.buttonBackground,
-                                opacity: 0.9,
-                              },
-                            }}
-                          >
-                            Sample Link 2
-                          </Button>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Avatar
-                        sx={{ 
-                          width: 100, 
-                          height: 100, 
-                          mx: 'auto', 
-                          mb: 2,
-                          bgcolor: 'rgba(255,255,255,0.9)',
-                          border: 3,
-                          borderColor: '#ffffff',
-                        }}
+              <PhonePreview
+                appearance={formData}
+                links={activeLinks}
+                displayName={formData.header.displayName}
+                compact
+              />
+            </Box>
+
+            {/* Left Column - Settings */}
+            <Box sx={{ flex: 1, minWidth: 0, mr: { xs: 0, md: '360px' } }}>
+              <Card>
+                <CardContent sx={{ p: 4 }}>
+                  <Box component="form" onSubmit={handleSubmit}>
+                    {/* Header Section */}
+                    <CollapsibleSection title="Header" id="header">
+                      <Stack spacing={3}>
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
+                            Profile image layout
+                          </Typography>
+                          <Grid container spacing={2}>
+                            {['classic', 'hero'].map((layout) => (
+                              <Grid item xs={6} key={layout}>
+                                <Paper
+                                  onClick={() => layout !== 'hero' && updateHeader({ profileImageLayout: layout as 'classic' | 'hero' })}
+                                  sx={{
+                                    p: 2,
+                                    cursor: layout === 'hero' ? 'not-allowed' : 'pointer',
+                                    border: 2,
+                                    borderColor: formData.header.profileImageLayout === layout ? 'primary.main' : 'transparent',
+                                    opacity: layout === 'hero' ? 0.6 : 1,
+                                    '&:hover': {
+                                      borderColor: layout === 'hero' ? 'transparent' : 'primary.light',
+                                    },
+                                    position: 'relative',
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      height: 56,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    {layout === 'classic' ? (
+                                      <PersonIcon sx={{ fontSize: 32, color: 'grey.500' }} />
+                                    ) : (
+                                      <LayoutIcon sx={{ fontSize: 32, color: 'grey.500' }} />
+                                    )}
+                                  </Box>
+                                  <Typography align="center" variant="caption" display="block">
+                                    {layout.charAt(0).toUpperCase() + layout.slice(1)}
+                                  </Typography>
+                                  {layout === 'hero' && (
+                                    <Chip
+                                      icon={<LockIcon sx={{ fontSize: 10 }} />}
+                                      label="Pro"
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        right: 8,
+                                        fontSize: 10,
+                                        height: 18,
+                                      }}
+                                    />
+                                  )}
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+
+                        <Divider />
+
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
+                            Title style
+                          </Typography>
+                          <Grid container spacing={2}>
+                            {['text', 'logo'].map((style) => (
+                              <Grid item xs={6} key={style}>
+                                <Paper
+                                  onClick={() => style !== 'logo' && updateHeader({ titleStyle: style as 'text' | 'logo' })}
+                                  sx={{
+                                    p: 2,
+                                    cursor: style === 'logo' ? 'not-allowed' : 'pointer',
+                                    border: 2,
+                                    borderColor: formData.header.titleStyle === style ? 'primary.main' : 'transparent',
+                                    opacity: style === 'logo' ? 0.6 : 1,
+                                    position: 'relative',
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      height: 56,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    {style === 'text' ? (
+                                      <TextIcon sx={{ fontSize: 32, color: 'grey.500' }} />
+                                    ) : (
+                                      <ImageIcon sx={{ fontSize: 32, color: 'grey.500' }} />
+                                    )}
+                                  </Box>
+                                  <Typography align="center" variant="caption" display="block">
+                                    {style.charAt(0).toUpperCase() + style.slice(1)}
+                                  </Typography>
+                                  {style === 'logo' && (
+                                    <Chip
+                                      icon={<LockIcon sx={{ fontSize: 10 }} />}
+                                      label="Pro"
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        right: 8,
+                                        fontSize: 10,
+                                        height: 18,
+                                      }}
+                                    />
+                                  )}
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+
+                        <TextField
+                          fullWidth
+                          label="Display Name"
+                          value={formData.header.displayName}
+                          onChange={(e) => updateHeader({ displayName: e.target.value })}
+                          inputProps={{ maxLength: 30 }}
+                          helperText={`${formData.header.displayName.length}/30 characters`}
+                        />
+
+                        <ColorPicker
+                          label="Title color"
+                          value={formData.text.titleColor}
+                          onChange={(color) => updateText({ titleColor: color })}
+                        />
+                      </Stack>
+                    </CollapsibleSection>
+
+                    {/* Theme Section */}
+                    <CollapsibleSection title="Theme" id="theme">
+                      <Tabs
+                        value={themeTab}
+                        onChange={(_, v) => setThemeTab(v)}
+                        sx={{ mb: 2 }}
                       >
-                        <Typography variant="h4" color="text.secondary">U</Typography>
-                      </Avatar>
-                      
-                      <Typography variant="h5" fontWeight={700} gutterBottom sx={{ color: '#ffffff' }}>
-                        Your Name
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }} gutterBottom>
-                        @username
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 1, mb: 3 }}>
-                        Your bio will appear here
-                      </Typography>
-                      
-                      <Stack spacing={2}>
-                        <Button
-                          variant="contained"
-                          size="large"
-                          fullWidth
-                          sx={{
-                            borderRadius: previewButtonBorderRadius,
-                            bgcolor: formData.colors.buttonBackground,
-                            color: formData.colors.buttonText,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                            '&:hover': {
-                              bgcolor: formData.colors.buttonBackground,
-                              opacity: 0.9,
-                            },
-                          }}
-                        >
-                          Sample Link 1
-                        </Button>
-                        <Button
-                          variant="contained"
-                          size="large"
-                          fullWidth
-                          sx={{
-                            borderRadius: previewButtonBorderRadius,
-                            bgcolor: formData.colors.buttonBackground,
-                            color: formData.colors.buttonText,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                            '&:hover': {
-                              bgcolor: formData.colors.buttonBackground,
-                              opacity: 0.9,
-                            },
-                          }}
-                        >
-                          Sample Link 2
-                        </Button>
-                      </Stack>
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+                        <Tab label="Customizable" />
+                        <Tab label="Curated" />
+                      </Tabs>
 
-          <Divider sx={{ my: 4 }} />
-
-          <Card sx={{ mt: 3 }}>
-            <CardContent sx={{ p: 4 }}>
-              <Box component="form" onSubmit={handleSubmit}>
-                <Stack spacing={4}>
-                  {/* Theme Selection */}
-                  <FormControl component="fieldset">
-                    <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
-                      Background Theme
-                    </FormLabel>
-                    <Grid container spacing={2}>
-                      {themes.map((t) => (
-                        <Grid item xs={6} md={4} key={t.value}>
-                          <Paper
-                            onClick={() => setFormData({ ...formData, theme: t.value })}
-                            sx={{
-                              p: 2,
-                              cursor: 'pointer',
-                              border: 2,
-                              borderColor: formData.theme === t.value ? 'primary.main' : 'transparent',
-                              '&:hover': { borderColor: 'primary.light' },
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                height: 80,
-                                borderRadius: 1,
-                                background: t.gradient,
-                                mb: 1,
-                              }}
-                            />
-                            <Typography align="center" fontWeight={600} variant="body2">
-                              {t.label}
-                            </Typography>
-                          </Paper>
-                        </Grid>
-                      ))}
-                    </Grid>
-                  </FormControl>
-
-                  {/* Custom Colors - Only show if theme is custom */}
-                  {formData.theme === 'custom' && (
-                    <FormControl component="fieldset">
-                      <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
-                        Custom Background Gradient
-                      </FormLabel>
                       <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Box>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                              Start Color
-                            </Typography>
-                            <TextField
-                              type="color"
-                              fullWidth
-                              value={formData.customGradient.start}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  customGradient: { ...formData.customGradient, start: e.target.value },
-                                })
-                              }
-                            />
-                          </Box>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Box>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                              End Color
-                            </Typography>
-                            <TextField
-                              type="color"
-                              fullWidth
-                              value={formData.customGradient.end}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  customGradient: { ...formData.customGradient, end: e.target.value },
-                                })
-                              }
-                            />
-                          </Box>
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Box
-                            sx={{
-                              height: 100,
-                              borderRadius: 2,
-                              background: `linear-gradient(135deg, ${formData.customGradient.start} 0%, ${formData.customGradient.end} 100%)`,
-                            }}
-                          />
-                        </Grid>
+                        {THEME_PRESETS
+                          .filter(t => themeTab === 0 ? t.type === 'customizable' : t.type === 'curated')
+                          .map((theme) => (
+                            <Grid item xs={4} sm={3} md={4} lg={3} key={theme.id}>
+                              <ThemeCard
+                                theme={theme}
+                                selected={formData.theme === theme.id}
+                                onClick={() => setFormData(prev => ({ ...prev, theme: theme.id }))}
+                              />
+                            </Grid>
+                          ))}
                       </Grid>
-                    </FormControl>
-                  )}
+                    </CollapsibleSection>
 
-                  {/* Button Colors */}
-                  <FormControl component="fieldset">
-                    <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
-                      Button Colors
-                    </FormLabel>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
+                    {/* Wallpaper Section */}
+                    <CollapsibleSection title="Wallpaper" id="wallpaper">
+                      <Stack spacing={3}>
                         <Box>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
-                            Button Background
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
+                            Wallpaper style
                           </Typography>
-                          <TextField
-                            type="color"
-                            fullWidth
-                            value={formData.colors.buttonBackground}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                colors: { ...formData.colors, buttonBackground: e.target.value },
-                              })
-                            }
-                          />
+                          <Grid container spacing={1}>
+                            {[
+                              { type: 'fill', icon: <FillIcon />, label: 'Fill' },
+                              { type: 'gradient', icon: <GradientIcon />, label: 'Gradient' },
+                              { type: 'blur', icon: <BlurIcon />, label: 'Blur' },
+                              { type: 'pattern', icon: <PatternIcon />, label: 'Pattern' },
+                              { type: 'image', icon: <ImageIcon />, label: 'Image', pro: true },
+                              { type: 'video', icon: <VideoIcon />, label: 'Video', pro: true },
+                            ].map((item) => (
+                              <Grid item xs={4} sm={2} key={item.type}>
+                                <Paper
+                                  onClick={() => !item.pro && updateWallpaper({ type: item.type as WallpaperStyle['type'] })}
+                                  sx={{
+                                    p: 1.5,
+                                    cursor: item.pro ? 'not-allowed' : 'pointer',
+                                    border: 2,
+                                    borderColor: formData.wallpaper.type === item.type ? 'primary.main' : 'transparent',
+                                    opacity: item.pro ? 0.6 : 1,
+                                    textAlign: 'center',
+                                    position: 'relative',
+                                  }}
+                                >
+                                  <Box sx={{ color: 'grey.600', mb: 0.5 }}>{item.icon}</Box>
+                                  <Typography variant="caption">{item.label}</Typography>
+                                  {item.pro && (
+                                    <Chip
+                                      icon={<LockIcon sx={{ fontSize: 8 }} />}
+                                      label="Pro"
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        fontSize: 8,
+                                        height: 16,
+                                        '& .MuiChip-label': { px: 0.5 },
+                                      }}
+                                    />
+                                  )}
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
                         </Box>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
-                            Button Text
-                          </Typography>
-                          <TextField
-                            type="color"
-                            fullWidth
-                            value={formData.colors.buttonText}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                colors: { ...formData.colors, buttonText: e.target.value },
-                              })
-                            }
-                          />
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </FormControl>
 
-                  {/* Button Style */}
-                  <FormControl component="fieldset">
-                    <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
-                      Button Style
-                    </FormLabel>
-                    <RadioGroup
-                      value={formData.buttonStyle}
-                      onChange={(e) => setFormData({ ...formData, buttonStyle: e.target.value })}
-                    >
-                      <Stack spacing={1}>
-                        {buttonStyles.map((style) => (
-                          <Paper key={style.value} sx={{ p: 2 }}>
-                            <Box display="flex" alignItems="center">
-                              <Radio value={style.value} />
-                              <Typography flex={1}>{style.label}</Typography>
-                              <Button
-                                variant="contained"
-                                size="small"
+                        <Divider />
+
+                        {/* Color options based on wallpaper type */}
+                        {formData.wallpaper.type === 'fill' && (
+                          <ColorPicker
+                            label="Background color"
+                            value={formData.wallpaper.color || '#ffffff'}
+                            onChange={(color) => updateWallpaper({ color })}
+                          />
+                        )}
+
+                        {formData.wallpaper.type === 'gradient' && (
+                          <Grid container spacing={2}>
+                            <Grid item xs={6}>
+                              <ColorPicker
+                                label="Start color"
+                                value={formData.wallpaper.gradientStart || '#667eea'}
+                                onChange={(color) => updateWallpaper({ gradientStart: color })}
+                              />
+                            </Grid>
+                            <Grid item xs={6}>
+                              <ColorPicker
+                                label="End color"
+                                value={formData.wallpaper.gradientEnd || '#764ba2'}
+                                onChange={(color) => updateWallpaper({ gradientEnd: color })}
+                              />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <Typography variant="body2" sx={{ mb: 1 }}>Direction</Typography>
+                              <Slider
+                                value={formData.wallpaper.gradientDirection || 180}
+                                onChange={(_, v) => updateWallpaper({ gradientDirection: v as number })}
+                                min={0}
+                                max={360}
+                                valueLabelDisplay="auto"
+                                valueLabelFormat={(v) => `${v}°`}
+                              />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <Box
                                 sx={{
-                                  borderRadius: style.borderRadius,
-                                  bgcolor: formData.colors.buttonBackground,
-                                  color: formData.colors.buttonText,
-                                  '&:hover': {
-                                    bgcolor: formData.colors.buttonBackground,
-                                    opacity: 0.9,
-                                  },
+                                  height: 80,
+                                  borderRadius: 2,
+                                  background: `linear-gradient(${formData.wallpaper.gradientDirection || 180}deg, ${formData.wallpaper.gradientStart || '#667eea'} 0%, ${formData.wallpaper.gradientEnd || '#764ba2'} 100%)`,
                                 }}
+                              />
+                            </Grid>
+                          </Grid>
+                        )}
+
+                        {formData.wallpaper.type === 'pattern' && (
+                          <>
+                            <Box>
+                              <Typography variant="body2" sx={{ mb: 1 }}>Pattern type</Typography>
+                              <ToggleButtonGroup
+                                value={formData.wallpaper.patternType || 'grid'}
+                                exclusive
+                                onChange={(_, v) => v && updateWallpaper({ patternType: v })}
+                                size="small"
                               >
-                                Example
-                              </Button>
+                                {PATTERN_OPTIONS.map((opt) => (
+                                  <ToggleButton key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </ToggleButton>
+                                ))}
+                              </ToggleButtonGroup>
                             </Box>
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </RadioGroup>
-                  </FormControl>
+                            <Grid container spacing={2}>
+                              <Grid item xs={6}>
+                                <ColorPicker
+                                  label="Background color"
+                                  value={formData.wallpaper.color || '#ffffff'}
+                                  onChange={(color) => updateWallpaper({ color })}
+                                />
+                              </Grid>
+                              <Grid item xs={6}>
+                                <ColorPicker
+                                  label="Pattern color"
+                                  value={formData.wallpaper.patternColor || '#e0e0e0'}
+                                  onChange={(color) => updateWallpaper({ patternColor: color })}
+                                />
+                              </Grid>
+                            </Grid>
+                          </>
+                        )}
 
-                  {/* Font Family */}
-                  <FormControl component="fieldset">
-                    <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
-                      Font Style
-                    </FormLabel>
-                    <RadioGroup
-                      value={formData.fontFamily}
-                      onChange={(e) => setFormData({ ...formData, fontFamily: e.target.value })}
-                    >
-                      <Stack spacing={1}>
-                        {fonts.map((font) => (
-                          <Paper key={font.value} sx={{ p: 2 }}>
-                            <Box display="flex" alignItems="center">
-                              <Radio value={font.value} />
-                              <Typography flex={1} sx={{ fontFamily: font.fontFamily }}>
-                                {font.label}
-                              </Typography>
+                        {formData.wallpaper.type === 'blur' && (
+                          <>
+                            <ColorPicker
+                              label="Background color"
+                              value={formData.wallpaper.color || '#ffffff'}
+                              onChange={(color) => updateWallpaper({ color })}
+                            />
+                            <Box>
+                              <Typography variant="body2" sx={{ mb: 1 }}>Blur amount</Typography>
+                              <Slider
+                                value={formData.wallpaper.blur || 10}
+                                onChange={(_, v) => updateWallpaper({ blur: v as number })}
+                                min={0}
+                                max={30}
+                                valueLabelDisplay="auto"
+                              />
                             </Box>
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </RadioGroup>
-                  </FormControl>
+                          </>
+                        )}
 
-                  {/* Layout Style */}
-                  <FormControl component="fieldset">
-                    <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>
-                      Layout Style
-                    </FormLabel>
-                    <RadioGroup
-                      value={formData.layoutStyle}
-                      onChange={(e) => setFormData({ ...formData, layoutStyle: e.target.value })}
-                    >
-                      <Stack spacing={1}>
-                        {layoutStyles.map((layout) => (
-                          <Paper key={layout.value} sx={{ p: 2 }}>
-                            <Box display="flex" alignItems="center">
-                              <Radio value={layout.value} />
-                              <Typography flex={1}>{layout.label}</Typography>
-                            </Box>
-                          </Paper>
-                        ))}
+                        {/* Suggested colors */}
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
+                            Suggested colors
+                          </Typography>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            {['#A29E8B', '#6A6253', '#958065', '#FFFFFF', '#000000', '#667eea', '#ff6b6b', '#48c6ef'].map((color) => (
+                              <Box
+                                key={color}
+                                onClick={() => updateWallpaper({ color })}
+                                sx={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: '50%',
+                                  bgcolor: color,
+                                  border: formData.wallpaper.color === color ? 3 : 1,
+                                  borderColor: formData.wallpaper.color === color ? 'primary.main' : 'divider',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  '&:hover': { transform: 'scale(1.1)' },
+                                }}
+                              />
+                            ))}
+                          </Stack>
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                            Colors suggested based on your profile image
+                          </Typography>
+                        </Box>
                       </Stack>
-                    </RadioGroup>
-                  </FormControl>
+                    </CollapsibleSection>
 
-                  <Box display="flex" gap={2}>
-                    <Button
-                      variant="contained"
-                      startIcon={<SaveIcon />}
-                      type="submit"
-                      disabled={updateAppearance.isPending}
-                    >
-                      {updateAppearance.isPending ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={() => router.push('/admin/dashboard')}
-                    >
-                      Cancel
-                    </Button>
+                    {/* Text Section */}
+                    <CollapsibleSection title="Text" id="text">
+                      <Stack spacing={3}>
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
+                            Title font
+                          </Typography>
+                          <Grid container spacing={1}>
+                            {FONT_OPTIONS.slice(0, 6).map((font) => (
+                              <Grid item xs={6} sm={4} key={font.value}>
+                                <Paper
+                                  onClick={() => !font.isPro && updateText({ titleFont: font.value })}
+                                  sx={{
+                                    p: 2,
+                                    cursor: font.isPro ? 'not-allowed' : 'pointer',
+                                    border: 2,
+                                    borderColor: formData.text.titleFont === font.value ? 'primary.main' : 'transparent',
+                                    opacity: font.isPro ? 0.6 : 1,
+                                    textAlign: 'center',
+                                    position: 'relative',
+                                  }}
+                                >
+                                  <Typography
+                                    sx={{
+                                      fontFamily: font.fontFamily,
+                                      fontSize: 14,
+                                    }}
+                                  >
+                                    {font.label}
+                                  </Typography>
+                                  {font.isPro && (
+                                    <Chip
+                                      icon={<LockIcon sx={{ fontSize: 10 }} />}
+                                      label="Pro"
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        fontSize: 8,
+                                        height: 16,
+                                      }}
+                                    />
+                                  )}
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <ColorPicker
+                              label="Title color"
+                              value={formData.text.titleColor}
+                              onChange={(color) => updateText({ titleColor: color })}
+                            />
+                          </Grid>
+                          <Grid item xs={6}>
+                            <ColorPicker
+                              label="Page text color"
+                              value={formData.text.pageTextColor}
+                              onChange={(color) => updateText({ pageTextColor: color })}
+                            />
+                          </Grid>
+                        </Grid>
+
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
+                            Title size
+                          </Typography>
+                          <Grid container spacing={2}>
+                            {['small', 'large'].map((size) => (
+                              <Grid item xs={6} key={size}>
+                                <Paper
+                                  onClick={() => size !== 'large' && updateText({ titleSize: size as 'small' | 'large' })}
+                                  sx={{
+                                    p: 2,
+                                    cursor: size === 'large' ? 'not-allowed' : 'pointer',
+                                    border: 2,
+                                    borderColor: formData.text.titleSize === size ? 'primary.main' : 'transparent',
+                                    opacity: size === 'large' ? 0.6 : 1,
+                                    textAlign: 'center',
+                                    position: 'relative',
+                                  }}
+                                >
+                                  <Typography variant="body2">
+                                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                                  </Typography>
+                                  {size === 'large' && (
+                                    <Chip
+                                      icon={<LockIcon sx={{ fontSize: 10 }} />}
+                                      label="Pro"
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        fontSize: 8,
+                                        height: 16,
+                                      }}
+                                    />
+                                  )}
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+                      </Stack>
+                    </CollapsibleSection>
+
+                    {/* Buttons Section */}
+                    <CollapsibleSection title="Buttons" id="buttons">
+                      <Stack spacing={3}>
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
+                            Button style
+                          </Typography>
+                          <Grid container spacing={2}>
+                            {[
+                              { type: 'solid', label: 'Solid' },
+                              { type: 'glass', label: 'Glass', pro: true },
+                              { type: 'outline', label: 'Outline' },
+                            ].map((style) => (
+                              <Grid item xs={4} key={style.type}>
+                                <Paper
+                                  onClick={() => !style.pro && updateButtons({ type: style.type as ButtonStyle['type'] })}
+                                  sx={{
+                                    p: 2,
+                                    cursor: style.pro ? 'not-allowed' : 'pointer',
+                                    border: 2,
+                                    borderColor: formData.buttons.type === style.type ? 'primary.main' : 'transparent',
+                                    opacity: style.pro ? 0.6 : 1,
+                                    textAlign: 'center',
+                                    position: 'relative',
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      height: 38,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        px: 2,
+                                        py: 0.5,
+                                        borderRadius: 0.5,
+                                        fontSize: 12,
+                                        ...(style.type === 'solid' && {
+                                          bgcolor: 'grey.300',
+                                        }),
+                                        ...(style.type === 'glass' && {
+                                          bgcolor: 'rgba(0,0,0,0.1)',
+                                          border: '1px solid rgba(255,255,255,0.3)',
+                                        }),
+                                        ...(style.type === 'outline' && {
+                                          border: '2px solid',
+                                          borderColor: 'grey.400',
+                                        }),
+                                      }}
+                                    >
+                                      {style.label}
+                                    </Box>
+                                  </Box>
+                                  {style.pro && (
+                                    <Chip
+                                      icon={<LockIcon sx={{ fontSize: 10 }} />}
+                                      label="Pro"
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        fontSize: 8,
+                                        height: 16,
+                                      }}
+                                    />
+                                  )}
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+
+                        <Divider />
+
+                        <Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="body2" fontWeight={500}>Corners</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Typography variant="caption" color="text.secondary">Square</Typography>
+                            <Slider
+                              value={cornerRadiusValue}
+                              onChange={handleCornerRadiusChange}
+                              min={0}
+                              max={2}
+                              step={1}
+                              marks
+                              sx={{ flex: 1 }}
+                            />
+                            <Typography variant="caption" color="text.secondary">Round</Typography>
+                          </Box>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>Shadows</Typography>
+                          <Grid container spacing={1}>
+                            {['none', 'subtle', 'strong', 'hard'].map((shadow) => (
+                              <Grid item xs={3} key={shadow}>
+                                <Paper
+                                  onClick={() => updateButtons({ shadow: shadow as ButtonStyle['shadow'] })}
+                                  sx={{
+                                    p: 1.5,
+                                    cursor: 'pointer',
+                                    border: 2,
+                                    borderColor: formData.buttons.shadow === shadow ? 'primary.main' : 'transparent',
+                                    textAlign: 'center',
+                                  }}
+                                >
+                                  <Typography variant="caption">
+                                    {shadow.charAt(0).toUpperCase() + shadow.slice(1)}
+                                  </Typography>
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+
+                        <Divider />
+
+                        <Typography variant="body2" fontWeight={500}>Colors</Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <ColorPicker
+                              label="Button color"
+                              value={formData.buttons.backgroundColor}
+                              onChange={(color) => updateButtons({ backgroundColor: color })}
+                            />
+                          </Grid>
+                          <Grid item xs={6}>
+                            <ColorPicker
+                              label="Text color"
+                              value={formData.buttons.textColor}
+                              onChange={(color) => updateButtons({ textColor: color })}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Stack>
+                    </CollapsibleSection>
+
+                    {/* Footer Section */}
+                    <CollapsibleSection title="Footer" id="footer" defaultExpanded={false}>
+                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Typography variant="body2">Hide LinkToMe footer</Typography>
+                            <Chip
+                              icon={<LockIcon sx={{ fontSize: 10 }} />}
+                              label="Pro"
+                              size="small"
+                              sx={{ fontSize: 10, height: 18 }}
+                            />
+                          </Box>
+                          <Switch
+                            checked={formData.hideFooter}
+                            onChange={(e) => setFormData(prev => ({ ...prev, hideFooter: e.target.checked }))}
+                            disabled
+                          />
+                        </Box>
+                      </Paper>
+                    </CollapsibleSection>
+
+                    {/* Save Button */}
+                    <Box sx={{ display: 'flex', gap: 2, pt: 2 }}>
+                      <Button
+                        variant="contained"
+                        startIcon={<SaveIcon />}
+                        type="submit"
+                        disabled={updateAppearance.isPending}
+                        size="large"
+                      >
+                        {updateAppearance.isPending ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={() => router.push('/admin/dashboard')}
+                        size="large"
+                      >
+                        Cancel
+                      </Button>
+                    </Box>
                   </Box>
-                </Stack>
+                </CardContent>
+              </Card>
+            </Box>
+
+            {/* Right Column - Fixed Phone Preview (Desktop) */}
+            <Box
+              sx={{
+                width: 320,
+                flexShrink: 0,
+                display: { xs: 'none', md: 'block' },
+                position: 'fixed',
+                right: 32,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                zIndex: 1,
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <PhoneIcon fontSize="small" color="action" />
+                <Typography variant="subtitle2" color="text.secondary">
+                  Live Preview
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
+
+              <PhonePreview
+                appearance={formData}
+                links={activeLinks}
+                displayName={formData.header.displayName}
+              />
+
+              {activeLinks.length === 0 && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', textAlign: 'center', mt: 2 }}
+                >
+                  Add links to see them in the preview
+                </Typography>
+              )}
+            </Box>
+          </Box>
         </Container>
       </AdminLayout>
     </>
