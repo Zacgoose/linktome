@@ -20,7 +20,7 @@ import {
   IconButton,
   ListSubheader,
 } from '@mui/material';
-import { Brightness4, Brightness7 } from '@mui/icons-material';
+import { Brightness4, Brightness7, Key } from '@mui/icons-material';
 import { UiThemeContext } from '@/pages/_app';
 import {
   Dashboard as DashboardIcon,
@@ -84,6 +84,12 @@ const menuItems: MenuItem[] = [
     path: '/admin/users',
     requiredPermissions: ['read:users']
   },
+  {
+    text: 'API Authentication',
+    icon: <Key />,
+    path: '/admin/apiauth',
+    requiredPermissions: ['read:apiauth'],
+  }
 ];
 
 

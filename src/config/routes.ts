@@ -65,6 +65,11 @@ export const ROUTE_CONFIG: RoutePermission[] = [
     allowedFor: 'authenticated',
     requiredPermissions: ['read:analytics'],
   },
+  {
+    path: '/admin/apiauth',
+    allowedFor: 'authenticated',
+    requiredPermissions: ['read:apiauth'],
+  },
 
   // Admin-only routes
   {
@@ -121,6 +126,12 @@ export const PERMISSIONS = {
   'list:user_manager': 'List user managers and managed users',
   'remove:user_manager': 'Remove a user manager or managed user',
   'respond:user_manager': 'Accept or reject a user manager invitation',
+
+  // API Authentication permissions
+  'read:apiauth': 'View API authentication keys',
+  'create:apiauth': 'Create new API authentication keys',
+  'update:apiauth': 'Update existing API authentication keys',
+  'delete:apiauth': 'Delete API authentication keys',
 } as const;
 
 /**
@@ -145,7 +156,11 @@ export const ROLES = {
       'invite:user_manager',
       'list:user_manager',
       'remove:user_manager',
-      'respond:user_manager'
+      'respond:user_manager',
+      'read:apiauth',
+      'create:apiauth',
+      'update:apiauth',
+      'delete:apiauth'
     ],
   },
   user_manager: {

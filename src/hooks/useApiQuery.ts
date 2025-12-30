@@ -119,6 +119,10 @@ const makeAuthenticatedRequest = async <TData,>(
     return await executeRequest();
   } catch (err: any) {
     if (axios.isAxiosError(err) && err.response?.status === 401 && authReady) {
+      // Special case: if this is a login attempt, show 'Invalid credentials' instead of 'Session expired'
+      if (url.toLowerCase().includes('login')) {
+        throw new Error('Invalid credentials');
+      }
       // Try to refresh the token (cookies will be updated by the backend)
       const refreshed = await refreshAuth();
       if (refreshed) {
