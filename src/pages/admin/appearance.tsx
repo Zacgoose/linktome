@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
@@ -47,6 +47,7 @@ import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
 import PhonePreview from '@/components/PhonePreview';
 import {
   AppearanceData,
+  AppearanceTheme,
   WallpaperStyle,
   ButtonStyle,
   TextStyle,
@@ -58,6 +59,7 @@ import {
   DEFAULT_APPEARANCE,
 } from '@/types/links';
 import { useToast } from '@/context/ToastContext';
+import { getBackgroundStyle, getButtonStyle } from '@/utils/appearanceUtils';
 
 interface SectionProps {
   title: string;
@@ -160,12 +162,107 @@ function ColorPicker({ label, value, onChange }: ColorPickerProps) {
 }
 
 interface ThemeCardProps {
-  theme: typeof THEME_PRESETS[0];
+  theme: AppearanceTheme;
   selected: boolean;
   onClick: () => void;
 }
 
 function ThemeCard({ theme, selected, onClick }: ThemeCardProps) {
+  const renderPreview = () => {
+    if (theme.id === 'custom') {
+      return (
+        <Box
+          sx={{
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'grey.100',
+          }}
+        >
+          <PaletteIcon sx={{ fontSize: 32, color: 'grey.500' }} />
+        </Box>
+      );
+    }
+
+    if (theme.preview) {
+      return (
+        <Box
+          component="img"
+          src={theme.preview}
+          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      );
+    }
+
+    const wallpaperStyle = theme.appearance ? getBackgroundStyle(theme.appearance.wallpaper) : {};
+    const buttonPreviewStyle = theme.appearance ? getButtonStyle(theme.appearance.buttons) : {};
+    const titleColor = theme.appearance?.text?.titleColor || 'rgba(0,0,0,0.8)';
+    const pageTextColor = theme.appearance?.text?.pageTextColor || 'rgba(0,0,0,0.6)';
+
+    if (theme.appearance) {
+      return (
+        <Box
+          sx={{
+            ...wallpaperStyle,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+            p: 1.5,
+            position: 'relative',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255,255,255,0.85)',
+                border: '2px solid rgba(0,0,0,0.04)',
+                boxShadow: '0 6px 14px rgba(0,0,0,0.15)',
+              }}
+            />
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ height: 8, width: '70%', borderRadius: 6, bgcolor: titleColor, opacity: 0.9 }} />
+              <Box sx={{ height: 6, width: '55%', borderRadius: 6, bgcolor: pageTextColor, opacity: 0.7, mt: 0.5 }} />
+            </Box>
+          </Box>
+
+          <Stack spacing={0.7}>
+            {[0, 1].map((item) => (
+              <Box
+                key={item}
+                sx={{
+                  height: 14,
+                  width: '100%',
+                  borderRadius: buttonPreviewStyle.borderRadius || '8px',
+                  backgroundColor: buttonPreviewStyle.backgroundColor || 'rgba(255,255,255,0.9)',
+                  border: buttonPreviewStyle.border,
+                  boxShadow: buttonPreviewStyle.boxShadow,
+                  opacity: 0.95,
+                }}
+              />
+            ))}
+          </Stack>
+
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 2,
+              pointerEvents: 'none',
+            }}
+          />
+        </Box>
+      );
+    }
+
+    return <Box sx={{ height: '100%', bgcolor: 'grey.200' }} />;
+  };
+
   return (
     <Box
       onClick={theme.isPro ? undefined : onClick}
@@ -190,27 +287,7 @@ function ThemeCard({ theme, selected, onClick }: ThemeCardProps) {
           },
         }}
       >
-        {theme.id === 'custom' ? (
-          <Box
-            sx={{
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'grey.100',
-            }}
-          >
-            <PaletteIcon sx={{ fontSize: 32, color: 'grey.500' }} />
-          </Box>
-        ) : theme.preview ? (
-          <Box
-            component="img"
-            src={theme.preview}
-            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <Box sx={{ height: '100%', bgcolor: 'grey.200' }} />
-        )}
+        {renderPreview()}
         {theme.isPro && (
           <Chip
             icon={<LockIcon sx={{ fontSize: 12 }} />}
@@ -332,6 +409,36 @@ export default function AppearancePage() {
     }));
   };
 
+  const handleThemeSelect = (theme: AppearanceTheme) => {
+    if (theme.isPro) return;
+
+    setFormData(prev => {
+      const next = {
+        ...prev,
+        theme: theme.id,
+        customTheme: theme.id === 'custom',
+      };
+
+      if (!theme.appearance) {
+        return next;
+      }
+
+      return {
+        ...next,
+        wallpaper: theme.appearance.wallpaper ? { ...prev.wallpaper, ...theme.appearance.wallpaper } : next.wallpaper,
+        buttons: theme.appearance.buttons ? { ...prev.buttons, ...theme.appearance.buttons } : next.buttons,
+        text: theme.appearance.text ? { ...prev.text, ...theme.appearance.text } : next.text,
+        header: theme.appearance.header ? { ...prev.header, ...theme.appearance.header } : next.header,
+        layoutStyle: theme.appearance.layoutStyle ?? next.layoutStyle,
+      };
+    });
+  };
+
+  const previewAppearance = useMemo(() => {
+    const { theme: _theme, customTheme: _customTheme, ...rest } = formData;
+    return rest;
+  }, [formData]);
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -367,7 +474,7 @@ export default function AppearancePage() {
                 </Typography>
               </Box>
               <PhonePreview
-                appearance={formData}
+                appearance={previewAppearance}
                 links={activeLinks}
                 displayName={formData.header.displayName}
                 compact
@@ -533,7 +640,7 @@ export default function AppearancePage() {
                               <ThemeCard
                                 theme={theme}
                                 selected={formData.theme === theme.id}
-                                onClick={() => setFormData(prev => ({ ...prev, theme: theme.id }))}
+                                onClick={() => handleThemeSelect(theme)}
                               />
                             </Grid>
                           ))}
@@ -1064,7 +1171,7 @@ export default function AppearancePage() {
               </Box>
 
               <PhonePreview
-                appearance={formData}
+                appearance={previewAppearance}
                 links={activeLinks}
                 displayName={formData.header.displayName}
               />

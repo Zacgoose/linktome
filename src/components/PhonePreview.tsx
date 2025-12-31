@@ -123,17 +123,19 @@ export default function PhonePreview({
   compact = false,
   className,
 }: PhonePreviewProps) {
-  const wallpaper = appearance.wallpaper || DEFAULT_WALLPAPER;
-  const buttons = appearance.buttons || DEFAULT_BUTTONS;
-  const text = appearance.text || DEFAULT_TEXT;
-  const header = appearance.header || {
+  const { theme: _theme, customTheme: _customTheme, ...appearanceProps } = appearance || {};
+
+  const wallpaper = appearanceProps.wallpaper || DEFAULT_WALLPAPER;
+  const buttons = appearanceProps.buttons || DEFAULT_BUTTONS;
+  const text = appearanceProps.text || DEFAULT_TEXT;
+  const header = appearanceProps.header || {
     profileImageLayout: 'classic',
     titleStyle: 'text',
     displayName: displayName,
   };
-  const socialIcons = appearance.socialIcons || [];
-  const layoutStyle = appearance.layoutStyle || 'centered';
-  const customGradient = appearance.customGradient;
+  const socialIcons = appearanceProps.socialIcons || [];
+  const layoutStyle = appearanceProps.layoutStyle || 'centered';
+  const customGradient = appearanceProps.customGradient;
 
   const activeLinks = links.filter(link => link.active).sort((a, b) => a.order - b.order);
   const backgroundStyle = getBackgroundStyle(wallpaper, customGradient);
@@ -241,15 +243,17 @@ export default function PhonePreview({
           >
             {layoutStyle === 'card' ? (
               /* Card Layout */
-              <Card 
-                elevation={3} 
-                sx={{ 
-                  borderRadius: 3, 
-                  mx: compact ? 0 : 0.5,
-                  overflow: 'visible',
-                }}
-              >
-                <CardContent sx={{ p: compact ? 2 : 2.5, textAlign: 'center' }}>
+              <>
+                <Card 
+                  elevation={3} 
+                  sx={{ 
+                    borderRadius: 3, 
+                    mx: compact ? 0 : 0.5,
+                    overflow: 'visible',
+                    bgcolor: '#ffffff',
+                  }}
+                >
+                  <CardContent sx={{ p: compact ? 2 : 2.5, textAlign: 'center' }}>
                   {/* Hero Image */}
                   {isHeroLayout ? (
                     <Box
@@ -357,8 +361,25 @@ export default function PhonePreview({
                       </>
                     )}
                   </Stack>
-                </CardContent>
-              </Card>
+
+                  </CardContent>
+                </Card>
+
+                {/* Footer mirrors public page placement (outside card) */}
+                {!appearance.hideFooter && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      mt: compact ? 2 : 3,
+                      textAlign: 'center',
+                      display: 'block',
+                    }}
+                  >
+                    Powered by LinkToMe
+                  </Typography>
+                )}
+              </>
             ) : (
               /* Centered Layout */
               <Box sx={{ textAlign: 'center', px: compact ? 0 : 0.5 }}>
@@ -546,12 +567,14 @@ export default function PhonePreview({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: darkBg ? 'rgba(255,255,255,0.5)' : 'text.disabled',
+                      color: darkBg ? 'rgba(255,255,255,0.7)' : text.pageTextColor,
+                      opacity: darkBg ? 0.8 : 0.6,
                       mt: 3,
                       display: 'block',
+                      fontFamily: bodyFontFamily,
                     }}
                   >
-                    LinkToMe
+                    Powered by LinkToMe
                   </Typography>
                 )}
               </Box>

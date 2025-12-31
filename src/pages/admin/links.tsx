@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import {
   Container,
@@ -101,13 +101,14 @@ interface UpdateLinksRequest {
 
 interface SortableLinkCardProps {
   link: Link;
+  appearance: AppearanceData;
   onEdit: (link: Link) => void;
   onDelete: (id: string) => void;
   onToggle: (id: string, active: boolean) => void;
   onOpenSettings: (link: Link, setting: string) => void;
 }
 
-function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: SortableLinkCardProps) {
+function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpenSettings }: SortableLinkCardProps) {
   const {
     attributes,
     listeners,
@@ -118,6 +119,11 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
   } = useSortable({ id: link.id });
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const accent = appearance.buttons?.backgroundColor || '#e0e7ff';
+  const accentText = appearance.buttons?.textColor || 'text.primary';
+  const accentBg = `${accent}15`;
+  const accentBgStrong = `${accent}30`;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -155,12 +161,12 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
             display: 'flex',
             alignItems: 'center',
             px: 1.5,
-            bgcolor: 'grey.50',
+            bgcolor: accentBg,
             cursor: 'grab',
             '&:active': { cursor: 'grabbing' },
           }}
         >
-          <DragIcon sx={{ color: 'grey.400' }} />
+          <DragIcon sx={{ color: accentText }} />
         </Box>
 
         {/* Main Content */}
@@ -201,7 +207,15 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
 
             {/* Action Buttons */}
             <Stack direction="row" spacing={0.5} sx={{ ml: 2 }}>
-              <IconButton size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
+              <IconButton
+                size="small"
+                onClick={(e) => setAnchorEl(e.currentTarget)}
+                sx={{
+                  bgcolor: appearance.buttons?.backgroundColor ? `${appearance.buttons.backgroundColor}15` : undefined,
+                  color: appearance.buttons?.textColor,
+                  '&:hover': { bgcolor: appearance.buttons?.backgroundColor ? `${appearance.buttons.backgroundColor}30` : 'grey.100' },
+                }}
+              >
                 <ShareIcon fontSize="small" />
               </IconButton>
               <Switch
@@ -220,8 +234,9 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
                 size="small"
                 onClick={() => onOpenSettings(link, 'layout')}
                 sx={{
-                  bgcolor: link.layout && link.layout !== 'classic' ? 'primary.50' : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.layout && link.layout !== 'classic' ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <LayoutIcon fontSize="small" />
@@ -232,7 +247,7 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
               <IconButton
                 size="small"
                 onClick={() => onOpenSettings(link, 'redirect')}
-                sx={{ bgcolor: 'grey.100', '&:hover': { bgcolor: 'grey.200' } }}
+                sx={{ bgcolor: accentBg, '&:hover': { bgcolor: accentBgStrong }, color: accentText }}
               >
                 <RedirectIcon fontSize="small" />
               </IconButton>
@@ -243,8 +258,9 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
                 size="small"
                 onClick={() => onOpenSettings(link, 'thumbnail')}
                 sx={{
-                  bgcolor: link.thumbnail ? 'primary.50' : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.thumbnail ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <ImageIcon fontSize="small" />
@@ -256,8 +272,9 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
                 size="small"
                 onClick={() => onOpenSettings(link, 'animation')}
                 sx={{
-                  bgcolor: link.animation && link.animation !== 'none' ? 'primary.50' : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.animation && link.animation !== 'none' ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <AnimationIcon fontSize="small" />
@@ -269,8 +286,9 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
                 size="small"
                 onClick={() => onOpenSettings(link, 'schedule')}
                 sx={{
-                  bgcolor: link.schedule?.enabled ? 'warning.50' : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.schedule?.enabled ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <ScheduleIcon fontSize="small" />
@@ -282,8 +300,9 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
                 size="small"
                 onClick={() => onOpenSettings(link, 'lock')}
                 sx={{
-                  bgcolor: link.lock?.enabled ? 'error.50' : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.lock?.enabled ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <LockIcon fontSize="small" />
@@ -303,7 +322,7 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
                 color="default"
                 sx={{
                   '& .MuiBadge-badge': {
-                    bgcolor: 'grey.200',
+                    bgcolor: accentBgStrong,
                     color: 'text.primary',
                     fontSize: 10,
                     minWidth: 'auto',
@@ -315,7 +334,7 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
                 <IconButton
                   size="small"
                   onClick={() => onOpenSettings(link, 'analytics')}
-                  sx={{ bgcolor: 'grey.100', '&:hover': { bgcolor: 'grey.200' } }}
+                  sx={{ bgcolor: accentBg, '&:hover': { bgcolor: accentBgStrong }, color: accentText }}
                 >
                   <AnalyticsIcon fontSize="small" />
                 </IconButton>
@@ -325,7 +344,7 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
             <IconButton
               size="small"
               onClick={() => onDelete(link.id)}
-              sx={{ bgcolor: 'grey.100', '&:hover': { bgcolor: 'error.50' } }}
+              sx={{ bgcolor: accentBg, '&:hover': { bgcolor: 'error.50' }, color: accentText }}
             >
               <DeleteIcon fontSize="small" />
             </IconButton>
@@ -352,6 +371,7 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
 interface SortableGroupProps {
   group: LinkGroup;
   links: Link[];
+  appearance: AppearanceData;
   onEditGroup: (group: LinkGroup) => void;
   onDeleteGroup: (id: string) => void;
   onToggleGroup: (id: string, active: boolean) => void;
@@ -365,6 +385,7 @@ interface SortableGroupProps {
 function SortableGroup({
   group,
   links,
+  appearance,
   onEditGroup,
   onDeleteGroup,
   onToggleGroup,
@@ -412,7 +433,7 @@ function SortableGroup({
           display: 'flex',
           alignItems: 'center',
           p: 2,
-          bgcolor: 'grey.50',
+          bgcolor: appearance.buttons?.backgroundColor ? `${appearance.buttons.backgroundColor}10` : 'grey.50',
           borderBottom: isCollapsed ? 'none' : '1px solid',
           borderColor: 'divider',
         }}
@@ -420,9 +441,14 @@ function SortableGroup({
         <Box
           {...attributes}
           {...listeners}
-          sx={{ cursor: 'grab', mr: 1, '&:active': { cursor: 'grabbing' } }}
+          sx={{
+            cursor: 'grab',
+            mr: 1,
+            '&:active': { cursor: 'grabbing' },
+            color: appearance.buttons?.textColor || 'grey.500',
+          }}
         >
-          <DragIcon sx={{ color: 'grey.400' }} />
+          <DragIcon sx={{ color: appearance.buttons?.textColor || 'grey.400' }} />
         </Box>
 
         <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)} sx={{ mr: 1 }}>
@@ -474,6 +500,7 @@ function SortableGroup({
                 <SortableLinkCard
                   key={link.id}
                   link={link}
+                  appearance={appearance}
                   onEdit={onEditLink}
                   onDelete={onDeleteLink}
                   onToggle={onToggleLink}
@@ -527,7 +554,11 @@ export default function LinksPage() {
     }
   }, [linksData]);
 
-  const appearance = appearanceData || DEFAULT_APPEARANCE;
+  const appearance = useMemo(() => {
+    const source = appearanceData || DEFAULT_APPEARANCE;
+    const { theme: _theme, customTheme: _customTheme, ...rest } = source;
+    return rest as AppearanceData;
+  }, [appearanceData]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -845,6 +876,7 @@ export default function LinksPage() {
                       <SortableLinkCard
                         key={link.id}
                         link={link}
+                        appearance={appearance}
                         onEdit={handleEditLink}
                         onDelete={handleDeleteLink}
                         onToggle={handleToggleLink}
@@ -854,15 +886,16 @@ export default function LinksPage() {
 
                     {/* Groups */}
                     {sortedGroups.map((group) => (
-                      <SortableGroup
-                        key={group.id}
-                        group={group}
-                        links={links}
-                        onEditGroup={handleEditGroup}
-                        onDeleteGroup={handleDeleteGroup}
-                        onToggleGroup={handleToggleGroup}
-                        onAddLinkToGroup={handleAddLinkToGroup}
-                        onEditLink={handleEditLink}
+        <SortableGroup
+          key={group.id}
+          group={group}
+          links={links}
+          appearance={appearance}
+          onEditGroup={handleEditGroup}
+          onDeleteGroup={handleDeleteGroup}
+          onToggleGroup={handleToggleGroup}
+          onAddLinkToGroup={handleAddLinkToGroup}
+          onEditLink={handleEditLink}
                         onDeleteLink={handleDeleteLink}
                         onToggleLink={handleToggleLink}
                         onOpenSettings={handleOpenSettings}

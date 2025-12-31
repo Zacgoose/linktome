@@ -169,6 +169,7 @@ const LinkButton: React.FC<LinkButtonProps> = ({ link, buttons, bodyFontFamily, 
       sx={{
         ...buttonStyle,
         ...animationStyle,
+        color: `${buttons.textColor || 'inherit'} !important`,
         fontFamily: bodyFontFamily,
         py: isFeatured ? 3 : 1.5,
         px: 3,
@@ -176,6 +177,11 @@ const LinkButton: React.FC<LinkButtonProps> = ({ link, buttons, bodyFontFamily, 
         justifyContent: thumbnailPosition ? 'flex-start' : 'center',
         flexDirection: thumbnailPosition === 'right' ? 'row-reverse' : 'row',
         gap: 2,
+        '& .MuiSvgIcon-root': { color: buttons.textColor || 'inherit' },
+        '& .MuiTypography-root': { color: buttons.textColor || 'inherit' },
+        '& .MuiButton-startIcon > *:not(style), & .MuiButton-endIcon > *:not(style)': {
+          color: buttons.textColor || 'inherit',
+        },
         '&:hover': {
           opacity: 0.9,
           transform: buttons.hoverEffect === 'lift' ? 'translateY(-2px)' : 
@@ -397,7 +403,7 @@ export default function PublicProfile() {
   const backgroundStyle = getBackgroundStyle(appearance.wallpaper, appearance.customGradient);
   const isLayoutCard = appearance.layoutStyle === 'card';
   const darkBg = isDarkBackground(appearance.wallpaper);
-  const textColor = darkBg ? '#ffffff' : appearance.text?.pageTextColor || '#010101';
+  const textColor = appearance.text?.pageTextColor || (darkBg ? '#ffffff' : '#010101');
   const titleFontFamily = getFontFamily(appearance.text?.titleFont);
   const bodyFontFamily = getFontFamily(appearance.text?.bodyFont);
   
