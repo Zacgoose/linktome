@@ -425,7 +425,6 @@ export default function AppearancePage() {
 
       return {
         ...next,
-        customTheme: false,
         wallpaper: theme.appearance.wallpaper ? { ...prev.wallpaper, ...theme.appearance.wallpaper } : next.wallpaper,
         buttons: theme.appearance.buttons ? { ...prev.buttons, ...theme.appearance.buttons } : next.buttons,
         text: theme.appearance.text ? { ...prev.text, ...theme.appearance.text } : next.text,
