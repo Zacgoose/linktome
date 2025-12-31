@@ -169,6 +169,7 @@ const LinkButton: React.FC<LinkButtonProps> = ({ link, buttons, bodyFontFamily, 
       sx={{
         ...buttonStyle,
         ...animationStyle,
+        color: buttons.textColor || 'inherit',
         fontFamily: bodyFontFamily,
         py: isFeatured ? 3 : 1.5,
         px: 3,
@@ -176,6 +177,7 @@ const LinkButton: React.FC<LinkButtonProps> = ({ link, buttons, bodyFontFamily, 
         justifyContent: thumbnailPosition ? 'flex-start' : 'center',
         flexDirection: thumbnailPosition === 'right' ? 'row-reverse' : 'row',
         gap: 2,
+        '& .MuiSvgIcon-root': { color: buttons.textColor || 'inherit' },
         '&:hover': {
           opacity: 0.9,
           transform: buttons.hoverEffect === 'lift' ? 'translateY(-2px)' : 
