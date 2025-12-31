@@ -324,18 +324,6 @@ export default function AppearancePage() {
     }));
   };
 
-  const cornerRadiusValue = {
-    square: 0,
-    rounded: 1,
-    pill: 2,
-  }[formData.buttons.cornerRadius] || 1;
-
-  const handleCornerRadiusChange = (_: Event, value: number | number[]) => {
-    const val = value as number;
-    const cornerRadius = val === 0 ? 'square' : val === 1 ? 'rounded' : 'pill';
-    updateButtons({ cornerRadius });
-  };
-
   if (isLoading) {
     return (
       <AdminLayout>
