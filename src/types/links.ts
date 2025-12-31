@@ -81,7 +81,6 @@ export interface TextStyle {
   titleSize: 'small' | 'large';
   bodyFont: string;
   pageTextColor: string;
-  buttonTextColor: string;
 }
 
 export interface HeaderStyle {
@@ -193,7 +192,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         titleSize: 'small',
         bodyFont: 'inter',
         pageTextColor: '#23335b',
-        buttonTextColor: '#1c2541',
       },
     },
   },
@@ -216,7 +214,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         titleSize: 'small',
         bodyFont: 'inter',
         pageTextColor: '#cbd5e1',
-        buttonTextColor: '#0b1021',
       },
     },
   },
@@ -240,7 +237,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         titleSize: 'small',
         bodyFont: 'inter',
         pageTextColor: '#c7e3ff',
-        buttonTextColor: '#0b132b',
       },
       layoutStyle: 'card',
     },
@@ -265,7 +261,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         titleSize: 'small',
         bodyFont: 'inter',
         pageTextColor: '#cbd5e1',
-        buttonTextColor: '#0f172a',
       },
       layoutStyle: 'centered',
     },
@@ -290,7 +285,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         titleSize: 'small',
         bodyFont: 'dm-sans',
         pageTextColor: '#e2e8f0',
-        buttonTextColor: '#1f2937',
       },
       layoutStyle: 'card',
     },
@@ -316,7 +310,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         titleSize: 'small',
         bodyFont: 'inter',
         pageTextColor: '#e0def7',
-        buttonTextColor: '#0b0f1a',
       },
       layoutStyle: 'centered',
     },
@@ -342,7 +335,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         titleSize: 'small',
         bodyFont: 'inter',
         pageTextColor: '#c3c9d7',
-        buttonTextColor: '#0d1b2a',
       },
       layoutStyle: 'centered',
     },
@@ -367,7 +359,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         titleSize: 'small',
         bodyFont: 'inter',
         pageTextColor: '#6a2137',
-        buttonTextColor: '#8c304d',
       },
       layoutStyle: 'centered',
     },
@@ -393,7 +384,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         titleSize: 'small',
         bodyFont: 'inter',
         pageTextColor: '#243b53',
-        buttonTextColor: '#1d3a6d',
       },
       layoutStyle: 'card',
     },
@@ -450,7 +440,6 @@ export const DEFAULT_APPEARANCE: AppearanceData = {
     titleSize: 'small',
     bodyFont: 'inter',
     pageTextColor: '#010101',
-    buttonTextColor: '#010101',
   },
   hideFooter: false,
 };

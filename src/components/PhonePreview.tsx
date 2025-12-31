@@ -1,6 +1,6 @@
 import { Box, Card, CardContent, Avatar, Typography, Stack, Button, IconButton } from '@mui/material';
 import { Lock } from '@mui/icons-material';
-import { Link, LinkGroup, AppearanceData } from '@/types/links';
+import { Link, LinkGroup, AppearanceData, ButtonStyle } from '@/types/links';
 import {
   getFontFamily,
   getBackgroundStyle,
@@ -30,14 +30,15 @@ interface PhonePreviewProps {
 // Link Button Component for preview
 interface PreviewLinkButtonProps {
   link: Link;
-  buttonStyle: React.CSSProperties;
+  buttons: ButtonStyle;
   bodyFontFamily: string;
   compact: boolean;
 }
 
-function PreviewLinkButton({ link, buttonStyle, bodyFontFamily, compact }: PreviewLinkButtonProps) {
+function PreviewLinkButton({ link, buttons, bodyFontFamily, compact }: PreviewLinkButtonProps) {
   const { isFeatured, hasThumbnail, thumbnailPosition } = getLinkLayoutProps(link);
   const animationStyle = getAnimationStyle(link.animation);
+  const buttonStyle = getButtonStyle(buttons);
   
   return (
     <Button
@@ -47,6 +48,7 @@ function PreviewLinkButton({ link, buttonStyle, bodyFontFamily, compact }: Previ
       sx={{
         ...buttonStyle,
         ...animationStyle,
+        color: `${buttons.textColor || 'inherit'} !important`,
         fontFamily: bodyFontFamily,
         fontSize: compact ? '0.7rem' : '0.8rem',
         py: isFeatured ? (compact ? 1.5 : 2) : (compact ? 0.75 : 1),
@@ -55,6 +57,8 @@ function PreviewLinkButton({ link, buttonStyle, bodyFontFamily, compact }: Previ
         justifyContent: thumbnailPosition ? 'flex-start' : 'center',
         flexDirection: thumbnailPosition === 'right' ? 'row-reverse' : 'row',
         gap: 1,
+        '& .MuiSvgIcon-root': { color: buttons.textColor || 'inherit' },
+        '& .MuiTypography-root': { color: buttons.textColor || 'inherit' },
         '&:hover': {
           opacity: 0.9,
           transform: buttonStyle.boxShadow?.includes('4px 4px') ? 'translate(2px, 2px)' : undefined,
@@ -345,17 +349,35 @@ export default function PhonePreview({
                         <PreviewLinkButton
                           key={link.id}
                           link={link}
-                          buttonStyle={buttonStyleObj}
+                          buttons={buttons}
                           bodyFontFamily={bodyFontFamily}
                           compact={compact}
                         />
                       ))
                     ) : (
                       <>
-                        <Button variant="contained" size="small" fullWidth sx={{ ...buttonStyleObj, textTransform: 'none' }}>
+                        <Button 
+                          variant="contained" 
+                          size="small" 
+                          fullWidth 
+                          sx={{ 
+                            ...buttonStyleObj, 
+                            color: `${buttons.textColor || 'inherit'} !important`,
+                            textTransform: 'none',
+                          }}
+                        >
                           Sample Link 1
                         </Button>
-                        <Button variant="contained" size="small" fullWidth sx={{ ...buttonStyleObj, textTransform: 'none' }}>
+                        <Button 
+                          variant="contained" 
+                          size="small" 
+                          fullWidth 
+                          sx={{ 
+                            ...buttonStyleObj,
+                            color: `${buttons.textColor || 'inherit'} !important`, 
+                            textTransform: 'none',
+                          }}
+                        >
                           Sample Link 2
                         </Button>
                       </>
@@ -494,7 +516,7 @@ export default function PhonePreview({
                       <PreviewLinkButton
                         key={link.id}
                         link={link}
-                        buttonStyle={buttonStyleObj}
+                        buttons={buttons}
                         bodyFontFamily={bodyFontFamily}
                         compact={compact}
                       />
@@ -507,6 +529,7 @@ export default function PhonePreview({
                         fullWidth
                         sx={{
                           ...buttonStyleObj,
+                          color: `${buttons.textColor || 'inherit'} !important`,
                           fontSize: compact ? '0.75rem' : '0.8rem',
                           py: compact ? 0.75 : 1,
                           textTransform: 'none',
@@ -521,6 +544,7 @@ export default function PhonePreview({
                         fullWidth
                         sx={{
                           ...buttonStyleObj,
+                          color: `${buttons.textColor || 'inherit'} !important`,
                           fontSize: compact ? '0.75rem' : '0.8rem',
                           py: compact ? 0.75 : 1,
                           textTransform: 'none',
@@ -551,7 +575,7 @@ export default function PhonePreview({
                             <PreviewLinkButton
                               key={link.id}
                               link={link}
-                              buttonStyle={buttonStyleObj}
+                              buttons={buttons}
                               bodyFontFamily={bodyFontFamily}
                               compact={compact}
                             />

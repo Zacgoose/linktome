@@ -283,7 +283,7 @@ export const getTextColor = (
 /**
  * Get link layout properties
  */
-export const getLinkLayoutProps = (link: Link) => {
+export const getLinkLayoutProps = (link: Pick<Link, 'layout' | 'thumbnail' | 'icon'>) => {
   const isFeatured = link.layout === 'featured';
   const hasThumbnail = link.thumbnail || link.icon;
   const thumbnailPosition = link.layout === 'thumbnail-left' ? 'left' : 
@@ -318,5 +318,4 @@ export const DEFAULT_TEXT: TextStyle = {
   titleSize: 'small',
   bodyFont: 'inter',
   pageTextColor: '#010101',
-  buttonTextColor: '#010101',
 };

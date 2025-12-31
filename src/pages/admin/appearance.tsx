@@ -377,7 +377,7 @@ export default function AppearancePage() {
     e.preventDefault();
     updateAppearance.mutate({
       url: 'admin/UpdateAppearance',
-      data: formData,
+      data: formData as unknown as Record<string, unknown>,
     });
   };
 

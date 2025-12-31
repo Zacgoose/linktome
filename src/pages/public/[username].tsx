@@ -35,8 +35,14 @@ import {
   getLinkLayoutProps,
   ANIMATION_KEYFRAMES,
 } from '@/utils/appearanceUtils';
+import type { 
+  WallpaperStyle, 
+  ButtonStyle, 
+  TextStyle, 
+  HeaderStyle,
+} from '@/types/links';
 
-// Types
+// Types for public profile response
 interface LinkLock {
   enabled: boolean;
   type?: 'code' | 'age' | 'sensitive';
@@ -55,6 +61,7 @@ interface Link {
   animation?: 'none' | 'shake' | 'pulse' | 'bounce' | 'glow';
   groupId?: string | null;
   lock?: LinkLock;
+  active?: boolean;
 }
 
 interface LinkGroup {
@@ -70,46 +77,6 @@ interface SocialIcon {
   platform: string;
   url: string;
   order: number;
-}
-
-interface WallpaperStyle {
-  type: 'fill' | 'gradient' | 'blur' | 'pattern' | 'image' | 'video';
-  color?: string;
-  gradientStart?: string;
-  gradientEnd?: string;
-  gradientDirection?: number;
-  patternType?: string;
-  patternColor?: string;
-  imageUrl?: string;
-  videoUrl?: string;
-  blur?: number;
-  opacity?: number;
-}
-
-interface ButtonStyle {
-  type: 'solid' | 'glass' | 'outline';
-  cornerRadius: 'square' | 'rounded' | 'pill';
-  shadow: 'none' | 'subtle' | 'strong' | 'hard';
-  backgroundColor: string;
-  textColor: string;
-  borderColor?: string;
-  hoverEffect?: string;
-}
-
-interface TextStyle {
-  titleFont: string;
-  titleColor: string;
-  titleSize: 'small' | 'large';
-  bodyFont: string;
-  pageTextColor: string;
-}
-
-interface HeaderStyle {
-  profileImageLayout: 'classic' | 'hero';
-  titleStyle: 'text' | 'logo';
-  logoUrl?: string;
-  displayName: string;
-  bio?: string;
 }
 
 interface Appearance {
@@ -742,12 +709,12 @@ const ProfileContent: React.FC<ProfileContentProps> = ({
                 spacing={2}
                 direction={group.layout === 'grid' ? 'row' : 'column'}
                 flexWrap={group.layout === 'grid' ? 'wrap' : 'nowrap'}
-                sx={{
-                  '& > *': group.layout === 'grid' ? { 
+                sx={group.layout === 'grid' ? {
+                  '& > *': { 
                     flex: '1 1 calc(50% - 8px)',
                     minWidth: 'calc(50% - 8px)',
-                  } : undefined,
-                }}
+                  },
+                } : undefined}
               >
                 {groupLinks.map((link) => (
                   <LinkButton 
