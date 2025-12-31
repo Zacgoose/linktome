@@ -243,15 +243,17 @@ export default function PhonePreview({
           >
             {layoutStyle === 'card' ? (
               /* Card Layout */
-              <Card 
-                elevation={3} 
-                sx={{ 
-                  borderRadius: 3, 
-                  mx: compact ? 0 : 0.5,
-                  overflow: 'visible',
-                }}
-              >
-                <CardContent sx={{ p: compact ? 2 : 2.5, textAlign: 'center' }}>
+              <>
+                <Card 
+                  elevation={3} 
+                  sx={{ 
+                    borderRadius: 3, 
+                    mx: compact ? 0 : 0.5,
+                    overflow: 'visible',
+                    bgcolor: '#ffffff',
+                  }}
+                >
+                  <CardContent sx={{ p: compact ? 2 : 2.5, textAlign: 'center' }}>
                   {/* Hero Image */}
                   {isHeroLayout ? (
                     <Box
@@ -360,20 +362,24 @@ export default function PhonePreview({
                     )}
                   </Stack>
 
-                  {!appearance.hideFooter && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: 'text.secondary',
-                        mt: compact ? 2 : 3,
-                        display: 'block',
-                      }}
-                    >
-                      Powered by LinkToMe
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                {/* Footer mirrors public page placement (outside card) */}
+                {!appearance.hideFooter && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      mt: compact ? 2 : 3,
+                      textAlign: 'center',
+                      display: 'block',
+                    }}
+                  >
+                    Powered by LinkToMe
+                  </Typography>
+                )}
+              </>
             ) : (
               /* Centered Layout */
               <Box sx={{ textAlign: 'center', px: compact ? 0 : 0.5 }}>
