@@ -246,10 +246,10 @@ export default function PublicProfile() {
                       }
                       sx={{
                         borderRadius: getButtonBorderRadius(profile.appearance?.buttonStyle),
-                        bgcolor: profile.appearance?.colors?.buttonBackground || '#667eea',
-                        color: profile.appearance?.colors?.buttonText || '#ffffff',
+                        bgcolor: `${profile.appearance?.colors?.buttonBackground || '#667eea'} !important`,
+                        color: `${profile.appearance?.colors?.buttonText || '#ffffff'} !important`,
                         '&:hover': {
-                          bgcolor: profile.appearance?.colors?.buttonBackground || '#667eea',
+                          bgcolor: `${profile.appearance?.colors?.buttonBackground || '#667eea'} !important`,
                           opacity: 0.9,
                         },
                       }}
@@ -308,11 +308,11 @@ export default function PublicProfile() {
                     }
                     sx={{
                       borderRadius: getButtonBorderRadius(profile.appearance?.buttonStyle),
-                      bgcolor: profile.appearance?.colors?.buttonBackground || '#ffffff',
-                      color: profile.appearance?.colors?.buttonText || '#667eea',
+                      bgcolor: `${profile.appearance?.colors?.buttonBackground || '#667eea'} !important`,
+                      color: `${profile.appearance?.colors?.buttonText || '#ffffff'} !important`,
                       boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       '&:hover': {
-                        bgcolor: profile.appearance?.colors?.buttonBackground || '#ffffff',
+                        bgcolor: `${profile.appearance?.colors?.buttonBackground || '#667eea'} !important`,
                         opacity: 0.9,
                         boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
                       },

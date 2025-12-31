@@ -250,7 +250,7 @@ export default function AppearancePage() {
               >
                 <Box sx={{ width: '100%', maxWidth: 400 }}>
                   {formData.layoutStyle === 'card' ? (
-                    <Card elevation={4}>
+                    <Card elevation={4} sx={{ bgcolor: '#ffffff' }}>
                       <CardContent sx={{ p: 4, textAlign: 'center' }}>
                         <Avatar
                           sx={{ 
@@ -258,19 +258,19 @@ export default function AppearancePage() {
                             height: 100, 
                             mx: 'auto', 
                             mb: 2,
-                            bgcolor: 'grey.300',
+                            bgcolor: '#e0e0e0',
                           }}
                         >
-                          <Typography variant="h4" color="text.secondary">U</Typography>
+                          <Typography variant="h4" sx={{ color: '#666666' }}>U</Typography>
                         </Avatar>
                         
-                        <Typography variant="h5" fontWeight={700} gutterBottom>
+                        <Typography variant="h5" fontWeight={700} gutterBottom sx={{ color: '#222222' }}>
                           Your Name
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                        <Typography variant="body2" sx={{ color: '#666666' }} gutterBottom>
                           @username
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: '#666666', mt: 1, mb: 3 }}>
                           Your bio will appear here
                         </Typography>
                         
@@ -281,10 +281,10 @@ export default function AppearancePage() {
                             fullWidth
                             sx={{
                               borderRadius: previewButtonBorderRadius,
-                              bgcolor: formData.colors.buttonBackground,
-                              color: formData.colors.buttonText,
+                              bgcolor: `${formData.colors.buttonBackground} !important`,
+                              color: `${formData.colors.buttonText} !important`,
                               '&:hover': {
-                                bgcolor: formData.colors.buttonBackground,
+                                bgcolor: `${formData.colors.buttonBackground} !important`,
                                 opacity: 0.9,
                               },
                             }}
@@ -297,10 +297,10 @@ export default function AppearancePage() {
                             fullWidth
                             sx={{
                               borderRadius: previewButtonBorderRadius,
-                              bgcolor: formData.colors.buttonBackground,
-                              color: formData.colors.buttonText,
+                              bgcolor: `${formData.colors.buttonBackground} !important`,
+                              color: `${formData.colors.buttonText} !important`,
                               '&:hover': {
-                                bgcolor: formData.colors.buttonBackground,
+                                bgcolor: `${formData.colors.buttonBackground} !important`,
                                 opacity: 0.9,
                               },
                             }}
@@ -323,7 +323,7 @@ export default function AppearancePage() {
                           borderColor: '#ffffff',
                         }}
                       >
-                        <Typography variant="h4" color="text.secondary">U</Typography>
+                        <Typography variant="h4" sx={{ color: '#666666' }}>U</Typography>
                       </Avatar>
                       
                       <Typography variant="h5" fontWeight={700} gutterBottom sx={{ color: '#ffffff' }}>
@@ -343,11 +343,11 @@ export default function AppearancePage() {
                           fullWidth
                           sx={{
                             borderRadius: previewButtonBorderRadius,
-                            bgcolor: formData.colors.buttonBackground,
-                            color: formData.colors.buttonText,
+                            bgcolor: `${formData.colors.buttonBackground} !important`,
+                            color: `${formData.colors.buttonText} !important`,
                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                             '&:hover': {
-                              bgcolor: formData.colors.buttonBackground,
+                              bgcolor: `${formData.colors.buttonBackground} !important`,
                               opacity: 0.9,
                             },
                           }}
@@ -360,11 +360,11 @@ export default function AppearancePage() {
                           fullWidth
                           sx={{
                             borderRadius: previewButtonBorderRadius,
-                            bgcolor: formData.colors.buttonBackground,
-                            color: formData.colors.buttonText,
+                            bgcolor: `${formData.colors.buttonBackground} !important`,
+                            color: `${formData.colors.buttonText} !important`,
                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                             '&:hover': {
-                              bgcolor: formData.colors.buttonBackground,
+                              bgcolor: `${formData.colors.buttonBackground} !important`,
                               opacity: 0.9,
                             },
                           }}
@@ -541,10 +541,10 @@ export default function AppearancePage() {
                                 size="small"
                                 sx={{
                                   borderRadius: style.borderRadius,
-                                  bgcolor: formData.colors.buttonBackground,
-                                  color: formData.colors.buttonText,
+                                  bgcolor: `${formData.colors.buttonBackground} !important`,
+                                  color: `${formData.colors.buttonText} !important`,
                                   '&:hover': {
-                                    bgcolor: formData.colors.buttonBackground,
+                                    bgcolor: `${formData.colors.buttonBackground} !important`,
                                     opacity: 0.9,
                                   },
                                 }}
