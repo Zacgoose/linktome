@@ -283,7 +283,7 @@ export const getTextColor = (
 /**
  * Get link layout properties
  */
-export const getLinkLayoutProps = (link: Link) => {
+export const getLinkLayoutProps = (link: Pick<Link, 'layout' | 'thumbnail' | 'icon'>) => {
   const isFeatured = link.layout === 'featured';
   const hasThumbnail = link.thumbnail || link.icon;
   const thumbnailPosition = link.layout === 'thumbnail-left' ? 'left' : 
