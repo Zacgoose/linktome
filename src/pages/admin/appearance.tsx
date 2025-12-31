@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
@@ -434,6 +434,11 @@ export default function AppearancePage() {
     });
   };
 
+  const previewAppearance = useMemo(() => {
+    const { theme: _theme, customTheme: _customTheme, ...rest } = formData;
+    return rest;
+  }, [formData]);
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -469,7 +474,7 @@ export default function AppearancePage() {
                 </Typography>
               </Box>
               <PhonePreview
-                appearance={formData}
+                appearance={previewAppearance}
                 links={activeLinks}
                 displayName={formData.header.displayName}
                 compact
@@ -1166,7 +1171,7 @@ export default function AppearancePage() {
               </Box>
 
               <PhonePreview
-                appearance={formData}
+                appearance={previewAppearance}
                 links={activeLinks}
                 displayName={formData.header.displayName}
               />
