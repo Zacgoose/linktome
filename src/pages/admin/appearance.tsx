@@ -923,22 +923,35 @@ export default function AppearancePage() {
                         <Divider />
 
                         <Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Typography variant="body2" fontWeight={500}>Corners</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Typography variant="caption" color="text.secondary">Square</Typography>
-                            <Slider
-                              value={cornerRadiusValue}
-                              onChange={handleCornerRadiusChange}
-                              min={0}
-                              max={2}
-                              step={1}
-                              marks
-                              sx={{ flex: 1 }}
-                            />
-                            <Typography variant="caption" color="text.secondary">Round</Typography>
-                          </Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Corners</Typography>
+                          <Grid container spacing={2} sx={{ mb: 1 }}>
+                            {[
+                              { value: 'square', label: 'Square', borderRadius: 0 },
+                              { value: 'rounded', label: 'Rounded', borderRadius: 1 },
+                              { value: 'pill', label: 'Pill', borderRadius: 999 },
+                            ].map(opt => (
+                              <Grid item xs={4} key={opt.value}>
+                                <Button
+                                  fullWidth
+                                  variant={formData.buttons.cornerRadius === opt.value ? 'contained' : 'outlined'}
+                                  onClick={() => updateButtons({ cornerRadius: opt.value as any })}
+                                  sx={{
+                                    borderRadius: opt.borderRadius,
+                                    height: 44,
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                    fontSize: 15,
+                                    bgcolor: formData.buttons.cornerRadius === opt.value ? 'primary.main' : 'background.paper',
+                                    color: formData.buttons.cornerRadius === opt.value ? 'primary.contrastText' : 'text.primary',
+                                    boxShadow: formData.buttons.cornerRadius === opt.value ? 2 : 0,
+                                    transition: 'all 0.2s',
+                                  }}
+                                >
+                                  {opt.label}
+                                </Button>
+                              </Grid>
+                            ))}
+                          </Grid>
                         </Box>
 
                         <Box>
