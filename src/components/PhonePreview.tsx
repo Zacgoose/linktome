@@ -123,17 +123,19 @@ export default function PhonePreview({
   compact = false,
   className,
 }: PhonePreviewProps) {
-  const wallpaper = appearance.wallpaper || DEFAULT_WALLPAPER;
-  const buttons = appearance.buttons || DEFAULT_BUTTONS;
-  const text = appearance.text || DEFAULT_TEXT;
-  const header = appearance.header || {
+  const { theme: _theme, customTheme: _customTheme, ...appearanceProps } = appearance || {};
+
+  const wallpaper = appearanceProps.wallpaper || DEFAULT_WALLPAPER;
+  const buttons = appearanceProps.buttons || DEFAULT_BUTTONS;
+  const text = appearanceProps.text || DEFAULT_TEXT;
+  const header = appearanceProps.header || {
     profileImageLayout: 'classic',
     titleStyle: 'text',
     displayName: displayName,
   };
-  const socialIcons = appearance.socialIcons || [];
-  const layoutStyle = appearance.layoutStyle || 'centered';
-  const customGradient = appearance.customGradient;
+  const socialIcons = appearanceProps.socialIcons || [];
+  const layoutStyle = appearanceProps.layoutStyle || 'centered';
+  const customGradient = appearanceProps.customGradient;
 
   const activeLinks = links.filter(link => link.active).sort((a, b) => a.order - b.order);
   const backgroundStyle = getBackgroundStyle(wallpaper, customGradient);
