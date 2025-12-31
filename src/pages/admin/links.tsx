@@ -120,6 +120,11 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  const accent = appearance.buttons?.backgroundColor || '#e0e7ff';
+  const accentText = appearance.buttons?.textColor || 'text.primary';
+  const accentBg = `${accent}15`;
+  const accentBgStrong = `${accent}30`;
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -156,14 +161,12 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
             display: 'flex',
             alignItems: 'center',
             px: 1.5,
-            bgcolor: appearance.buttons?.backgroundColor
-              ? `${appearance.buttons.backgroundColor}15`
-              : 'grey.50',
+            bgcolor: accentBg,
             cursor: 'grab',
             '&:active': { cursor: 'grabbing' },
           }}
         >
-          <DragIcon sx={{ color: appearance.buttons?.textColor || 'grey.400' }} />
+          <DragIcon sx={{ color: accentText }} />
         </Box>
 
         {/* Main Content */}
@@ -231,10 +234,9 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
                 size="small"
                 onClick={() => onOpenSettings(link, 'layout')}
                 sx={{
-                  bgcolor: link.layout && link.layout !== 'classic'
-                    ? `${appearance.buttons?.backgroundColor || '#e0e7ff'}22`
-                    : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.layout && link.layout !== 'classic' ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <LayoutIcon fontSize="small" />
@@ -245,7 +247,7 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
               <IconButton
                 size="small"
                 onClick={() => onOpenSettings(link, 'redirect')}
-                sx={{ bgcolor: 'grey.100', '&:hover': { bgcolor: 'grey.200' } }}
+                sx={{ bgcolor: accentBg, '&:hover': { bgcolor: accentBgStrong }, color: accentText }}
               >
                 <RedirectIcon fontSize="small" />
               </IconButton>
@@ -256,8 +258,9 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
                 size="small"
                 onClick={() => onOpenSettings(link, 'thumbnail')}
                 sx={{
-                  bgcolor: link.thumbnail ? 'primary.50' : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.thumbnail ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <ImageIcon fontSize="small" />
@@ -269,8 +272,9 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
                 size="small"
                 onClick={() => onOpenSettings(link, 'animation')}
                 sx={{
-                  bgcolor: link.animation && link.animation !== 'none' ? 'primary.50' : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.animation && link.animation !== 'none' ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <AnimationIcon fontSize="small" />
@@ -282,8 +286,9 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
                 size="small"
                 onClick={() => onOpenSettings(link, 'schedule')}
                 sx={{
-                  bgcolor: link.schedule?.enabled ? 'warning.50' : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.schedule?.enabled ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <ScheduleIcon fontSize="small" />
@@ -295,8 +300,9 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
                 size="small"
                 onClick={() => onOpenSettings(link, 'lock')}
                 sx={{
-                  bgcolor: link.lock?.enabled ? 'error.50' : 'grey.100',
-                  '&:hover': { bgcolor: 'grey.200' },
+                  bgcolor: link.lock?.enabled ? accentBgStrong : accentBg,
+                  '&:hover': { bgcolor: accentBgStrong },
+                  color: accentText,
                 }}
               >
                 <LockIcon fontSize="small" />
@@ -316,7 +322,7 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
                 color="default"
                 sx={{
                   '& .MuiBadge-badge': {
-                    bgcolor: 'grey.200',
+                    bgcolor: accentBgStrong,
                     color: 'text.primary',
                     fontSize: 10,
                     minWidth: 'auto',
@@ -328,7 +334,7 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
                 <IconButton
                   size="small"
                   onClick={() => onOpenSettings(link, 'analytics')}
-                  sx={{ bgcolor: 'grey.100', '&:hover': { bgcolor: 'grey.200' } }}
+                  sx={{ bgcolor: accentBg, '&:hover': { bgcolor: accentBgStrong }, color: accentText }}
                 >
                   <AnalyticsIcon fontSize="small" />
                 </IconButton>
@@ -338,7 +344,7 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
             <IconButton
               size="small"
               onClick={() => onDelete(link.id)}
-              sx={{ bgcolor: 'grey.100', '&:hover': { bgcolor: 'error.50' } }}
+              sx={{ bgcolor: accentBg, '&:hover': { bgcolor: 'error.50' }, color: accentText }}
             >
               <DeleteIcon fontSize="small" />
             </IconButton>

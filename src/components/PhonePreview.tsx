@@ -359,6 +359,19 @@ export default function PhonePreview({
                       </>
                     )}
                   </Stack>
+
+                  {!appearance.hideFooter && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        mt: compact ? 2 : 3,
+                        display: 'block',
+                      }}
+                    >
+                      Powered by LinkToMe
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -548,12 +561,14 @@ export default function PhonePreview({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: darkBg ? 'rgba(255,255,255,0.5)' : 'text.disabled',
+                      color: darkBg ? 'rgba(255,255,255,0.7)' : text.pageTextColor,
+                      opacity: darkBg ? 0.8 : 0.6,
                       mt: 3,
                       display: 'block',
+                      fontFamily: bodyFontFamily,
                     }}
                   >
-                    LinkToMe
+                    Powered by LinkToMe
                   </Typography>
                 )}
               </Box>
