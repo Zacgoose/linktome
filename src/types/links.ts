@@ -242,7 +242,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         pageTextColor: '#c7e3ff',
         buttonTextColor: '#0b132b',
       },
-      header: { profileImageLayout: 'classic', titleStyle: 'text', displayName: '@username' },
       layoutStyle: 'card',
     },
   },
