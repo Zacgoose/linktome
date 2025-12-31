@@ -397,7 +397,7 @@ export default function PublicProfile() {
   const backgroundStyle = getBackgroundStyle(appearance.wallpaper, appearance.customGradient);
   const isLayoutCard = appearance.layoutStyle === 'card';
   const darkBg = isDarkBackground(appearance.wallpaper);
-  const textColor = darkBg ? '#ffffff' : appearance.text?.pageTextColor || '#010101';
+  const textColor = appearance.text?.pageTextColor || (darkBg ? '#ffffff' : '#010101');
   const titleFontFamily = getFontFamily(appearance.text?.titleFont);
   const bodyFontFamily = getFontFamily(appearance.text?.bodyFont);
   
