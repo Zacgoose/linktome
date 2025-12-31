@@ -879,7 +879,7 @@ export default function LinksPage() {
                     p: 4,
                     textAlign: 'center',
                     borderRadius: 3,
-                    bgcolor: 'grey.50',
+                    bgcolor: (theme) => theme.palette.background.paper,
                   }}
                 >
                   <LinkIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />

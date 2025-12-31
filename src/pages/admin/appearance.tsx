@@ -109,7 +109,7 @@ function ColorPicker({ label, value, onChange }: ColorPickerProps) {
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Box
-          sx={{
+          sx={(theme) => ({
             width: 40,
             height: 40,
             borderRadius: 1,
@@ -117,20 +117,28 @@ function ColorPicker({ label, value, onChange }: ColorPickerProps) {
             borderColor: 'divider',
             overflow: 'hidden',
             position: 'relative',
-          }}
+            bgcolor: theme.palette.background.paper,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          })}
         >
           <input
             type="color"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
               width: '150%',
               height: '150%',
-              cursor: 'pointer',
               border: 'none',
+              borderRadius: '12px',
+              padding: 0,
+              background: 'transparent',
+              cursor: 'pointer',
+              display: 'block',
+              position: 'absolute',
+              top: '-15%',
+              left: '-15%',
             }}
           />
         </Box>
@@ -836,7 +844,7 @@ export default function AppearancePage() {
                     <CollapsibleSection title="Buttons" id="buttons">
                       <Stack spacing={3}>
                         <Box>
-                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2}} >
                             Button style
                           </Typography>
                           <Grid container spacing={2}>
@@ -873,13 +881,14 @@ export default function AppearancePage() {
                                         borderRadius: 0.5,
                                         fontSize: 12,
                                         ...(style.type === 'solid' && {
-                                          bgcolor: 'grey.300',
+                                          bgcolor: (theme) => theme.palette.background.paper,
                                         }),
                                         ...(style.type === 'glass' && {
-                                          bgcolor: 'rgba(0,0,0,0.1)',
+                                          bgcolor: (theme) => theme.palette.background.paper,
                                           border: '1px solid rgba(255,255,255,0.3)',
                                         }),
                                         ...(style.type === 'outline' && {
+                                          bgcolor: (theme) => theme.palette.background.paper,
                                           border: '2px solid',
                                           borderColor: 'grey.400',
                                         }),
