@@ -318,5 +318,4 @@ export const DEFAULT_TEXT: TextStyle = {
   titleSize: 'small',
   bodyFont: 'inter',
   pageTextColor: '#010101',
-  buttonTextColor: '#010101',
 };
