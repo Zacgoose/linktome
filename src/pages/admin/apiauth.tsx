@@ -528,7 +528,7 @@ export default function ApiKeysPage() {
           </DialogTitle>
           <DialogContent>
             <Alert severity="warning" sx={{ mb: 3 }}>
-              <strong>Save this key now!</strong> You won't be able to see it again.
+              <strong>Save this key now!</strong> You won&apos;t be able to see it again.
             </Alert>
 
             <Paper
