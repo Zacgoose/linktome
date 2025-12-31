@@ -389,10 +389,20 @@ export default function AppearancePage() {
   };
 
   const updateButtons = (updates: Partial<ButtonStyle>) => {
-    setFormData(prev => ({
-      ...prev,
-      buttons: { ...prev.buttons, ...updates },
-    }));
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        buttons: { ...prev.buttons, ...updates },
+      };
+      
+      // Sync textColor to text.buttonTextColor to ensure consistency
+      // The backend stores both in the same field (ButtonTextColor)
+      if (updates.textColor !== undefined) {
+        newFormData.text = { ...prev.text, buttonTextColor: updates.textColor };
+      }
+      
+      return newFormData;
+    });
   };
 
   const updateText = (updates: Partial<TextStyle>) => {
