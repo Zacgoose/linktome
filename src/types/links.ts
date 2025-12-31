@@ -48,6 +48,7 @@ export interface AppearanceTheme {
   type: 'customizable' | 'curated';
   preview?: string;
   isPro?: boolean;
+  appearance?: Partial<AppearanceData>;
 }
 
 export interface WallpaperStyle {
@@ -172,15 +173,232 @@ export const FONT_OPTIONS: FontOption[] = [
 // Theme presets
 export const THEME_PRESETS: AppearanceTheme[] = [
   { id: 'custom', name: 'Custom', type: 'customizable' },
-  { id: 'air', name: 'Air', type: 'customizable', preview: '/themes/air.webp' },
-  { id: 'blocks', name: 'Blocks', type: 'customizable', preview: '/themes/blocks.webp' },
-  { id: 'lake', name: 'Lake', type: 'customizable', preview: '/themes/lake.webp' },
-  { id: 'mineral', name: 'Mineral', type: 'customizable', preview: '/themes/mineral.webp' },
-  { id: 'agate', name: 'Agate', type: 'customizable', preview: '/themes/agate.webp', isPro: true },
-  { id: 'astrid', name: 'Astrid', type: 'customizable', preview: '/themes/astrid.webp', isPro: true },
-  { id: 'aura', name: 'Aura', type: 'customizable', preview: '/themes/aura.webp', isPro: true },
-  { id: 'bloom', name: 'Bloom', type: 'customizable', preview: '/themes/bloom.webp', isPro: true },
-  { id: 'breeze', name: 'Breeze', type: 'customizable', preview: '/themes/breeze.webp', isPro: true },
+  {
+    id: 'air',
+    name: 'Air',
+    type: 'customizable',
+    appearance: {
+      wallpaper: { type: 'gradient', gradientStart: '#d7e8ff', gradientEnd: '#f5f7fb', gradientDirection: 135 },
+      buttons: {
+        type: 'outline',
+        cornerRadius: 'pill',
+        shadow: 'subtle',
+        backgroundColor: '#4a6cf7',
+        textColor: '#1c2541',
+        borderColor: '#4a6cf7',
+      },
+      text: {
+        titleFont: 'poppins',
+        titleColor: '#1c2541',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#23335b',
+        buttonTextColor: '#1c2541',
+      },
+    },
+  },
+  {
+    id: 'blocks',
+    name: 'Blocks',
+    type: 'customizable',
+    appearance: {
+      wallpaper: { type: 'pattern', patternType: 'grid', color: '#0b1021', patternColor: '#16213e' },
+      buttons: {
+        type: 'solid',
+        cornerRadius: 'square',
+        shadow: 'hard',
+        backgroundColor: '#9ef01a',
+        textColor: '#0b1021',
+      },
+      text: {
+        titleFont: 'oswald',
+        titleColor: '#e5e7eb',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#cbd5e1',
+        buttonTextColor: '#0b1021',
+      },
+    },
+  },
+  {
+    id: 'lake',
+    name: 'Lake',
+    type: 'curated',
+    appearance: {
+      wallpaper: { type: 'pattern', patternType: 'waves', color: '#0b132b', patternColor: '#1c2541' },
+      buttons: {
+        type: 'glass',
+        cornerRadius: 'rounded',
+        shadow: 'subtle',
+        backgroundColor: '#4cc9f0',
+        textColor: '#e0f7fa',
+        borderColor: '#a0e9ff',
+      },
+      text: {
+        titleFont: 'dm-sans',
+        titleColor: '#e0fbfc',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#c7e3ff',
+        buttonTextColor: '#0b132b',
+      },
+      header: { profileImageLayout: 'classic', titleStyle: 'text', displayName: '@username' },
+      layoutStyle: 'card',
+    },
+  },
+  {
+    id: 'mineral',
+    name: 'Mineral',
+    type: 'curated',
+    appearance: {
+      wallpaper: { type: 'fill', color: '#0f172a' },
+      buttons: {
+        type: 'outline',
+        cornerRadius: 'rounded',
+        shadow: 'subtle',
+        backgroundColor: '#93c5fd',
+        textColor: '#e2e8f0',
+        borderColor: '#93c5fd',
+      },
+      text: {
+        titleFont: 'space-mono',
+        titleColor: '#e2e8f0',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#cbd5e1',
+        buttonTextColor: '#0f172a',
+      },
+      layoutStyle: 'centered',
+    },
+  },
+  {
+    id: 'agate',
+    name: 'Agate',
+    type: 'curated',
+    isPro: true,
+    appearance: {
+      wallpaper: { type: 'gradient', gradientStart: '#1f1c2c', gradientEnd: '#928dab', gradientDirection: 220 },
+      buttons: {
+        type: 'solid',
+        cornerRadius: 'pill',
+        shadow: 'strong',
+        backgroundColor: '#f8fafc',
+        textColor: '#1f2937',
+      },
+      text: {
+        titleFont: 'playfair',
+        titleColor: '#f8fafc',
+        titleSize: 'small',
+        bodyFont: 'dm-sans',
+        pageTextColor: '#e2e8f0',
+        buttonTextColor: '#1f2937',
+      },
+      layoutStyle: 'card',
+    },
+  },
+  {
+    id: 'astrid',
+    name: 'Astrid',
+    type: 'curated',
+    isPro: true,
+    appearance: {
+      wallpaper: { type: 'blur', color: '#0b0f1a', blur: 14, opacity: 0.94 },
+      buttons: {
+        type: 'glass',
+        cornerRadius: 'pill',
+        shadow: 'subtle',
+        backgroundColor: '#7c3aed',
+        textColor: '#f8f7ff',
+        borderColor: '#c084fc',
+      },
+      text: {
+        titleFont: 'poppins',
+        titleColor: '#f5f3ff',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#e0def7',
+        buttonTextColor: '#0b0f1a',
+      },
+      layoutStyle: 'centered',
+    },
+  },
+  {
+    id: 'aura',
+    name: 'Aura',
+    type: 'curated',
+    isPro: true,
+    appearance: {
+      wallpaper: { type: 'pattern', patternType: 'dots', color: '#0d1b2a', patternColor: '#415a77' },
+      buttons: {
+        type: 'outline',
+        cornerRadius: 'pill',
+        shadow: 'subtle',
+        backgroundColor: '#fcbf49',
+        textColor: '#0d1b2a',
+        borderColor: '#fcbf49',
+      },
+      text: {
+        titleFont: 'raleway',
+        titleColor: '#e0e1dd',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#c3c9d7',
+        buttonTextColor: '#0d1b2a',
+      },
+      layoutStyle: 'centered',
+    },
+  },
+  {
+    id: 'bloom',
+    name: 'Bloom',
+    type: 'curated',
+    isPro: true,
+    appearance: {
+      wallpaper: { type: 'gradient', gradientStart: '#ff9a9e', gradientEnd: '#fecfef', gradientDirection: 160 },
+      buttons: {
+        type: 'solid',
+        cornerRadius: 'pill',
+        shadow: 'subtle',
+        backgroundColor: '#fffaf0',
+        textColor: '#8c304d',
+      },
+      text: {
+        titleFont: 'playfair',
+        titleColor: '#5c1225',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#6a2137',
+        buttonTextColor: '#8c304d',
+      },
+      layoutStyle: 'centered',
+    },
+  },
+  {
+    id: 'breeze',
+    name: 'Breeze',
+    type: 'curated',
+    isPro: true,
+    appearance: {
+      wallpaper: { type: 'pattern', patternType: 'lines', color: '#e6f1ff', patternColor: '#c1d6f5' },
+      buttons: {
+        type: 'outline',
+        cornerRadius: 'rounded',
+        shadow: 'none',
+        backgroundColor: '#2b65ff',
+        textColor: '#1d3a6d',
+        borderColor: '#2b65ff',
+      },
+      text: {
+        titleFont: 'montserrat',
+        titleColor: '#0f172a',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#243b53',
+        buttonTextColor: '#1d3a6d',
+      },
+      layoutStyle: 'card',
+    },
+  },
 ];
 
 // Pattern options
