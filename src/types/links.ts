@@ -161,11 +161,11 @@ export const FONT_OPTIONS: FontOption[] = [
   { value: 'space-mono', label: 'Space Mono', fontFamily: '"Space Mono", monospace' },
   { value: 'poppins', label: 'Poppins', fontFamily: 'Poppins, sans-serif' },
   { value: 'roboto', label: 'Roboto', fontFamily: 'Roboto, sans-serif' },
-  { value: 'playfair', label: 'Playfair Display', fontFamily: '"Playfair Display", serif', isPro: true },
+  { value: 'playfair', label: 'Playfair Display', fontFamily: '"Playfair Display", serif', isPro: false },
   { value: 'oswald', label: 'Oswald', fontFamily: 'Oswald, sans-serif' },
   { value: 'lato', label: 'Lato', fontFamily: 'Lato, sans-serif' },
   { value: 'montserrat', label: 'Montserrat', fontFamily: 'Montserrat, sans-serif' },
-  { value: 'raleway', label: 'Raleway', fontFamily: 'Raleway, sans-serif', isPro: true },
+  { value: 'raleway', label: 'Raleway', fontFamily: 'Raleway, sans-serif', isPro: false },
   { value: 'dm-sans', label: 'DM Sans', fontFamily: '"DM Sans", sans-serif' },
 ];
 
@@ -269,7 +269,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'agate',
     name: 'Agate',
     type: 'customizable',
-    isPro: true,
+    isPro: false,
     appearance: {
       wallpaper: { type: 'gradient', gradientStart: '#1f1c2c', gradientEnd: '#928dab', gradientDirection: 220 },
       buttons: {
@@ -293,7 +293,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'astrid',
     name: 'Astrid',
     type: 'customizable',
-    isPro: true,
+    isPro: false,
     appearance: {
       wallpaper: { type: 'blur', color: '#0b0f1a', blur: 14, opacity: 0.94 },
       buttons: {
@@ -318,7 +318,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'aura',
     name: 'Aura',
     type: 'customizable',
-    isPro: true,
+    isPro: false,
     appearance: {
       wallpaper: { type: 'pattern', patternType: 'dots', color: '#0d1b2a', patternColor: '#415a77' },
       buttons: {
@@ -343,7 +343,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'bloom',
     name: 'Bloom',
     type: 'customizable',
-    isPro: true,
+    isPro: false,
     appearance: {
       wallpaper: { type: 'gradient', gradientStart: '#ff9a9e', gradientEnd: '#fecfef', gradientDirection: 160 },
       buttons: {
@@ -367,7 +367,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'breeze',
     name: 'Breeze',
     type: 'customizable',
-    isPro: true,
+    isPro: false,
     appearance: {
       wallpaper: { type: 'pattern', patternType: 'lines', color: '#e6f1ff', patternColor: '#c1d6f5' },
       buttons: {

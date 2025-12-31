@@ -957,7 +957,7 @@ export default function AppearancePage() {
                           <Grid container spacing={2}>
                             {[
                               { type: 'solid', label: 'Solid' },
-                              { type: 'glass', label: 'Glass', pro: true },
+                              { type: 'glass', label: 'Glass', pro: false },
                               { type: 'outline', label: 'Outline' },
                             ].map((style) => (
                               <Grid item xs={4} key={style.type}>
