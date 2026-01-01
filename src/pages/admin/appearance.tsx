@@ -874,7 +874,7 @@ export default function AppearancePage() {
                               size="small"
                               options={FONT_OPTIONS.filter(f => !f.isPro)}
                               getOptionLabel={(option) => option.label}
-                              value={FONT_OPTIONS.find(f => f.value === formData.text.titleFont) || null}
+                              value={FONT_OPTIONS.find(f => f.value === formData.text.titleFont) || FONT_OPTIONS[0]}
                               onChange={(_, newValue) => {
                                 if (newValue) updateText({ titleFont: newValue.value });
                               }}
@@ -888,6 +888,12 @@ export default function AppearancePage() {
                               )}
                               isOptionEqualToValue={(option, value) => option.value === value.value}
                               disableClearable
+                              componentsProps={{
+                                popper: {
+                                  style: { zIndex: 1300 },
+                                  disablePortal: false,
+                                },
+                              }}
                             />
                           </Grid>
                           <Grid item xs={6}>
@@ -896,7 +902,7 @@ export default function AppearancePage() {
                               size="small"
                               options={FONT_OPTIONS.filter(f => !f.isPro)}
                               getOptionLabel={(option) => option.label}
-                              value={FONT_OPTIONS.find(f => f.value === formData.text.bodyFont) || null}
+                              value={FONT_OPTIONS.find(f => f.value === formData.text.bodyFont) || FONT_OPTIONS[0]}
                               onChange={(_, newValue) => {
                                 if (newValue) updateText({ bodyFont: newValue.value });
                               }}
@@ -910,6 +916,12 @@ export default function AppearancePage() {
                               )}
                               isOptionEqualToValue={(option, value) => option.value === value.value}
                               disableClearable
+                              componentsProps={{
+                                popper: {
+                                  style: { zIndex: 1300 },
+                                  disablePortal: false,
+                                },
+                              }}
                             />
                           </Grid>
                         </Grid>
