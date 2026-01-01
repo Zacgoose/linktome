@@ -23,6 +23,10 @@ import {
   Chip,
   Collapse,
   Switch,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -862,101 +866,50 @@ export default function AppearancePage() {
                     {/* Text Section */}
                     <CollapsibleSection title="Text" id="text">
                       <Stack spacing={3}>
-                        <Box>
-                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
-                            Title font
-                          </Typography>
-                          <Grid container spacing={1}>
-                            {FONT_OPTIONS.map((font) => (
-                              <Grid item xs={6} sm={4} key={font.value}>
-                                <Paper
-                                  onClick={() => !font.isPro && updateText({ titleFont: font.value })}
-                                  sx={{
-                                    p: 2,
-                                    cursor: font.isPro ? 'not-allowed' : 'pointer',
-                                    border: 2,
-                                    borderColor: formData.text.titleFont === font.value ? 'primary.main' : 'transparent',
-                                    opacity: font.isPro ? 0.6 : 1,
-                                    textAlign: 'center',
-                                    position: 'relative',
-                                  }}
-                                >
-                                  <Typography
-                                    sx={{
-                                      fontFamily: font.fontFamily,
-                                      fontSize: 14,
-                                    }}
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <FormControl fullWidth size="small">
+                              <InputLabel>Title font</InputLabel>
+                              <Select
+                                value={formData.text.titleFont}
+                                label="Title font"
+                                onChange={(e) => updateText({ titleFont: e.target.value })}
+                              >
+                                {FONT_OPTIONS.map((font) => (
+                                  <MenuItem 
+                                    key={font.value} 
+                                    value={font.value}
+                                    disabled={font.isPro}
+                                    sx={{ fontFamily: font.fontFamily }}
                                   >
-                                    {font.label}
-                                  </Typography>
-                                  {font.isPro && (
-                                    <Chip
-                                      icon={<LockIcon sx={{ fontSize: 10 }} />}
-                                      label="Pro"
-                                      size="small"
-                                      sx={{
-                                        position: 'absolute',
-                                        top: 4,
-                                        right: 4,
-                                        fontSize: 8,
-                                        height: 16,
-                                      }}
-                                    />
-                                  )}
-                                </Paper>
-                              </Grid>
-                            ))}
+                                    {font.label} {font.isPro && '(Pro)'}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
                           </Grid>
-                        </Box>
-
-                        <Divider />
-
-                        <Box>
-                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
-                            Body font
-                          </Typography>
-                          <Grid container spacing={1}>
-                            {FONT_OPTIONS.map((font) => (
-                              <Grid item xs={6} sm={4} key={font.value}>
-                                <Paper
-                                  onClick={() => !font.isPro && updateText({ bodyFont: font.value })}
-                                  sx={{
-                                    p: 2,
-                                    cursor: font.isPro ? 'not-allowed' : 'pointer',
-                                    border: 2,
-                                    borderColor: formData.text.bodyFont === font.value ? 'primary.main' : 'transparent',
-                                    opacity: font.isPro ? 0.6 : 1,
-                                    textAlign: 'center',
-                                    position: 'relative',
-                                  }}
-                                >
-                                  <Typography
-                                    sx={{
-                                      fontFamily: font.fontFamily,
-                                      fontSize: 14,
-                                    }}
+                          <Grid item xs={6}>
+                            <FormControl fullWidth size="small">
+                              <InputLabel>Body font</InputLabel>
+                              <Select
+                                value={formData.text.bodyFont}
+                                label="Body font"
+                                onChange={(e) => updateText({ bodyFont: e.target.value })}
+                              >
+                                {FONT_OPTIONS.map((font) => (
+                                  <MenuItem 
+                                    key={font.value} 
+                                    value={font.value}
+                                    disabled={font.isPro}
+                                    sx={{ fontFamily: font.fontFamily }}
                                   >
-                                    {font.label}
-                                  </Typography>
-                                  {font.isPro && (
-                                    <Chip
-                                      icon={<LockIcon sx={{ fontSize: 10 }} />}
-                                      label="Pro"
-                                      size="small"
-                                      sx={{
-                                        position: 'absolute',
-                                        top: 4,
-                                        right: 4,
-                                        fontSize: 8,
-                                        height: 16,
-                                      }}
-                                    />
-                                  )}
-                                </Paper>
-                              </Grid>
-                            ))}
+                                    {font.label} {font.isPro && '(Pro)'}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
                           </Grid>
-                        </Box>
+                        </Grid>
 
                         <Divider />
 
@@ -976,57 +929,6 @@ export default function AppearancePage() {
                             />
                           </Grid>
                         </Grid>
-
-                        <Divider />
-
-                        <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
-                          Text opacity
-                        </Typography>
-                        
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                            Username opacity: {Math.round((formData.text.usernameOpacity ?? 0.9) * 100)}%
-                          </Typography>
-                          <Slider
-                            value={formData.text.usernameOpacity ?? 0.9}
-                            onChange={(_, v) => updateText({ usernameOpacity: v as number })}
-                            min={0}
-                            max={1}
-                            step={0.05}
-                            valueLabelDisplay="auto"
-                            valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
-                          />
-                        </Box>
-
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                            Bio opacity: {Math.round((formData.text.bioOpacity ?? 0.8) * 100)}%
-                          </Typography>
-                          <Slider
-                            value={formData.text.bioOpacity ?? 0.8}
-                            onChange={(_, v) => updateText({ bioOpacity: v as number })}
-                            min={0}
-                            max={1}
-                            step={0.05}
-                            valueLabelDisplay="auto"
-                            valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
-                          />
-                        </Box>
-
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                            Footer opacity: {Math.round((formData.text.footerOpacity ?? 0.8) * 100)}%
-                          </Typography>
-                          <Slider
-                            value={formData.text.footerOpacity ?? 0.8}
-                            onChange={(_, v) => updateText({ footerOpacity: v as number })}
-                            min={0}
-                            max={1}
-                            step={0.05}
-                            valueLabelDisplay="auto"
-                            valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
-                          />
-                        </Box>
 
                         <Divider />
 
@@ -1070,6 +972,59 @@ export default function AppearancePage() {
                               </Grid>
                             ))}
                           </Grid>
+                        </Box>
+
+                        <Divider />
+
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
+                            Text opacity
+                          </Typography>
+                          
+                          <Box sx={{ mb: 2 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                              Username opacity: {Math.round((formData.text.usernameOpacity ?? 0.9) * 100)}%
+                            </Typography>
+                            <Slider
+                              value={formData.text.usernameOpacity ?? 0.9}
+                              onChange={(_, v) => updateText({ usernameOpacity: v as number })}
+                              min={0}
+                              max={1}
+                              step={0.05}
+                              valueLabelDisplay="auto"
+                              valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
+                            />
+                          </Box>
+
+                          <Box sx={{ mb: 2 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                              Bio opacity: {Math.round((formData.text.bioOpacity ?? 0.8) * 100)}%
+                            </Typography>
+                            <Slider
+                              value={formData.text.bioOpacity ?? 0.8}
+                              onChange={(_, v) => updateText({ bioOpacity: v as number })}
+                              min={0}
+                              max={1}
+                              step={0.05}
+                              valueLabelDisplay="auto"
+                              valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
+                            />
+                          </Box>
+
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                              Footer opacity: {Math.round((formData.text.footerOpacity ?? 0.8) * 100)}%
+                            </Typography>
+                            <Slider
+                              value={formData.text.footerOpacity ?? 0.8}
+                              onChange={(_, v) => updateText({ footerOpacity: v as number })}
+                              min={0}
+                              max={1}
+                              step={0.05}
+                              valueLabelDisplay="auto"
+                              valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
+                            />
+                          </Box>
                         </Box>
                       </Stack>
                     </CollapsibleSection>
