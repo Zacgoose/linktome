@@ -888,7 +888,7 @@ export default function AppearancePage() {
                               )}
                               isOptionEqualToValue={(option, value) => option.value === value.value}
                               disableClearable
-                              componentsProps={{
+                              slotProps={{
                                 popper: {
                                   style: { zIndex: 1200 },
                                   disablePortal: false,
@@ -922,7 +922,7 @@ export default function AppearancePage() {
                               )}
                               isOptionEqualToValue={(option, value) => option.value === value.value}
                               disableClearable
-                              componentsProps={{
+                              slotProps={{
                                 popper: {
                                   style: { zIndex: 1200 },
                                   disablePortal: false,
