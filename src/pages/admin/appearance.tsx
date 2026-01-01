@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
@@ -110,7 +110,27 @@ interface ColorPickerProps {
   onChange: (color: string) => void;
 }
 
-function ColorPicker({ label, value, onChange }: ColorPickerProps) {
+// Debounce utility
+function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
+  let timer: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+const ColorPicker: React.FC<ColorPickerProps> = React.memo(({ label, value, onChange }) => {
+  // Debounce the onChange callback to avoid rapid parent updates
+  const debouncedOnChange = useMemo(() => debounce(onChange, 60), [onChange]);
+
+  // For the text field, update immediately (no debounce)
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+      onChange(val);
+    }
+  }, [onChange]);
+
   return (
     <Box>
       <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
@@ -135,7 +155,7 @@ function ColorPicker({ label, value, onChange }: ColorPickerProps) {
           <input
             type="color"
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => debouncedOnChange(e.target.value)}
             style={{
               width: '150%',
               height: '150%',
@@ -154,19 +174,15 @@ function ColorPicker({ label, value, onChange }: ColorPickerProps) {
         <TextField
           size="small"
           value={value.toUpperCase()}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
-              onChange(val);
-            }
-          }}
+          onChange={handleTextChange}
           sx={{ width: 100 }}
           inputProps={{ style: { fontFamily: 'monospace' } }}
         />
       </Box>
     </Box>
   );
-}
+});
+ColorPicker.displayName = 'ColorPicker';
 
 interface ThemeCardProps {
   theme: AppearanceTheme;
