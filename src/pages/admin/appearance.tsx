@@ -641,12 +641,6 @@ export default function AppearancePage() {
                           inputProps={{ maxLength: 30 }}
                           helperText={`${formData.header.displayName.length}/30 characters`}
                         />
-
-                        <ColorPicker
-                          label="Title color"
-                          value={formData.text.titleColor}
-                          onChange={(color) => updateText({ titleColor: color })}
-                        />
                       </Stack>
                     </CollapsibleSection>
 
@@ -873,7 +867,7 @@ export default function AppearancePage() {
                             Title font
                           </Typography>
                           <Grid container spacing={1}>
-                            {FONT_OPTIONS.slice(0, 6).map((font) => (
+                            {FONT_OPTIONS.map((font) => (
                               <Grid item xs={6} sm={4} key={font.value}>
                                 <Paper
                                   onClick={() => !font.isPro && updateText({ titleFont: font.value })}
@@ -922,7 +916,7 @@ export default function AppearancePage() {
                             Body font
                           </Typography>
                           <Grid container spacing={1}>
-                            {FONT_OPTIONS.slice(0, 6).map((font) => (
+                            {FONT_OPTIONS.map((font) => (
                               <Grid item xs={6} sm={4} key={font.value}>
                                 <Paper
                                   onClick={() => !font.isPro && updateText({ bodyFont: font.value })}
