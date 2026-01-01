@@ -884,6 +884,7 @@ export default function AppearancePage() {
                                     vertical: 'top',
                                     horizontal: 'left',
                                   },
+                                  disablePortal: true,
                                 }}
                               >
                                 {FONT_OPTIONS.map((font) => (
@@ -916,6 +917,7 @@ export default function AppearancePage() {
                                     vertical: 'top',
                                     horizontal: 'left',
                                   },
+                                  disablePortal: true,
                                 }}
                               >
                                 {FONT_OPTIONS.map((font) => (
