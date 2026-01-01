@@ -28,32 +28,33 @@ import {
   TextField,
 } from '@mui/material';
 import {
-  Add as AddIcon,
-  DragIndicator as DragIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Share as ShareIcon,
-  Schedule as ScheduleIcon,
-  Lock as LockIcon,
-  Image as ImageIcon,
-  BarChart as AnalyticsIcon,
-  MoreHoriz as MoreIcon,
-  ContentCopy as CopyIcon,
-  Archive as ArchiveIcon,
-  Folder as FolderIcon,
-  FolderOpen as FolderOpenIcon,
-  ViewModule as LayoutIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
+  Add,
+  DragIndicator,
+  Edit,
+  Delete,
+  Share,
+  Schedule,
+  Lock,
+  Image,
+  BarChart,
+  MoreHoriz,
+  ContentCopy,
+  Archive,
+  Folder,
+  FolderOpen,
+  ViewModule,
+  TrendingUp,
+  TrendingDown,
   Link as LinkIcon,
   Instagram,
   YouTube,
   Twitter,
   Email,
   MusicNote,
-  OpenInNew as OpenIcon,
-  ShortcutOutlined as RedirectIcon,
-  Animation as AnimationIcon,
+  OpenInNew,
+  ShortcutOutlined,
+  Animation,
+  PhoneIphone as PhoneIcon,
 } from '@mui/icons-material';
 import {
   DndContext,
@@ -99,6 +100,13 @@ interface UpdateLinksRequest {
   groups?: GroupOperation[];
 }
 
+interface UserProfile {
+  username: string;
+  displayName: string;
+  bio: string;
+  avatar: string;
+}
+
 interface SortableLinkCardProps {
   link: Link;
   appearance: AppearanceData;
@@ -108,7 +116,7 @@ interface SortableLinkCardProps {
   onOpenSettings: (link: Link, setting: string) => void;
 }
 
-function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpenSettings }: SortableLinkCardProps) {
+function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: SortableLinkCardProps) {
   const {
     attributes,
     listeners,
@@ -120,10 +128,9 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const accent = appearance.buttons?.backgroundColor || '#e0e7ff';
-  const accentText = appearance.buttons?.textColor || 'text.primary';
-  const accentBg = `${accent}15`;
-  const accentBgStrong = `${accent}30`;
+  // Remove user theme for editable section
+  const accentText = 'text.primary';
+  const accentBg = '#e0e7ff15';
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -133,9 +140,9 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
 
   const getTrendIcon = () => {
     if (link.clicksTrend === 'up') {
-      return <TrendingUpIcon sx={{ fontSize: 14, color: 'success.main' }} />;
+      return <TrendingUp sx={{ fontSize: 14, color: 'success.main' }} />;
     } else if (link.clicksTrend === 'down') {
-      return <TrendingDownIcon sx={{ fontSize: 14, color: 'text.secondary' }} />;
+      return <TrendingDown sx={{ fontSize: 14, color: 'text.secondary' }} />;
     }
     return null;
   };
@@ -166,7 +173,7 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
             '&:active': { cursor: 'grabbing' },
           }}
         >
-          <DragIcon sx={{ color: accentText }} />
+          <DragIndicator sx={{ color: accentText }} />
         </Box>
 
         {/* Main Content */}
@@ -210,13 +217,9 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
               <IconButton
                 size="small"
                 onClick={(e) => setAnchorEl(e.currentTarget)}
-                sx={{
-                  bgcolor: appearance.buttons?.backgroundColor ? `${appearance.buttons.backgroundColor}15` : undefined,
-                  color: appearance.buttons?.textColor,
-                  '&:hover': { bgcolor: appearance.buttons?.backgroundColor ? `${appearance.buttons.backgroundColor}30` : 'grey.100' },
-                }}
+                sx={{}}
               >
-                <ShareIcon fontSize="small" />
+                <Share fontSize="small" />
               </IconButton>
               <Switch
                 size="small"
@@ -233,13 +236,8 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
               <IconButton
                 size="small"
                 onClick={() => onOpenSettings(link, 'layout')}
-                sx={{
-                  bgcolor: link.layout && link.layout !== 'classic' ? accentBgStrong : accentBg,
-                  '&:hover': { bgcolor: accentBgStrong },
-                  color: accentText,
-                }}
               >
-                <LayoutIcon fontSize="small" />
+                <ViewModule fontSize="small" />
               </IconButton>
             </Tooltip>
 
@@ -247,9 +245,8 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
               <IconButton
                 size="small"
                 onClick={() => onOpenSettings(link, 'redirect')}
-                sx={{ bgcolor: accentBg, '&:hover': { bgcolor: accentBgStrong }, color: accentText }}
               >
-                <RedirectIcon fontSize="small" />
+                <ShortcutOutlined fontSize="small" />
               </IconButton>
             </Tooltip>
 
@@ -257,13 +254,8 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
               <IconButton
                 size="small"
                 onClick={() => onOpenSettings(link, 'thumbnail')}
-                sx={{
-                  bgcolor: link.thumbnail ? accentBgStrong : accentBg,
-                  '&:hover': { bgcolor: accentBgStrong },
-                  color: accentText,
-                }}
               >
-                <ImageIcon fontSize="small" />
+                <Image fontSize="small" />
               </IconButton>
             </Tooltip>
 
@@ -271,13 +263,8 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
               <IconButton
                 size="small"
                 onClick={() => onOpenSettings(link, 'animation')}
-                sx={{
-                  bgcolor: link.animation && link.animation !== 'none' ? accentBgStrong : accentBg,
-                  '&:hover': { bgcolor: accentBgStrong },
-                  color: accentText,
-                }}
               >
-                <AnimationIcon fontSize="small" />
+                <Animation fontSize="small" />
               </IconButton>
             </Tooltip>
 
@@ -285,13 +272,8 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
               <IconButton
                 size="small"
                 onClick={() => onOpenSettings(link, 'schedule')}
-                sx={{
-                  bgcolor: link.schedule?.enabled ? accentBgStrong : accentBg,
-                  '&:hover': { bgcolor: accentBgStrong },
-                  color: accentText,
-                }}
               >
-                <ScheduleIcon fontSize="small" />
+                <Schedule fontSize="small" />
               </IconButton>
             </Tooltip>
 
@@ -299,13 +281,8 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
               <IconButton
                 size="small"
                 onClick={() => onOpenSettings(link, 'lock')}
-                sx={{
-                  bgcolor: link.lock?.enabled ? accentBgStrong : accentBg,
-                  '&:hover': { bgcolor: accentBgStrong },
-                  color: accentText,
-                }}
               >
-                <LockIcon fontSize="small" />
+                <Lock fontSize="small" />
               </IconButton>
             </Tooltip>
 
@@ -320,23 +297,12 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
                   ) : null
                 }
                 color="default"
-                sx={{
-                  '& .MuiBadge-badge': {
-                    bgcolor: accentBgStrong,
-                    color: 'text.primary',
-                    fontSize: 10,
-                    minWidth: 'auto',
-                    height: 16,
-                    px: 0.5,
-                  },
-                }}
               >
                 <IconButton
                   size="small"
                   onClick={() => onOpenSettings(link, 'analytics')}
-                  sx={{ bgcolor: accentBg, '&:hover': { bgcolor: accentBgStrong }, color: accentText }}
                 >
-                  <AnalyticsIcon fontSize="small" />
+                  <BarChart fontSize="small" />
                 </IconButton>
               </Badge>
             </Tooltip>
@@ -344,9 +310,8 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
             <IconButton
               size="small"
               onClick={() => onDelete(link.id)}
-              sx={{ bgcolor: accentBg, '&:hover': { bgcolor: 'error.50' }, color: accentText }}
             >
-              <DeleteIcon fontSize="small" />
+              <Delete fontSize="small" />
             </IconButton>
           </Stack>
         </Box>
@@ -355,11 +320,11 @@ function SortableLinkCard({ link, appearance, onEdit, onDelete, onToggle, onOpen
       {/* Share Menu */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => { navigator.clipboard.writeText(link.url); setAnchorEl(null); }}>
-          <ListItemIcon><CopyIcon fontSize="small" /></ListItemIcon>
+          <ListItemIcon><ContentCopy fontSize="small" /></ListItemIcon>
           <ListItemText>Copy link</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => { window.open(link.url, '_blank'); setAnchorEl(null); }}>
-          <ListItemIcon><OpenIcon fontSize="small" /></ListItemIcon>
+          <ListItemIcon><OpenInNew fontSize="small" /></ListItemIcon>
           <ListItemText>Open in new tab</ListItemText>
         </MenuItem>
       </Menu>
@@ -433,7 +398,7 @@ function SortableGroup({
           display: 'flex',
           alignItems: 'center',
           p: 2,
-          bgcolor: appearance.buttons?.backgroundColor ? `${appearance.buttons.backgroundColor}10` : 'grey.50',
+          bgcolor: 'grey.50',
           borderBottom: isCollapsed ? 'none' : '1px solid',
           borderColor: 'divider',
         }}
@@ -445,14 +410,14 @@ function SortableGroup({
             cursor: 'grab',
             mr: 1,
             '&:active': { cursor: 'grabbing' },
-            color: appearance.buttons?.textColor || 'grey.500',
+            color: 'grey.500',
           }}
         >
-          <DragIcon sx={{ color: appearance.buttons?.textColor || 'grey.400' }} />
+          <DragIndicator sx={{ color: 'grey.400' }} />
         </Box>
 
         <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)} sx={{ mr: 1 }}>
-          {isCollapsed ? <FolderIcon /> : <FolderOpenIcon />}
+          {isCollapsed ? <Folder /> : <FolderOpen />}
         </IconButton>
 
         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
@@ -462,20 +427,20 @@ function SortableGroup({
         <Stack direction="row" spacing={1} alignItems="center">
           <Tooltip title="Layout">
             <IconButton size="small" sx={{ bgcolor: 'white' }}>
-              <LayoutIcon fontSize="small" />
+              <ViewModule fontSize="small" />
             </IconButton>
           </Tooltip>
 
           <IconButton size="small" onClick={() => onEditGroup(group)}>
-            <EditIcon fontSize="small" />
+            <Edit fontSize="small" />
           </IconButton>
 
           <IconButton size="small" onClick={() => onAddLinkToGroup(group.id)}>
-            <AddIcon fontSize="small" />
+            <Add fontSize="small" />
           </IconButton>
 
           <IconButton size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
-            <MoreIcon fontSize="small" />
+            <MoreHoriz fontSize="small" />
           </IconButton>
 
           <Switch
@@ -515,7 +480,7 @@ function SortableGroup({
       {/* Group Menu */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => { onDeleteGroup(group.id); setAnchorEl(null); }}>
-          <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
+          <ListItemIcon><Delete fontSize="small" color="error" /></ListItemIcon>
           <ListItemText>Delete collection</ListItemText>
         </MenuItem>
       </Menu>
@@ -542,6 +507,11 @@ export default function LinksPage() {
   const { data: appearanceData } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
     queryKey: 'admin-appearance',
+  });
+
+  const { data: profileData } = useApiGet<UserProfile>({
+    url: 'admin/GetProfile',
+    queryKey: 'admin-profile',
   });
 
   const [links, setLinks] = useState<Link[]>([]);
@@ -775,200 +745,232 @@ export default function LinksPage() {
 
       <AdminLayout>
         <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 4 }}>
-            {/* Main Content */}
-            <Box sx={{ flex: 1, minWidth: 0, maxWidth: 640, mx: { xs: 'auto', lg: 0 } }}>
-              {/* Profile Header */}
-              <Card sx={{ mb: 3, borderRadius: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar
-                      src={appearance.profileImageUrl}
-                      sx={{ width: 64, height: 64 }}
-                    >
-                      {appearance.header?.displayName?.charAt(0) || 'U'}
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {appearance.header?.displayName || '@username'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {appearance.header?.bio || 'Your bio goes here'}
-                      </Typography>
-                      <Stack direction="row" spacing={1}>
-                        {[Instagram, YouTube, Twitter, Email, MusicNote].slice(0, 4).map((Icon, idx) => (
-                          <IconButton
-                            key={idx}
-                            size="small"
-                            sx={{
-                              color: 'grey.400',
-                              '&:hover': { color: 'grey.600', bgcolor: 'grey.100' },
-                            }}
-                          >
-                            <Icon fontSize="small" />
-                          </IconButton>
-                        ))}
-                        <IconButton
-                          size="small"
-                          sx={{
-                            bgcolor: 'grey.100',
-                            '&:hover': { bgcolor: 'grey.200' },
-                          }}
-                        >
-                          <AddIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Add Link Button */}
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleAddLink}
-                fullWidth
-                size="large"
-                sx={{
-                  borderRadius: 6,
-                  py: 1.5,
-                  mb: 3,
-                  bgcolor: 'primary.main',
-                  '&:hover': { bgcolor: 'primary.dark' },
-                }}
-              >
-                Add Link
-              </Button>
-
-              {/* Collection & Archive Controls */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<FolderIcon />}
-                  onClick={handleAddCollection}
-                  sx={{ borderRadius: 2 }}
-                >
-                  Add collection
-                </Button>
-                <Button
-                  variant="text"
-                  startIcon={<ArchiveIcon />}
-                  sx={{ borderRadius: 2, color: 'text.secondary' }}
-                >
-                  Archive
-                </Button>
-              </Box>
-
-              {/* Links List */}
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={[...rootLinks.map(l => l.id), ...sortedGroups.map(g => g.id)]}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <Stack spacing={2}>
-                    {/* Root Links */}
-                    {rootLinks.map((link) => (
-                      <SortableLinkCard
-                        key={link.id}
-                        link={link}
-                        appearance={appearance}
-                        onEdit={handleEditLink}
-                        onDelete={handleDeleteLink}
-                        onToggle={handleToggleLink}
-                        onOpenSettings={handleOpenSettings}
-                      />
-                    ))}
-
-                    {/* Groups */}
-                    {sortedGroups.map((group) => (
-        <SortableGroup
-          key={group.id}
-          group={group}
-          links={links}
-          appearance={appearance}
-          onEditGroup={handleEditGroup}
-          onDeleteGroup={handleDeleteGroup}
-          onToggleGroup={handleToggleGroup}
-          onAddLinkToGroup={handleAddLinkToGroup}
-          onEditLink={handleEditLink}
-                        onDeleteLink={handleDeleteLink}
-                        onToggleLink={handleToggleLink}
-                        onOpenSettings={handleOpenSettings}
-                      />
-                    ))}
-                  </Stack>
-                </SortableContext>
-              </DndContext>
-
-              {/* Empty State */}
-              {rootLinks.length === 0 && sortedGroups.length === 0 && (
-                <Paper
-                  sx={{
-                    p: 4,
-                    textAlign: 'center',
-                    borderRadius: 3,
-                    bgcolor: (theme) => theme.palette.background.paper,
-                  }}
-                >
-                  <LinkIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    No links yet
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Add your first link to get started
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleAddLink}
-                  >
-                    Add your first link
-                  </Button>
-                </Paper>
-              )}
-
-              {/* Footer Toggle */}
-              <Card sx={{ mt: 3, borderRadius: 3 }}>
-                <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body1">LinkToMe footer</Typography>
-                    <Chip
-                      label="Pro"
-                      size="small"
-                      icon={<LockIcon sx={{ fontSize: 14 }} />}
-                      sx={{ height: 20, fontSize: 10 }}
-                    />
-                  </Box>
-                  <Switch disabled />
-                </CardContent>
-              </Card>
+          {/* Mobile Preview - Show at top on small screens */}
+          <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <PhoneIcon fontSize="small" color="action" />
+              <Typography variant="subtitle2" color="text.secondary">
+                Live Preview
+              </Typography>
             </Box>
+            <PhonePreview
+              appearance={appearance}
+              links={activeLinks}
+              groups={sortedGroups}
+              profileImageUrl={appearance.profileImageUrl}
+              displayName={appearance.header?.displayName}
+              username={profileData?.username}
+              bio={appearance.header?.bio}
+              compact
+            />
+          </Box>
 
-            {/* Preview */}
-            <Box
+          {/* Main Content */}
+          <Box sx={{ flex: 1, minWidth: 0, maxWidth: 640, mx: { xs: 'auto', md: 0 }, mr: { xs: 0, md: '360px' } }}>
+            {/* Profile Header */}
+            <Card sx={{ mb: 3, borderRadius: 3 }}>
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar
+                    src={appearance.profileImageUrl}
+                    sx={{ width: 64, height: 64 }}
+                  >
+                    {appearance.header?.displayName?.charAt(0) || 'U'}
+                  </Avatar>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {appearance.header?.displayName || 'username'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      {appearance.header?.bio || 'Your bio goes here'}
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      {[Instagram, YouTube, Twitter, Email, MusicNote].slice(0, 4).map((Icon, idx) => (
+                        <IconButton
+                          key={idx}
+                          size="small"
+                          sx={{color: 'text.secondary'}}
+                        >
+                          <Icon fontSize="small" />
+                        </IconButton>
+                      ))}
+                      <IconButton
+                        size="small"
+                        sx={{color: 'text.secondary'}}
+                      >
+                        <Add fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Add Link Button */}
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={handleAddLink}
+              fullWidth
+              size="large"
               sx={{
-                display: { xs: 'none', lg: 'block' },
-                width: 320,
-                position: 'sticky',
-                top: 100,
-                alignSelf: 'flex-start',
+                borderRadius: 6,
+                py: 1.5,
+                mb: 3,
+                bgcolor: 'primary.main',
+                '&:hover': { bgcolor: 'primary.dark' },
               }}
             >
-              <PhonePreview
-                appearance={appearance}
-                links={activeLinks}
-                groups={sortedGroups}
-                profileImageUrl={appearance.profileImageUrl}
-                displayName={appearance.header?.displayName}
-                username="username"
-                bio={appearance.header?.bio}
-              />
+              Add Link
+            </Button>
+
+            {/* Collection & Archive Controls */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<Folder />}
+                onClick={handleAddCollection}
+                sx={{ borderRadius: 2 }}
+              >
+                Add collection
+              </Button>
+              <Button
+                variant="text"
+                startIcon={<Archive />}
+                sx={{ borderRadius: 2, color: 'text.secondary' }}
+              >
+                Archive
+              </Button>
             </Box>
+
+            {/* Links List */}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={[...rootLinks.map(l => l.id), ...sortedGroups.map(g => g.id)]}
+                strategy={verticalListSortingStrategy}
+              >
+                <Stack spacing={2}>
+                  {/* Root Links */}
+                  {rootLinks.map((link) => (
+                    <SortableLinkCard
+                      key={link.id}
+                      link={link}
+                      appearance={appearance}
+                      onEdit={handleEditLink}
+                      onDelete={handleDeleteLink}
+                      onToggle={handleToggleLink}
+                      onOpenSettings={handleOpenSettings}
+                    />
+                  ))}
+
+                  {/* Groups */}
+                  {sortedGroups.map((group) => (
+                    <SortableGroup
+                      key={group.id}
+                      group={group}
+                      links={links}
+                      appearance={appearance}
+                      onEditGroup={handleEditGroup}
+                      onDeleteGroup={handleDeleteGroup}
+                      onToggleGroup={handleToggleGroup}
+                      onAddLinkToGroup={handleAddLinkToGroup}
+                      onEditLink={handleEditLink}
+                      onDeleteLink={handleDeleteLink}
+                      onToggleLink={handleToggleLink}
+                      onOpenSettings={handleOpenSettings}
+                    />
+                  ))}
+                </Stack>
+              </SortableContext>
+            </DndContext>
+
+            {/* Empty State */}
+            {rootLinks.length === 0 && sortedGroups.length === 0 && (
+              <Paper
+                sx={{
+                  p: 4,
+                  textAlign: 'center',
+                  borderRadius: 3,
+                  bgcolor: (theme) => theme.palette.background.paper,
+                }}
+              >
+                <LinkIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                <Typography variant="h6" gutterBottom>
+                  No links yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Add your first link to get started
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={handleAddLink}
+                >
+                  Add your first link
+                </Button>
+              </Paper>
+            )}
+
+            {/* Footer Toggle */}
+            <Card sx={{ mt: 3, borderRadius: 3 }}>
+              <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body1">LinkToMe footer</Typography>
+                  <Chip
+                    label="Pro"
+                    size="small"
+                    icon={<Lock sx={{ fontSize: 14 }} />}
+                    sx={{ height: 20, fontSize: 10 }}
+                  />
+                </Box>
+                <Switch disabled />
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Fixed Preview on Right (Desktop) */}
+          <Box
+            sx={{
+              width: 320,
+              flexShrink: 0,
+              display: { xs: 'none', md: 'block' },
+              position: 'fixed',
+              right: 32,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 1,
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <PhoneIcon fontSize="small" color="action" />
+              <Typography variant="subtitle2" color="text.secondary">
+                Live Preview
+              </Typography>
+            </Box>
+
+            <PhonePreview
+              appearance={appearance}
+              links={activeLinks}
+              groups={sortedGroups}
+              profileImageUrl={appearance.profileImageUrl}
+              displayName={appearance.header?.displayName}
+              username={profileData?.username}
+              bio={appearance.header?.bio}
+            />
+
+            {activeLinks.length === 0 && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', textAlign: 'center', mt: 2 }}
+              >
+                Add links to see them in the preview
+              </Typography>
+            )}
           </Box>
         </Container>
       </AdminLayout>

@@ -68,6 +68,13 @@ interface SectionProps {
   defaultExpanded?: boolean;
 }
 
+interface UserProfile {
+  username: string;
+  displayName: string;
+  bio: string;
+  avatar: string;
+}
+
 function CollapsibleSection({ title, id, children, defaultExpanded = true }: SectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -346,6 +353,11 @@ export default function AppearancePage() {
     queryKey: 'admin-links',
   });
 
+  const { data: profileData } = useApiGet<UserProfile>({
+      url: 'admin/GetProfile',
+      queryKey: 'admin-profile',
+    });
+
   const activeLinks = linksData?.links?.filter(link => link.active).sort((a, b) => a.order - b.order) || [];
 
   const [formData, setFormData] = useState<AppearanceData>(DEFAULT_APPEARANCE);
@@ -367,7 +379,7 @@ export default function AppearancePage() {
   }, [data]);
 
   const updateAppearance = useApiPut({
-    relatedQueryKeys: ['admin-appearance'],
+    relatedQueryKeys: ['admin-appearance', 'admin-profile'],
     onSuccess: () => {
       showToast('Appearance updated successfully', 'success');
     },
@@ -477,6 +489,7 @@ export default function AppearancePage() {
                 appearance={previewAppearance}
                 links={activeLinks}
                 displayName={formData.header.displayName}
+                username={profileData?.username}
                 compact
               />
             </Box>
@@ -1174,6 +1187,7 @@ export default function AppearancePage() {
                 appearance={previewAppearance}
                 links={activeLinks}
                 displayName={formData.header.displayName}
+                username={profileData?.username}
               />
 
               {activeLinks.length === 0 && (

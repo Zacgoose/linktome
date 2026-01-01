@@ -122,7 +122,7 @@ export default function PhonePreview({
   groups = [],
   profileImageUrl,
   displayName = 'Your Name',
-  username = '@username',
+  username = 'username',
   bio,
   compact = false,
   className,
@@ -148,12 +148,10 @@ export default function PhonePreview({
   const bodyFontFamily = getFontFamily(text.bodyFont);
   const darkBg = isDarkBackground(wallpaper);
 
-  // Phone dimensions
-  const phoneWidth = compact ? 240 : 280;
-  const phoneHeight = compact ? 500 : 580;
+  // Preview window dimensions (same as phone)
+  const previewWidth = compact ? 240 : 300;
+  const previewHeight = compact ? 500 : 650;
   const borderWidth = compact ? 6 : 8;
-  const notchWidth = compact ? 100 : 120;
-  const notchHeight = compact ? 24 : 28;
   const borderRadius = compact ? '32px' : '36px';
 
   const isHeroLayout = header.profileImageLayout === 'hero';
@@ -167,37 +165,21 @@ export default function PhonePreview({
     <Box className={className}>
       {/* Inject animation keyframes */}
       <style dangerouslySetInnerHTML={{ __html: ANIMATION_KEYFRAMES }} />
-      
-      {/* Phone Frame */}
+
+      {/* Preview Window Frame */}
       <Box
-        sx={{
-          width: phoneWidth,
-          height: phoneHeight,
+        sx={theme => ({
+          width: previewWidth,
+          height: previewHeight,
           borderRadius: borderRadius,
-          border: `${borderWidth}px solid #1a1a1a`,
-          bgcolor: '#1a1a1a',
+          border: `${borderWidth}px solid ${theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[800]}`,
+          bgcolor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[850] || '#232323',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
           mx: 'auto',
-        }}
+        })}
       >
-        {/* Notch */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: notchWidth,
-            height: notchHeight,
-            bgcolor: '#1a1a1a',
-            borderBottomLeftRadius: notchHeight / 2,
-            borderBottomRightRadius: notchHeight / 2,
-            zIndex: 10,
-          }}
-        />
-
         {/* Video Background */}
         {wallpaper.type === 'video' && wallpaper.videoUrl && (
           <Box
@@ -221,7 +203,7 @@ export default function PhonePreview({
           </Box>
         )}
 
-        {/* Screen Content */}
+        {/* Preview Content */}
         <Box
           sx={{
             width: '100%',
@@ -238,7 +220,7 @@ export default function PhonePreview({
               width: '100%',
               height: '100%',
               overflowY: 'auto',
-              pt: `${notchHeight + 8}px`,
+              pt: compact ? 2 : 3,
               pb: 4,
               px: compact ? 1.5 : 2,
               '&::-webkit-scrollbar': { display: 'none' },
@@ -606,20 +588,7 @@ export default function PhonePreview({
           </Box>
         </Box>
 
-        {/* Home Indicator */}
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: compact ? 6 : 8,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: compact ? 80 : 100,
-            height: 4,
-            bgcolor: '#fff',
-            borderRadius: 2,
-            opacity: 0.6,
-          }}
-        />
+        {/* ...no home indicator for preview window... */}
       </Box>
     </Box>
   );
