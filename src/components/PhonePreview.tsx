@@ -147,6 +147,9 @@ export default function PhonePreview({
   const titleFontFamily = getFontFamily(text.titleFont);
   const bodyFontFamily = getFontFamily(text.bodyFont);
   const darkBg = isDarkBackground(wallpaper);
+  const usernameOpacity = text.usernameOpacity ?? 0.9;
+  const bioOpacity = text.bioOpacity ?? 0.8;
+  const footerOpacity = text.footerOpacity ?? 0.8;
 
   // Preview window dimensions (same as phone)
   const previewWidth = compact ? 240 : 300;
@@ -173,7 +176,7 @@ export default function PhonePreview({
           height: previewHeight,
           borderRadius: borderRadius,
           border: `${borderWidth}px solid ${theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[800]}`,
-          bgcolor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[850] || '#232323',
+          bgcolor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#232323',
           position: 'relative',
           overflow: 'hidden',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
@@ -441,7 +444,7 @@ export default function PhonePreview({
                     fontWeight={700}
                     gutterBottom
                     sx={{
-                      color: darkBg ? '#ffffff' : text.titleColor,
+                      color: text.titleColor,
                       fontFamily: titleFontFamily,
                       fontSize: text.titleSize === 'large' ? (compact ? '1rem' : '1.25rem') : undefined,
                     }}
@@ -453,7 +456,8 @@ export default function PhonePreview({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: darkBg ? 'rgba(255,255,255,0.9)' : text.pageTextColor,
+                    color: text.pageTextColor,
+                    opacity: usernameOpacity,
                     fontFamily: bodyFontFamily,
                   }}
                   display="block"
@@ -465,7 +469,8 @@ export default function PhonePreview({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: darkBg ? 'rgba(255,255,255,0.8)' : text.pageTextColor,
+                      color: text.pageTextColor,
+                      opacity: bioOpacity,
                       mt: 0.5,
                       mb: 2,
                       display: 'block',
@@ -483,7 +488,7 @@ export default function PhonePreview({
                       <IconButton
                         key={idx}
                         size="small"
-                        sx={{ color: darkBg ? 'rgba(255,255,255,0.9)' : text.pageTextColor }}
+                        sx={{ color: text.pageTextColor }}
                       >
                         {getSocialIcon(social.platform)}
                       </IconButton>
@@ -548,7 +553,7 @@ export default function PhonePreview({
                         <Typography
                           variant="caption"
                           fontWeight={600}
-                          sx={{ color: darkBg ? 'rgba(255,255,255,0.9)' : text.pageTextColor, mb: 1, display: 'block' }}
+                          sx={{ color: text.pageTextColor, mb: 1, display: 'block' }}
                         >
                           {group.title}
                         </Typography>
@@ -573,8 +578,8 @@ export default function PhonePreview({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: darkBg ? 'rgba(255,255,255,0.7)' : text.pageTextColor,
-                      opacity: darkBg ? 0.8 : 0.6,
+                      color: text.pageTextColor,
+                      opacity: footerOpacity,
                       mt: 3,
                       display: 'block',
                       fontFamily: bodyFontFamily,

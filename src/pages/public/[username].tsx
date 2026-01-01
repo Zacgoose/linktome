@@ -373,6 +373,9 @@ export default function PublicProfile() {
   const textColor = appearance.text?.pageTextColor || (darkBg ? '#ffffff' : '#010101');
   const titleFontFamily = getFontFamily(appearance.text?.titleFont);
   const bodyFontFamily = getFontFamily(appearance.text?.bodyFont);
+  const usernameOpacity = appearance.text?.usernameOpacity ?? 0.9;
+  const bioOpacity = appearance.text?.bioOpacity ?? 0.8;
+  const footerOpacity = appearance.text?.footerOpacity ?? 0.8;
   
   // Separate links into grouped and ungrouped
   const ungroupedLinks = links.filter(link => !link.groupId);
@@ -434,6 +437,9 @@ export default function PublicProfile() {
                   textColor={appearance.text?.pageTextColor || '#010101'}
                   titleFontFamily={titleFontFamily}
                   bodyFontFamily={bodyFontFamily}
+                  usernameOpacity={usernameOpacity}
+                  bioOpacity={bioOpacity}
+                  footerOpacity={footerOpacity}
                   socialIcons={socialIcons}
                   ungroupedLinks={ungroupedLinks}
                   sortedGroups={sortedGroups}
@@ -452,6 +458,9 @@ export default function PublicProfile() {
                 textColor={textColor}
                 titleFontFamily={titleFontFamily}
                 bodyFontFamily={bodyFontFamily}
+                usernameOpacity={usernameOpacity}
+                bioOpacity={bioOpacity}
+                footerOpacity={footerOpacity}
                 socialIcons={socialIcons}
                 ungroupedLinks={ungroupedLinks}
                 sortedGroups={sortedGroups}
@@ -468,7 +477,7 @@ export default function PublicProfile() {
             <Box sx={{ mt: 4, textAlign: 'center' }}>
               <Typography 
                 variant="caption" 
-                sx={{ color: isLayoutCard ? 'text.secondary' : `${textColor}80` }}
+                sx={{ color: isLayoutCard ? 'text.secondary' : textColor, opacity: isLayoutCard ? 1 : footerOpacity }}
               >
                 Powered by LinkToMe
               </Typography>
@@ -536,6 +545,9 @@ interface ProfileContentProps {
   textColor: string;
   titleFontFamily: string;
   bodyFontFamily: string;
+  usernameOpacity: number;
+  bioOpacity: number;
+  footerOpacity: number;
   socialIcons: SocialIcon[];
   ungroupedLinks: Link[];
   sortedGroups: LinkGroup[];
@@ -551,6 +563,9 @@ const ProfileContent: React.FC<ProfileContentProps> = ({
   textColor,
   titleFontFamily,
   bodyFontFamily,
+  usernameOpacity,
+  bioOpacity,
+  footerOpacity,
   socialIcons,
   ungroupedLinks,
   sortedGroups,
@@ -621,7 +636,7 @@ const ProfileContent: React.FC<ProfileContentProps> = ({
       
       <Typography 
         variant="body2" 
-        sx={{ color: `${textColor}90`, fontFamily: bodyFontFamily }} 
+        sx={{ color: textColor, fontFamily: bodyFontFamily, opacity: usernameOpacity }} 
         gutterBottom
       >
         @{profile.username}
@@ -632,7 +647,8 @@ const ProfileContent: React.FC<ProfileContentProps> = ({
         <Typography 
           variant="body2" 
           sx={{ 
-            color: `${textColor}80`, 
+            color: textColor,
+            opacity: bioOpacity, 
             mt: 1, 
             mb: 3,
             maxWidth: '90%',

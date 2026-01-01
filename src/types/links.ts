@@ -81,6 +81,9 @@ export interface TextStyle {
   titleSize: 'small' | 'large';
   bodyFont: string;
   pageTextColor: string;
+  usernameOpacity?: number;
+  bioOpacity?: number;
+  footerOpacity?: number;
 }
 
 export interface HeaderStyle {
