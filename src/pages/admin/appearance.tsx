@@ -890,7 +890,7 @@ export default function AppearancePage() {
                               disableClearable
                               componentsProps={{
                                 popper: {
-                                  style: { zIndex: 1300 },
+                                  style: { zIndex: 1200 },
                                   disablePortal: false,
                                 },
                               }}
@@ -918,7 +918,7 @@ export default function AppearancePage() {
                               disableClearable
                               componentsProps={{
                                 popper: {
-                                  style: { zIndex: 1300 },
+                                  style: { zIndex: 1200 },
                                   disablePortal: false,
                                 },
                               }}
