@@ -147,6 +147,9 @@ export default function PhonePreview({
   const titleFontFamily = getFontFamily(text.titleFont);
   const bodyFontFamily = getFontFamily(text.bodyFont);
   const darkBg = isDarkBackground(wallpaper);
+  const usernameOpacity = text.usernameOpacity ?? 0.9;
+  const bioOpacity = text.bioOpacity ?? 0.8;
+  const footerOpacity = text.footerOpacity ?? 0.8;
 
   // Preview window dimensions (same as phone)
   const previewWidth = compact ? 240 : 300;
@@ -454,7 +457,7 @@ export default function PhonePreview({
                   variant="caption"
                   sx={{
                     color: darkBg ? '#ffffff' : text.pageTextColor,
-                    opacity: 0.9,
+                    opacity: usernameOpacity,
                     fontFamily: bodyFontFamily,
                   }}
                   display="block"
@@ -467,7 +470,7 @@ export default function PhonePreview({
                     variant="caption"
                     sx={{
                       color: darkBg ? '#ffffff' : text.pageTextColor,
-                      opacity: 0.8,
+                      opacity: bioOpacity,
                       mt: 0.5,
                       mb: 2,
                       display: 'block',
@@ -576,7 +579,7 @@ export default function PhonePreview({
                     variant="caption"
                     sx={{
                       color: darkBg ? '#ffffff' : text.pageTextColor,
-                      opacity: 0.8,
+                      opacity: footerOpacity,
                       mt: 3,
                       display: 'block',
                       fontFamily: bodyFontFamily,

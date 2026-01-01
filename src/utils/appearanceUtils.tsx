@@ -324,4 +324,7 @@ export const DEFAULT_TEXT: TextStyle = {
   titleSize: 'small',
   bodyFont: 'inter',
   pageTextColor: '#010101',
+  usernameOpacity: 0.9,
+  bioOpacity: 0.8,
+  footerOpacity: 0.8,
 };
