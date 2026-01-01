@@ -892,12 +892,21 @@ export default function AppearancePage() {
                                 popper: {
                                   style: { zIndex: 1200 },
                                   disablePortal: false,
-                                },
-                                paper: {
-                                  sx: {
-                                    width: 'fit-content',
-                                    minWidth: '100%',
-                                  },
+                                  modifiers: [
+                                    {
+                                      name: 'sameWidth',
+                                      enabled: true,
+                                      phase: 'beforeWrite',
+                                      requires: ['computeStyles'],
+                                      fn: ({ state }) => {
+                                        state.styles.popper.width = `${state.rects.reference.width}px`;
+                                      },
+                                      effect: ({ state }) => {
+                                        const referenceElement = state.elements.reference as HTMLElement;
+                                        state.elements.popper.style.width = `${referenceElement.offsetWidth}px`;
+                                      },
+                                    },
+                                  ],
                                 },
                               }}
                             />
@@ -926,12 +935,21 @@ export default function AppearancePage() {
                                 popper: {
                                   style: { zIndex: 1200 },
                                   disablePortal: false,
-                                },
-                                paper: {
-                                  sx: {
-                                    width: 'fit-content',
-                                    minWidth: '100%',
-                                  },
+                                  modifiers: [
+                                    {
+                                      name: 'sameWidth',
+                                      enabled: true,
+                                      phase: 'beforeWrite',
+                                      requires: ['computeStyles'],
+                                      fn: ({ state }) => {
+                                        state.styles.popper.width = `${state.rects.reference.width}px`;
+                                      },
+                                      effect: ({ state }) => {
+                                        const referenceElement = state.elements.reference as HTMLElement;
+                                        state.elements.popper.style.width = `${referenceElement.offsetWidth}px`;
+                                      },
+                                    },
+                                  ],
                                 },
                               }}
                             />
