@@ -599,15 +599,31 @@ export default function LinksPage() {
     setFormOpen(false);
   };
 
+  // State for delete confirmation dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
   const handleDeleteLink = (id: string) => {
-    if (confirm('Are you sure you want to delete this link?')) {
+    setPendingDeleteId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteLink = () => {
+    if (pendingDeleteId) {
       updateLinks.mutate({
         url: 'admin/UpdateLinks',
         data: {
-          links: [{ operation: 'remove', id }],
+          links: [{ operation: 'remove', id: pendingDeleteId }],
         },
       });
     }
+    setDeleteDialogOpen(false);
+    setPendingDeleteId(null);
+  };
+
+  const handleCancelDeleteLink = () => {
+    setDeleteDialogOpen(false);
+    setPendingDeleteId(null);
   };
 
   const handleToggleLink = (id: string, active: boolean) => {
@@ -982,6 +998,18 @@ export default function LinksPage() {
         onSave={handleSaveLink}
         link={selectedLink}
       />
+
+      {/* Delete Link Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleCancelDeleteLink} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete Link</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this link?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDeleteLink}>Cancel</Button>
+          <Button onClick={handleConfirmDeleteLink} color="error" variant="contained">Delete</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Group Dialog */}
       <Dialog open={groupDialogOpen} onClose={() => setGroupDialogOpen(false)} maxWidth="xs" fullWidth>
