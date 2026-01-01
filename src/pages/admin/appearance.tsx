@@ -874,6 +874,17 @@ export default function AppearancePage() {
                                 value={formData.text.titleFont}
                                 label="Title font"
                                 onChange={(e) => updateText({ titleFont: e.target.value })}
+                                MenuProps={{
+                                  disableScrollLock: true,
+                                  anchorOrigin: {
+                                    vertical: 'bottom',
+                                    horizontal: 'left',
+                                  },
+                                  transformOrigin: {
+                                    vertical: 'top',
+                                    horizontal: 'left',
+                                  },
+                                }}
                               >
                                 {FONT_OPTIONS.map((font) => (
                                   <MenuItem 
@@ -895,6 +906,17 @@ export default function AppearancePage() {
                                 value={formData.text.bodyFont}
                                 label="Body font"
                                 onChange={(e) => updateText({ bodyFont: e.target.value })}
+                                MenuProps={{
+                                  disableScrollLock: true,
+                                  anchorOrigin: {
+                                    vertical: 'bottom',
+                                    horizontal: 'left',
+                                  },
+                                  transformOrigin: {
+                                    vertical: 'top',
+                                    horizontal: 'left',
+                                  },
+                                }}
                               >
                                 {FONT_OPTIONS.map((font) => (
                                   <MenuItem 
