@@ -46,6 +46,7 @@ import {
   Person as PersonIcon,
   AspectRatio as LayoutIcon,
 } from '@mui/icons-material';
+import Autocomplete from '@mui/material/Autocomplete';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
 import PhonePreview from '@/components/PhonePreview';
@@ -868,70 +869,48 @@ export default function AppearancePage() {
                       <Stack spacing={3}>
                         <Grid container spacing={2}>
                           <Grid item xs={6}>
-                            <FormControl fullWidth size="small">
-                              <InputLabel>Title font</InputLabel>
-                              <Select
-                                value={formData.text.titleFont}
-                                label="Title font"
-                                onChange={(e) => updateText({ titleFont: e.target.value })}
-                                MenuProps={{
-                                  disableScrollLock: true,
-                                  anchorOrigin: {
-                                    vertical: 'bottom',
-                                    horizontal: 'left',
-                                  },
-                                  transformOrigin: {
-                                    vertical: 'top',
-                                    horizontal: 'left',
-                                  },
-                                  disablePortal: true,
-                                }}
-                              >
-                                {FONT_OPTIONS.map((font) => (
-                                  <MenuItem 
-                                    key={font.value} 
-                                    value={font.value}
-                                    disabled={font.isPro}
-                                    sx={{ fontFamily: font.fontFamily }}
-                                  >
-                                    {font.label} {font.isPro && '(Pro)'}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
+                            <Autocomplete
+                              fullWidth
+                              size="small"
+                              options={FONT_OPTIONS.filter(f => !f.isPro)}
+                              getOptionLabel={(option) => option.label}
+                              value={FONT_OPTIONS.find(f => f.value === formData.text.titleFont) || null}
+                              onChange={(_, newValue) => {
+                                if (newValue) updateText({ titleFont: newValue.value });
+                              }}
+                              renderInput={(params) => (
+                                <TextField {...params} label="Title font" />
+                              )}
+                              renderOption={(props, option) => (
+                                <li {...props} style={{ fontFamily: option.fontFamily }}>
+                                  {option.label}
+                                </li>
+                              )}
+                              isOptionEqualToValue={(option, value) => option.value === value.value}
+                              disableClearable
+                            />
                           </Grid>
                           <Grid item xs={6}>
-                            <FormControl fullWidth size="small">
-                              <InputLabel>Body font</InputLabel>
-                              <Select
-                                value={formData.text.bodyFont}
-                                label="Body font"
-                                onChange={(e) => updateText({ bodyFont: e.target.value })}
-                                MenuProps={{
-                                  disableScrollLock: true,
-                                  anchorOrigin: {
-                                    vertical: 'bottom',
-                                    horizontal: 'left',
-                                  },
-                                  transformOrigin: {
-                                    vertical: 'top',
-                                    horizontal: 'left',
-                                  },
-                                  disablePortal: true,
-                                }}
-                              >
-                                {FONT_OPTIONS.map((font) => (
-                                  <MenuItem 
-                                    key={font.value} 
-                                    value={font.value}
-                                    disabled={font.isPro}
-                                    sx={{ fontFamily: font.fontFamily }}
-                                  >
-                                    {font.label} {font.isPro && '(Pro)'}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
+                            <Autocomplete
+                              fullWidth
+                              size="small"
+                              options={FONT_OPTIONS.filter(f => !f.isPro)}
+                              getOptionLabel={(option) => option.label}
+                              value={FONT_OPTIONS.find(f => f.value === formData.text.bodyFont) || null}
+                              onChange={(_, newValue) => {
+                                if (newValue) updateText({ bodyFont: newValue.value });
+                              }}
+                              renderInput={(params) => (
+                                <TextField {...params} label="Body font" />
+                              )}
+                              renderOption={(props, option) => (
+                                <li {...props} style={{ fontFamily: option.fontFamily }}>
+                                  {option.label}
+                                </li>
+                              )}
+                              isOptionEqualToValue={(option, value) => option.value === value.value}
+                              disableClearable
+                            />
                           </Grid>
                         </Grid>
 
