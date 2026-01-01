@@ -893,6 +893,12 @@ export default function AppearancePage() {
                                   style: { zIndex: 1200 },
                                   disablePortal: false,
                                 },
+                                paper: {
+                                  sx: {
+                                    width: 'fit-content',
+                                    minWidth: '100%',
+                                  },
+                                },
                               }}
                             />
                           </Grid>
@@ -920,6 +926,12 @@ export default function AppearancePage() {
                                 popper: {
                                   style: { zIndex: 1200 },
                                   disablePortal: false,
+                                },
+                                paper: {
+                                  sx: {
+                                    width: 'fit-content',
+                                    minWidth: '100%',
+                                  },
                                 },
                               }}
                             />
