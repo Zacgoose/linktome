@@ -468,7 +468,7 @@ export default function PublicProfile() {
             <Box sx={{ mt: 4, textAlign: 'center' }}>
               <Typography 
                 variant="caption" 
-                sx={{ color: isLayoutCard ? 'text.secondary' : `${textColor}80` }}
+                sx={{ color: isLayoutCard ? 'text.secondary' : textColor, opacity: isLayoutCard ? 1 : 0.8 }}
               >
                 Powered by LinkToMe
               </Typography>
@@ -621,7 +621,7 @@ const ProfileContent: React.FC<ProfileContentProps> = ({
       
       <Typography 
         variant="body2" 
-        sx={{ color: `${textColor}90`, fontFamily: bodyFontFamily }} 
+        sx={{ color: textColor, fontFamily: bodyFontFamily, opacity: 0.9 }} 
         gutterBottom
       >
         @{profile.username}
@@ -632,7 +632,8 @@ const ProfileContent: React.FC<ProfileContentProps> = ({
         <Typography 
           variant="body2" 
           sx={{ 
-            color: `${textColor}80`, 
+            color: textColor,
+            opacity: 0.8, 
             mt: 1, 
             mb: 3,
             maxWidth: '90%',

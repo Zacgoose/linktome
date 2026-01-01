@@ -915,6 +915,57 @@ export default function AppearancePage() {
                           </Grid>
                         </Box>
 
+                        <Divider />
+
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
+                            Body font
+                          </Typography>
+                          <Grid container spacing={1}>
+                            {FONT_OPTIONS.slice(0, 6).map((font) => (
+                              <Grid item xs={6} sm={4} key={font.value}>
+                                <Paper
+                                  onClick={() => !font.isPro && updateText({ bodyFont: font.value })}
+                                  sx={{
+                                    p: 2,
+                                    cursor: font.isPro ? 'not-allowed' : 'pointer',
+                                    border: 2,
+                                    borderColor: formData.text.bodyFont === font.value ? 'primary.main' : 'transparent',
+                                    opacity: font.isPro ? 0.6 : 1,
+                                    textAlign: 'center',
+                                    position: 'relative',
+                                  }}
+                                >
+                                  <Typography
+                                    sx={{
+                                      fontFamily: font.fontFamily,
+                                      fontSize: 14,
+                                    }}
+                                  >
+                                    {font.label}
+                                  </Typography>
+                                  {font.isPro && (
+                                    <Chip
+                                      icon={<LockIcon sx={{ fontSize: 10 }} />}
+                                      label="Pro"
+                                      size="small"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        fontSize: 8,
+                                        height: 16,
+                                      }}
+                                    />
+                                  )}
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+
+                        <Divider />
+
                         <Grid container spacing={2}>
                           <Grid item xs={6}>
                             <ColorPicker
@@ -1104,6 +1155,30 @@ export default function AppearancePage() {
                                 >
                                   <Typography variant="caption">
                                     {shadow.charAt(0).toUpperCase() + shadow.slice(1)}
+                                  </Typography>
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>Hover effect</Typography>
+                          <Grid container spacing={1}>
+                            {['none', 'lift', 'glow', 'fill'].map((effect) => (
+                              <Grid item xs={3} key={effect}>
+                                <Paper
+                                  onClick={() => updateButtons({ hoverEffect: effect as ButtonStyle['hoverEffect'] })}
+                                  sx={{
+                                    p: 1.5,
+                                    cursor: 'pointer',
+                                    border: 2,
+                                    borderColor: formData.buttons.hoverEffect === effect ? 'primary.main' : 'transparent',
+                                    textAlign: 'center',
+                                  }}
+                                >
+                                  <Typography variant="caption">
+                                    {effect.charAt(0).toUpperCase() + effect.slice(1)}
                                   </Typography>
                                 </Paper>
                               </Grid>
