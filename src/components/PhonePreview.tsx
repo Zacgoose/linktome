@@ -587,8 +587,6 @@ export default function PhonePreview({
             )}
           </Box>
         </Box>
-
-        {/* ...no home indicator for preview window... */}
       </Box>
     </Box>
   );

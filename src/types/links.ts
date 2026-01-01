@@ -57,7 +57,7 @@ export interface WallpaperStyle {
   gradientStart?: string;
   gradientEnd?: string;
   gradientDirection?: number;
-  patternType?: 'grid' | 'dots' | 'lines' | 'waves' | 'geometric';
+  patternType?: 'grid' | 'dots' | 'lines' | 'waves' | 'geometric' | 'honey';
   patternColor?: string;
   imageUrl?: string;
   videoUrl?: string;
@@ -388,6 +388,31 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       layoutStyle: 'card',
     },
   },
+  {
+    id: 'honeycomb',
+    name: 'Honeycomb',
+    type: 'customizable',
+    isPro: false,
+    appearance: {
+      wallpaper: { type: 'pattern', patternType: 'honey', color: '#4E4E4E', patternColor: '#ECC94B' },
+      buttons: {
+        type: 'glass',
+        cornerRadius: 'pill',
+        shadow: 'subtle',
+        backgroundColor: '#FDDC9D',
+        textColor: '#000000',
+        borderColor: '#fcbf49',
+      },
+      text: {
+        titleFont: 'inter',
+        titleColor: '#000000',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#000000',
+      },
+      layoutStyle: 'centered',
+    },
+  },
 ];
 
 // Pattern options
@@ -397,6 +422,7 @@ export const PATTERN_OPTIONS = [
   { value: 'lines', label: 'Lines' },
   { value: 'waves', label: 'Waves' },
   { value: 'geometric', label: 'Geometric' },
+  { value: 'honey', label: 'Honeycomb' },
 ];
 
 // Social platform options
