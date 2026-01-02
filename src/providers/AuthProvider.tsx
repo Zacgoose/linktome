@@ -60,6 +60,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             updated: um.updated,
           }))
         : [],
+      tier: user.tier, // Include tier from backend
     };
   }
 

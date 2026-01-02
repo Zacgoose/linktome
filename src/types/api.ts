@@ -3,6 +3,8 @@
  * See: API_RESPONSE_FORMAT.md in linktome-api repository
  */
 
+import { UserTier } from './tiers';
+
 /**
  * Standard error response format
  * HTTP Status: 4xx or 5xx
@@ -22,6 +24,7 @@ export interface UserAuth {
   roles: string[];
   permissions: string[];
   userManagements: UserManagement[];
+  tier?: UserTier; // User's subscription tier
 }
 
 /**
