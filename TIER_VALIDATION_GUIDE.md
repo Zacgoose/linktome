@@ -1,8 +1,8 @@
-# User Tier Validation & Premium Feature Tracking System
+# User Tier Validation System
 
 ## Overview
 
-This document explains the user tier validation and premium feature tracking system that has been implemented in the LinkToMe application. This system allows you to restrict features based on user subscription tiers and track usage patterns.
+This document explains the user tier validation system that has been implemented in the LinkToMe application. This system allows you to restrict features based on user subscription tiers.
 
 ## Architecture
 
@@ -23,7 +23,6 @@ Each tier has specific feature limits defined in the `TIER_CONFIG` object.
 - `UserTier`: Enum defining available tiers
 - `TierLimits`: Interface defining feature limits per tier
 - `TIER_CONFIG`: Configuration mapping tiers to their limits
-- `FeatureUsage`: Interface for tracking feature usage
 - `FeatureAccessResult`: Result of feature access checks
 
 #### Validation Utilities (`src/utils/tierValidation.ts`)
@@ -34,15 +33,9 @@ Each tier has specific feature limits defined in the `TIER_CONFIG` object.
 - `canUseFontFamily(tier, isPro)`: Check font availability
 - `canUseTheme(tier, isPro)`: Check theme availability
 
-#### Feature Gate Utilities (`src/utils/featureGate.ts`)
-- `trackFeatureUsage(usage)`: Log feature usage attempts
-- `getFeatureUsageLog()`: Retrieve usage log
-- `getFeatureUsageStats(userId)`: Get usage statistics
-- `withFeatureGate(feature, callback)`: Wrap feature with tier check
-
 #### React Hook (`src/hooks/useFeatureGate.ts`)
 - `useFeatureGate()`: Primary hook for feature validation in components
-  - Returns: `canAccess`, `checkAndTrack`, `userTier`, `showUpgrade`, etc.
+  - Returns: `canAccess`, `userTier`, `showUpgrade`, `openUpgradePrompt`, `closeUpgradePrompt`
 
 #### UI Components
 - **TierBadge** (`src/components/TierBadge.tsx`): Display user tier
@@ -66,11 +59,6 @@ The system is integrated into:
 3. **Admin Dashboard** (`src/pages/admin/dashboard.tsx`)
    - Displays user tier badge
 
-4. **Feature Usage Tracking** (`src/pages/admin/feature-usage.tsx`)
-   - View usage statistics
-   - See blocked attempts
-   - Track most-used features
-
 ## Usage Examples
 
 ### Basic Feature Check
@@ -79,7 +67,7 @@ The system is integrated into:
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 
 function MyComponent() {
-  const { canAccess, checkAndTrack } = useFeatureGate();
+  const { canAccess } = useFeatureGate();
   
   // Check if user can access a feature
   const access = canAccess('linkAnimations');
@@ -88,9 +76,7 @@ function MyComponent() {
     console.log(access.reason); // "This feature requires pro tier or higher"
   }
   
-  // Check and track usage
-  const allowed = checkAndTrack('linkAnimations', 'Link Animation Feature');
-  if (allowed) {
+  if (access.allowed) {
     // Enable feature
   }
 }
@@ -102,16 +88,16 @@ function MyComponent() {
 function MyComponent() {
   const { 
     canAccess, 
-    checkAndTrack, 
+    openUpgradePrompt,
     showUpgrade, 
     upgradeInfo, 
     closeUpgradePrompt 
   } = useFeatureGate();
   
   const handleFeatureClick = () => {
-    if (!canAccess('customLayouts').allowed) {
-      checkAndTrack('customLayouts', 'Custom Layout');
-      // Automatically shows upgrade prompt
+    const access = canAccess('customLayouts');
+    if (!access.allowed && access.requiredTier) {
+      openUpgradePrompt('Custom Layout', access.requiredTier);
     } else {
       // Enable feature
     }
@@ -157,47 +143,11 @@ function LinkList() {
 }
 ```
 
-## Feature Tracking
-
-### How It Works
-
-1. Every feature access attempt is logged to localStorage (in production, this would be sent to a backend)
-2. Logs include:
-   - Feature name
-   - User ID
-   - Timestamp
-   - Success/failure status
-   - User tier at time of attempt
-   - Metadata (reason for failure, required tier)
-
-### Viewing Usage Data
-
-Navigate to `/admin/feature-usage` to see:
-- Total usage attempts
-- Successful vs blocked attempts
-- Most-used features
-- Most-blocked features
-- Recent activity log
-
-### Analytics Integration
-
-The system provides `getFeatureUsageStats(userId)` which returns:
-
-```typescript
-{
-  totalAttempts: number,
-  successfulAttempts: number,
-  blockedAttempts: number,
-  mostUsedFeatures: Array<{ feature: string, count: number }>,
-  blockedFeatures: Array<{ feature: string, count: number }>
-}
-```
-
 ## Backend Integration
 
 ### Current State
 
-The system is **frontend-only** with mock data storage in localStorage. The user tier is read from `user.tier` in the auth context.
+The system is **frontend-only**. The user tier is read from `user.tier` in the auth context.
 
 ### Backend Requirements
 
@@ -210,11 +160,7 @@ To make this production-ready, you need to:
    - `GET /api/admin/GetUserTier` - Get user's current tier
    - `POST /api/billing/UpdateSubscription` - Handle subscription changes
 
-4. **Implement feature tracking API**:
-   - `POST /api/tracking/FeatureUsage` - Log feature usage
-   - `GET /api/tracking/FeatureStats` - Get usage statistics
-
-5. **Add server-side validation**:
+4. **Add server-side validation**:
    - Validate tier on every feature-related API call
    - Reject requests if user tier doesn't allow the feature
    - Example: Check tier before saving link with animations
@@ -340,12 +286,10 @@ location.reload();
 1. **User Experience**:
    - Clear indication of premium features
    - Informative upgrade prompts
-   - Tracks what features users want
 
 2. **Business Intelligence**:
-   - Track which premium features are most desired
-   - Identify conversion opportunities
-   - Measure feature adoption by tier
+   - Understand which features drive upgrades
+   - Clear tier boundaries
 
 3. **Flexibility**:
    - Easy to add new tiers
@@ -362,9 +306,7 @@ location.reload();
 1. **Backend Integration**: Implement server-side tier validation
 2. **Billing Integration**: Connect to Stripe/payment processor
 3. **Tier Management UI**: Admin panel for managing user tiers
-4. **Analytics Dashboard**: Enhanced reporting on feature usage
-5. **A/B Testing**: Test different tier configurations
-6. **Upgrade Flows**: Complete checkout and subscription management
+4. **Upgrade Flows**: Complete checkout and subscription management
 
 ## Support
 
@@ -372,4 +314,3 @@ For questions or issues with the tier validation system, refer to:
 - Type definitions: `src/types/tiers.ts`
 - Validation logic: `src/utils/tierValidation.ts`
 - React hook: `src/hooks/useFeatureGate.ts`
-- Feature tracking: `src/utils/featureGate.ts`

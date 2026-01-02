@@ -84,7 +84,7 @@ const LOCK_TYPES = [
 
 export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps) {
   const [tabValue, setTabValue] = useState(0);
-  const { canAccess, checkAndTrack, showUpgrade, upgradeInfo, closeUpgradePrompt } = useFeatureGate();
+  const { canAccess, openUpgradePrompt, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -393,8 +393,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                     <Grid item xs={6} key={layout.value}>
                       <Paper
                         onClick={() => {
-                          if (isLocked) {
-                            checkAndTrack('customLayouts', 'Custom Link Layout');
+                          if (isLocked && access.requiredTier) {
+                            openUpgradePrompt('Custom Link Layout', access.requiredTier);
                           } else {
                             setFormData({ ...formData, layout: layout.value as typeof formData.layout });
                           }
@@ -457,8 +457,9 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   value={formData.animation}
                   onChange={(e) => {
                     const newValue = e.target.value as typeof formData.animation;
-                    if (newValue !== 'none' && !canAccess('linkAnimations').allowed) {
-                      checkAndTrack('linkAnimations', 'Link Animations');
+                    const access = canAccess('linkAnimations');
+                    if (newValue !== 'none' && !access.allowed && access.requiredTier) {
+                      openUpgradePrompt('Link Animations', access.requiredTier);
                     } else {
                       setFormData({ ...formData, animation: newValue });
                     }
@@ -528,8 +529,9 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   <Switch
                     checked={formData.schedule.enabled}
                     onChange={(e) => {
-                      if (e.target.checked && !canAccess('linkScheduling').allowed) {
-                        checkAndTrack('linkScheduling', 'Link Scheduling');
+                      const access = canAccess('linkScheduling');
+                      if (e.target.checked && !access.allowed && access.requiredTier) {
+                        openUpgradePrompt('Link Scheduling', access.requiredTier);
                       } else {
                         updateSchedule({ enabled: e.target.checked });
                       }
@@ -596,8 +598,9 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   <Switch
                     checked={formData.lock.enabled}
                     onChange={(e) => {
-                      if (e.target.checked && !canAccess('linkLocking').allowed) {
-                        checkAndTrack('linkLocking', 'Link Locking');
+                      const access = canAccess('linkLocking');
+                      if (e.target.checked && !access.allowed && access.requiredTier) {
+                        openUpgradePrompt('Link Locking', access.requiredTier);
                       } else {
                         updateLock({ enabled: e.target.checked });
                       }

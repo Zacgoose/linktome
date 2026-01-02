@@ -2,7 +2,7 @@
 
 ## System Overview
 
-A complete user tier validation and feature tracking system has been implemented to support premium features and subscription management.
+A complete user tier validation system has been implemented to support premium features and subscription management.
 
 ## Key Files Created
 
@@ -12,7 +12,6 @@ A complete user tier validation and feature tracking system has been implemented
 
 ### Utilities
 - `src/utils/tierValidation.ts` - Core validation logic
-- `src/utils/featureGate.ts` - Feature usage tracking
 
 ### Components
 - `src/components/TierBadge.tsx` - Display user tier
@@ -20,7 +19,6 @@ A complete user tier validation and feature tracking system has been implemented
 - `src/hooks/useFeatureGate.ts` - React hook for feature checks
 
 ### Pages
-- `src/pages/admin/feature-usage.tsx` - Usage analytics dashboard
 - `src/pages/admin/dashboard.tsx` - Updated with tier badge
 - `src/pages/admin/appearance.tsx` - Integrated tier checks
 - `src/components/LinkForm.tsx` - Integrated tier checks
@@ -65,16 +63,17 @@ import UpgradePrompt from '@/components/UpgradePrompt';
 function MyComponent() {
   const { 
     canAccess, 
-    checkAndTrack, 
+    openUpgradePrompt,
     showUpgrade, 
     upgradeInfo, 
     closeUpgradePrompt 
   } = useFeatureGate();
 
   const handlePremiumAction = () => {
-    if (!canAccess('linkAnimations').allowed) {
-      checkAndTrack('linkAnimations', 'Animations Feature');
-      return; // Automatically shows upgrade prompt
+    const access = canAccess('linkAnimations');
+    if (!access.allowed && access.requiredTier) {
+      openUpgradePrompt('Animations Feature', access.requiredTier);
+      return;
     }
     
     // Execute premium action
@@ -113,14 +112,7 @@ Try these actions (should show upgrade prompts for free tier):
 - Add a link → Layout tab → Select featured or thumbnail layout
 - Appearance → Select a premium theme (has lock icon)
 
-### 3. View Usage Tracking
-Navigate to `/admin/feature-usage` to see:
-- Total attempts
-- Successful uses
-- Blocked attempts
-- Feature usage statistics
-
-### 4. Simulate Different Tiers
+### 3. Simulate Different Tiers
 In browser console:
 ```javascript
 const user = JSON.parse(localStorage.getItem('user'));
@@ -141,11 +133,6 @@ The frontend is ready. To complete the system:
    GET /api/user/GetTier
    ```
 4. **Add server-side validation** for all premium features
-5. **Implement feature tracking endpoint**:
-   ```
-   POST /api/tracking/FeatureUsage
-   GET /api/tracking/FeatureStats
-   ```
 
 ## Customization
 
@@ -190,7 +177,6 @@ Edit `TIER_CONFIG` in `src/types/tiers.ts` to change:
 ## Key Benefits
 
 ✅ **Clear UX**: Users see what's premium before trying  
-✅ **Usage Tracking**: Know which features drive upgrades  
 ✅ **Flexible**: Easy to add features or change limits  
 ✅ **Type-Safe**: Full TypeScript support  
 ✅ **Extensible**: Hook-based architecture for easy reuse  
@@ -198,30 +184,14 @@ Edit `TIER_CONFIG` in `src/types/tiers.ts` to change:
 ## Important Notes
 
 ⚠️ **Frontend Only**: Current implementation is client-side. Add server validation before production.  
-⚠️ **Mock Storage**: Usage tracking uses localStorage. Replace with API calls for production.  
 ⚠️ **Tier Source**: User tier comes from `user.tier` in auth context. Backend must provide this.  
-
-## Feature Usage Dashboard
-
-Access at `/admin/feature-usage` to see:
-- Usage summary cards (attempts, successful, blocked)
-- Current tier limits
-- Most used features
-- Blocked feature attempts
-- Recent activity log
-
-This helps identify:
-- Which premium features users want most
-- Conversion opportunities
-- Feature adoption by tier
 
 ## Next Steps
 
 1. ✅ Frontend tier validation - COMPLETE
 2. ✅ UI components and prompts - COMPLETE
-3. ✅ Usage tracking system - COMPLETE
-4. ⏳ Backend tier validation - TODO
-5. ⏳ Payment integration - TODO
-6. ⏳ Subscription management - TODO
+3. ⏳ Backend tier validation - TODO
+4. ⏳ Payment integration - TODO
+5. ⏳ Subscription management - TODO
 
 For detailed information, see `TIER_VALIDATION_GUIDE.md`.

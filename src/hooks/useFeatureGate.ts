@@ -6,11 +6,9 @@ import { useState, useCallback } from 'react';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { UserTier, TierLimits, FeatureAccessResult } from '@/types/tiers';
 import { canAccessFeature, parseTier } from '@/utils/tierValidation';
-import { trackFeatureUsage } from '@/utils/featureGate';
 
 interface UseFeatureGateResult {
   canAccess: (feature: keyof TierLimits) => FeatureAccessResult;
-  checkAndTrack: (feature: keyof TierLimits, featureName: string) => boolean;
   userTier: UserTier;
   showUpgrade: boolean;
   upgradeInfo: {
@@ -47,38 +45,6 @@ export function useFeatureGate(): UseFeatureGateResult {
   );
 
   /**
-   * Check access and track the attempt
-   */
-  const checkAndTrack = useCallback(
-    (feature: keyof TierLimits, featureName: string): boolean => {
-      const result = canAccessFeature(userTier, feature);
-      
-      trackFeatureUsage({
-        feature: featureName,
-        userId: user?.UserId || 'unknown',
-        tier: userTier,
-        success: result.allowed,
-        metadata: result.allowed ? undefined : {
-          reason: result.reason,
-          requiredTier: result.requiredTier,
-        },
-      });
-
-      if (!result.allowed && result.requiredTier) {
-        setUpgradeInfo({
-          feature: featureName,
-          requiredTier: result.requiredTier,
-          currentTier: userTier,
-        });
-        setShowUpgrade(true);
-      }
-
-      return result.allowed;
-    },
-    [userTier, user?.UserId]
-  );
-
-  /**
    * Open upgrade prompt manually
    */
   const openUpgradePrompt = useCallback(
@@ -103,7 +69,6 @@ export function useFeatureGate(): UseFeatureGateResult {
 
   return {
     canAccess,
-    checkAndTrack,
     userTier,
     showUpgrade,
     upgradeInfo,

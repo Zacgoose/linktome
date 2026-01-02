@@ -147,18 +147,6 @@ export const TIER_CONFIG: Record<UserTier, TierLimits> = {
 };
 
 /**
- * Feature usage tracking
- */
-export interface FeatureUsage {
-  feature: string;
-  userId: string;
-  timestamp: Date;
-  success: boolean;
-  tier: UserTier;
-  metadata?: Record<string, unknown>;
-}
-
-/**
  * Feature access result
  */
 export interface FeatureAccessResult {

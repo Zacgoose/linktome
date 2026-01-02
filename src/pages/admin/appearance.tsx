@@ -199,10 +199,10 @@ interface ThemeCardProps {
   selected: boolean;
   onClick: () => void;
   userTier: any;
-  checkAndTrack: (feature: any, name: string) => boolean;
+  openUpgradePrompt: (feature: string, requiredTier: UserTier) => void;
 }
 
-function ThemeCard({ theme, selected, onClick, userTier, checkAndTrack }: ThemeCardProps) {
+function ThemeCard({ theme, selected, onClick, userTier, openUpgradePrompt }: ThemeCardProps) {
   const renderPreview = () => {
     if (theme.id === 'custom') {
       return (
@@ -304,8 +304,8 @@ function ThemeCard({ theme, selected, onClick, userTier, checkAndTrack }: ThemeC
         const themeAccess = canUseTheme(userTier, theme.isPro);
         if (themeAccess.allowed) {
           onClick();
-        } else {
-          checkAndTrack('customThemes', 'Premium Theme');
+        } else if (themeAccess.requiredTier) {
+          openUpgradePrompt('Premium Theme', themeAccess.requiredTier);
         }
       }}
       sx={{
@@ -377,7 +377,7 @@ export default function AppearancePage() {
   const router = useRouter();
   const { showToast } = useToast();
   const [themeTab, setThemeTab] = useState(0);
-  const { canAccess, checkAndTrack, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
+  const { canAccess, openUpgradePrompt, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
 
   const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
@@ -461,7 +461,9 @@ export default function AppearancePage() {
     // Check tier access for premium themes
     const themeAccess = canUseTheme(userTier, theme.isPro);
     if (!themeAccess.allowed) {
-      checkAndTrack('customThemes', 'Premium Theme');
+      if (themeAccess.requiredTier) {
+        openUpgradePrompt('Premium Theme', themeAccess.requiredTier);
+      }
       return;
     }
 
@@ -690,7 +692,7 @@ export default function AppearancePage() {
                                 selected={formData.theme === theme.id}
                                 onClick={() => handleThemeSelect(theme)}
                                 userTier={userTier}
-                                checkAndTrack={checkAndTrack}
+                                openUpgradePrompt={openUpgradePrompt}
                               />
                             </Grid>
                           ))}
@@ -902,8 +904,8 @@ export default function AppearancePage() {
                                   const fontAccess = canUseFontFamily(userTier, newValue.isPro);
                                   if (fontAccess.allowed) {
                                     updateText({ titleFont: newValue.value });
-                                  } else {
-                                    checkAndTrack('premiumFonts', 'Premium Font');
+                                  } else if (fontAccess.requiredTier) {
+                                    openUpgradePrompt('Premium Font', fontAccess.requiredTier);
                                   }
                                 }
                               }}
@@ -955,8 +957,8 @@ export default function AppearancePage() {
                                   const fontAccess = canUseFontFamily(userTier, newValue.isPro);
                                   if (fontAccess.allowed) {
                                     updateText({ bodyFont: newValue.value });
-                                  } else {
-                                    checkAndTrack('premiumFonts', 'Premium Font');
+                                  } else if (fontAccess.requiredTier) {
+                                    openUpgradePrompt('Premium Font', fontAccess.requiredTier);
                                   }
                                 }
                               }}
