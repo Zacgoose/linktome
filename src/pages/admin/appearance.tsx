@@ -27,6 +27,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Alert,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -45,6 +46,7 @@ import {
   Lock as LockIcon,
   Person as PersonIcon,
   AspectRatio as LayoutIcon,
+  LockOutlined as LockOutlinedIcon,
 } from '@mui/icons-material';
 import Autocomplete from '@mui/material/Autocomplete';
 import AdminLayout from '@/layouts/AdminLayout';
@@ -65,6 +67,9 @@ import {
 } from '@/types/links';
 import { useToast } from '@/context/ToastContext';
 import { getBackgroundStyle, getButtonStyle } from '@/utils/appearanceUtils';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import { canUseFontFamily, canUseTheme } from '@/utils/tierValidation';
 
 interface SectionProps {
   title: string;
@@ -193,9 +198,11 @@ interface ThemeCardProps {
   theme: AppearanceTheme;
   selected: boolean;
   onClick: () => void;
+  userTier: any;
+  checkAndTrack: (feature: any, name: string) => boolean;
 }
 
-function ThemeCard({ theme, selected, onClick }: ThemeCardProps) {
+function ThemeCard({ theme, selected, onClick, userTier, checkAndTrack }: ThemeCardProps) {
   const renderPreview = () => {
     if (theme.id === 'custom') {
       return (
@@ -293,10 +300,17 @@ function ThemeCard({ theme, selected, onClick }: ThemeCardProps) {
 
   return (
     <Box
-      onClick={theme.isPro ? undefined : onClick}
+      onClick={() => {
+        const themeAccess = canUseTheme(userTier, theme.isPro);
+        if (themeAccess.allowed) {
+          onClick();
+        } else {
+          checkAndTrack('customThemes', 'Premium Theme');
+        }
+      }}
       sx={{
-        cursor: theme.isPro ? 'not-allowed' : 'pointer',
-        opacity: theme.isPro ? 0.7 : 1,
+        cursor: (!canUseTheme(userTier, theme.isPro).allowed) ? 'not-allowed' : 'pointer',
+        opacity: (!canUseTheme(userTier, theme.isPro).allowed) ? 0.7 : 1,
         position: 'relative',
       }}
     >
@@ -310,16 +324,16 @@ function ThemeCard({ theme, selected, onClick }: ThemeCardProps) {
           borderColor: selected ? 'primary.main' : 'divider',
           transition: 'all 0.2s',
           '&:hover': {
-            borderColor: theme.isPro ? 'divider' : 'primary.light',
-            transform: theme.isPro ? 'none' : 'scale(1.02)',
+            borderColor: (!canUseTheme(userTier, theme.isPro).allowed) ? 'divider' : 'primary.light',
+            transform: (!canUseTheme(userTier, theme.isPro).allowed) ? 'none' : 'scale(1.02)',
           },
         }}
       >
         {renderPreview()}
-        {theme.isPro && (
+        {theme.isPro && !canUseTheme(userTier, theme.isPro).allowed && (
           <Chip
             icon={<LockIcon sx={{ fontSize: 12 }} />}
-            label="Pro"
+            label="Premium"
             size="small"
             sx={{
               position: 'absolute',
@@ -363,6 +377,7 @@ export default function AppearancePage() {
   const router = useRouter();
   const { showToast } = useToast();
   const [themeTab, setThemeTab] = useState(0);
+  const { canAccess, checkAndTrack, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
 
   const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
@@ -443,7 +458,12 @@ export default function AppearancePage() {
   };
 
   const handleThemeSelect = (theme: AppearanceTheme) => {
-    if (theme.isPro) return;
+    // Check tier access for premium themes
+    const themeAccess = canUseTheme(userTier, theme.isPro);
+    if (!themeAccess.allowed) {
+      checkAndTrack('customThemes', 'Premium Theme');
+      return;
+    }
 
     setFormData(prev => {
       const next = {
@@ -669,6 +689,8 @@ export default function AppearancePage() {
                                 theme={theme}
                                 selected={formData.theme === theme.id}
                                 onClick={() => handleThemeSelect(theme)}
+                                userTier={userTier}
+                                checkAndTrack={checkAndTrack}
                               />
                             </Grid>
                           ))}
@@ -872,11 +894,18 @@ export default function AppearancePage() {
                             <Autocomplete
                               fullWidth
                               size="small"
-                              options={FONT_OPTIONS.filter(f => !f.isPro)}
+                              options={FONT_OPTIONS.filter(f => canUseFontFamily(userTier, f.isPro).allowed)}
                               getOptionLabel={(option) => option.label}
                               value={FONT_OPTIONS.find(f => f.value === formData.text.titleFont) || FONT_OPTIONS[0]}
                               onChange={(_, newValue) => {
-                                if (newValue) updateText({ titleFont: newValue.value });
+                                if (newValue) {
+                                  const fontAccess = canUseFontFamily(userTier, newValue.isPro);
+                                  if (fontAccess.allowed) {
+                                    updateText({ titleFont: newValue.value });
+                                  } else {
+                                    checkAndTrack('premiumFonts', 'Premium Font');
+                                  }
+                                }
                               }}
                               renderInput={(params) => (
                                 <TextField {...params} label="Title font" />
@@ -884,6 +913,9 @@ export default function AppearancePage() {
                               renderOption={(props, option) => (
                                 <li {...props} style={{ fontFamily: option.fontFamily }}>
                                   {option.label}
+                                  {option.isPro && !canUseFontFamily(userTier, option.isPro).allowed && (
+                                    <LockOutlinedIcon sx={{ ml: 1, fontSize: 14, verticalAlign: 'middle' }} />
+                                  )}
                                 </li>
                               )}
                               isOptionEqualToValue={(option, value) => option.value === value.value}
@@ -915,11 +947,18 @@ export default function AppearancePage() {
                             <Autocomplete
                               fullWidth
                               size="small"
-                              options={FONT_OPTIONS.filter(f => !f.isPro)}
+                              options={FONT_OPTIONS.filter(f => canUseFontFamily(userTier, f.isPro).allowed)}
                               getOptionLabel={(option) => option.label}
                               value={FONT_OPTIONS.find(f => f.value === formData.text.bodyFont) || FONT_OPTIONS[0]}
                               onChange={(_, newValue) => {
-                                if (newValue) updateText({ bodyFont: newValue.value });
+                                if (newValue) {
+                                  const fontAccess = canUseFontFamily(userTier, newValue.isPro);
+                                  if (fontAccess.allowed) {
+                                    updateText({ bodyFont: newValue.value });
+                                  } else {
+                                    checkAndTrack('premiumFonts', 'Premium Font');
+                                  }
+                                }
                               }}
                               renderInput={(params) => (
                                 <TextField {...params} label="Body font" />
@@ -927,6 +966,9 @@ export default function AppearancePage() {
                               renderOption={(props, option) => (
                                 <li {...props} style={{ fontFamily: option.fontFamily }}>
                                   {option.label}
+                                  {option.isPro && !canUseFontFamily(userTier, option.isPro).allowed && (
+                                    <LockOutlinedIcon sx={{ ml: 1, fontSize: 14, verticalAlign: 'middle' }} />
+                                  )}
                                 </li>
                               )}
                               isOptionEqualToValue={(option, value) => option.value === value.value}
@@ -1341,6 +1383,17 @@ export default function AppearancePage() {
           </Box>
         </Container>
       </AdminLayout>
+      
+      {/* Upgrade Prompt Dialog */}
+      {showUpgrade && upgradeInfo && (
+        <UpgradePrompt
+          open={showUpgrade}
+          onClose={closeUpgradePrompt}
+          feature={upgradeInfo.feature}
+          requiredTier={upgradeInfo.requiredTier!}
+          currentTier={upgradeInfo.currentTier}
+        />
+      )}
     </>
   );
 }

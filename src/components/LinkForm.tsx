@@ -22,6 +22,7 @@ import {
   MenuItem,
   Stack,
   Alert,
+  Chip,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -33,8 +34,11 @@ import {
   Link as LinkIcon,
   EmojiEmotions as EmojiIcon,
   Delete as DeleteIcon,
+  LockOutlined as LockOutlinedIcon,
 } from '@mui/icons-material';
 import { Link } from '@/types/links';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import UpgradePrompt from './UpgradePrompt';
 
 interface LinkFormProps {
   open: boolean;
@@ -80,6 +84,8 @@ const LOCK_TYPES = [
 
 export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps) {
   const [tabValue, setTabValue] = useState(0);
+  const { canAccess, checkAndTrack, showUpgrade, upgradeInfo, closeUpgradePrompt } = useFeatureGate();
+  
   const [formData, setFormData] = useState({
     title: '',
     url: '',
@@ -371,28 +377,57 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                 Choose how your link appears on your profile
               </Typography>
 
+              {!canAccess('customLayouts').allowed && (
+                <Alert severity="warning" icon={<LockOutlinedIcon />}>
+                  Custom layouts are a premium feature. Upgrade to unlock featured and thumbnail layouts.
+                </Alert>
+              )}
+
               <Grid container spacing={2}>
-                {LAYOUT_OPTIONS.map((layout) => (
-                  <Grid item xs={6} key={layout.value}>
-                    <Paper
-                      onClick={() => setFormData({ ...formData, layout: layout.value as typeof formData.layout })}
-                      sx={{
-                        p: 2,
-                        cursor: 'pointer',
-                        border: 2,
-                        borderColor: formData.layout === layout.value ? 'primary.main' : 'transparent',
-                        '&:hover': { borderColor: 'primary.light' },
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={500}>
-                        {layout.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {layout.description}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                ))}
+                {LAYOUT_OPTIONS.map((layout) => {
+                  const isPremium = layout.value !== 'classic';
+                  const access = canAccess('customLayouts');
+                  const isLocked = isPremium && !access.allowed;
+                  
+                  return (
+                    <Grid item xs={6} key={layout.value}>
+                      <Paper
+                        onClick={() => {
+                          if (isLocked) {
+                            checkAndTrack('customLayouts', 'Custom Link Layout');
+                          } else {
+                            setFormData({ ...formData, layout: layout.value as typeof formData.layout });
+                          }
+                        }}
+                        sx={{
+                          p: 2,
+                          cursor: 'pointer',
+                          border: 2,
+                          borderColor: formData.layout === layout.value ? 'primary.main' : 'transparent',
+                          '&:hover': { borderColor: isLocked ? 'error.light' : 'primary.light' },
+                          opacity: isLocked ? 0.6 : 1,
+                          position: 'relative',
+                        }}
+                      >
+                        {isLocked && (
+                          <Chip
+                            icon={<LockOutlinedIcon />}
+                            label="Premium"
+                            size="small"
+                            color="warning"
+                            sx={{ position: 'absolute', top: 8, right: 8 }}
+                          />
+                        )}
+                        <Typography variant="body2" fontWeight={500}>
+                          {layout.label}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {layout.description}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  );
+                })}
               </Grid>
 
               {(formData.layout === 'featured' || formData.layout?.includes('thumbnail')) && (
@@ -410,16 +445,32 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                 Add animation to draw attention to your link
               </Typography>
 
+              {!canAccess('linkAnimations').allowed && (
+                <Alert severity="warning" icon={<LockOutlinedIcon />}>
+                  Link animations are a premium feature. Upgrade to add eye-catching effects to your links.
+                </Alert>
+              )}
+
               <FormControl fullWidth>
                 <InputLabel>Animation</InputLabel>
                 <Select
                   value={formData.animation}
-                  onChange={(e) => setFormData({ ...formData, animation: e.target.value as typeof formData.animation })}
+                  onChange={(e) => {
+                    const newValue = e.target.value as typeof formData.animation;
+                    if (newValue !== 'none' && !canAccess('linkAnimations').allowed) {
+                      checkAndTrack('linkAnimations', 'Link Animations');
+                    } else {
+                      setFormData({ ...formData, animation: newValue });
+                    }
+                  }}
                   label="Animation"
                 >
                   {ANIMATION_OPTIONS.map((anim) => (
                     <MenuItem key={anim.value} value={anim.value}>
                       {anim.label}
+                      {anim.value !== 'none' && !canAccess('linkAnimations').allowed && (
+                        <LockOutlinedIcon sx={{ ml: 1, fontSize: 16, color: 'warning.main' }} />
+                      )}
                     </MenuItem>
                   ))}
                 </Select>
@@ -466,17 +517,33 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
           {/* Schedule Tab */}
           <TabPanel value={tabValue} index={4}>
             <Stack spacing={3}>
+              {!canAccess('linkScheduling').allowed && (
+                <Alert severity="warning" icon={<LockOutlinedIcon />}>
+                  Link scheduling is a premium feature. Upgrade to show links during specific dates and times.
+                </Alert>
+              )}
+              
               <FormControlLabel
                 control={
                   <Switch
                     checked={formData.schedule.enabled}
-                    onChange={(e) => updateSchedule({ enabled: e.target.checked })}
+                    onChange={(e) => {
+                      if (e.target.checked && !canAccess('linkScheduling').allowed) {
+                        checkAndTrack('linkScheduling', 'Link Scheduling');
+                      } else {
+                        updateSchedule({ enabled: e.target.checked });
+                      }
+                    }}
+                    disabled={!canAccess('linkScheduling').allowed}
                   />
                 }
                 label={
                   <Box>
                     <Typography variant="body2" fontWeight={500}>
                       Enable scheduling
+                      {!canAccess('linkScheduling').allowed && (
+                        <LockOutlinedIcon sx={{ ml: 1, fontSize: 16, verticalAlign: 'middle', color: 'warning.main' }} />
+                      )}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Show this link only during specific dates/times
@@ -518,17 +585,33 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
           {/* Lock Tab */}
           <TabPanel value={tabValue} index={5}>
             <Stack spacing={3}>
+              {!canAccess('linkLocking').allowed && (
+                <Alert severity="warning" icon={<LockOutlinedIcon />}>
+                  Link locking is a premium feature. Upgrade to add access restrictions to your links.
+                </Alert>
+              )}
+              
               <FormControlLabel
                 control={
                   <Switch
                     checked={formData.lock.enabled}
-                    onChange={(e) => updateLock({ enabled: e.target.checked })}
+                    onChange={(e) => {
+                      if (e.target.checked && !canAccess('linkLocking').allowed) {
+                        checkAndTrack('linkLocking', 'Link Locking');
+                      } else {
+                        updateLock({ enabled: e.target.checked });
+                      }
+                    }}
+                    disabled={!canAccess('linkLocking').allowed}
                   />
                 }
                 label={
                   <Box>
                     <Typography variant="body2" fontWeight={500}>
                       Lock this link
+                      {!canAccess('linkLocking').allowed && (
+                        <LockOutlinedIcon sx={{ ml: 1, fontSize: 16, verticalAlign: 'middle', color: 'warning.main' }} />
+                      )}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Require visitors to take an action before viewing
@@ -606,6 +689,17 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
           </Button>
         </DialogActions>
       </form>
+      
+      {/* Upgrade Prompt Dialog */}
+      {showUpgrade && upgradeInfo && (
+        <UpgradePrompt
+          open={showUpgrade}
+          onClose={closeUpgradePrompt}
+          feature={upgradeInfo.feature}
+          requiredTier={upgradeInfo.requiredTier!}
+          currentTier={upgradeInfo.currentTier}
+        />
+      )}
     </Dialog>
   );
 }
