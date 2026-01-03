@@ -21,7 +21,8 @@ import {
   Star as StarIcon,
   Check as CheckIcon,
 } from '@mui/icons-material';
-import { UserTier, TIER_INFO, getTierLimits } from '@/types/tiers';
+import { UserTier, TIER_INFO } from '@/types/tiers';
+import { getTierLimits } from '@/utils/tierValidation';
 
 interface UpgradePromptProps {
   open: boolean;
