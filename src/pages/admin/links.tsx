@@ -85,6 +85,8 @@ import {
   DEFAULT_APPEARANCE,
 } from '@/types/links';
 import { useToast } from '@/context/ToastContext';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 // Operation types for bulk API
 interface LinkOperation extends Partial<Link> {
@@ -490,12 +492,15 @@ function SortableGroup({
 
 export default function LinksPage() {
   const { showToast } = useToast();
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt } = useFeatureGate();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<LinkGroup | null>(null);
   const [newGroupTitle, setNewGroupTitle] = useState('');
+
+  const maxLinkGroupsCheck = canAccess('maxLinkGroups');
 
   // Fetch links and groups
   const { data: linksData, isLoading, refetch } = useApiGet<LinksResponse>({
@@ -638,6 +643,15 @@ export default function LinksPage() {
   };
 
   const handleAddCollection = () => {
+    // Check if user has reached link groups limit
+    const currentGroupsCount = groups.length;
+    const limit = maxLinkGroupsCheck.limit;
+    
+    if (limit !== -1 && currentGroupsCount >= limit) {
+      openUpgradePrompt('Link Collections', maxLinkGroupsCheck.requiredTier);
+      return;
+    }
+
     setSelectedGroup(null);
     setNewGroupTitle('New Collection');
     setGroupDialogOpen(true);
@@ -1031,6 +1045,14 @@ export default function LinksPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Upgrade Prompt */}
+      <UpgradePrompt
+        open={showUpgrade}
+        onClose={closeUpgradePrompt}
+        requiredTier={upgradeInfo.requiredTier}
+        featureName={upgradeInfo.featureName}
+      />
     </>
   );
 }

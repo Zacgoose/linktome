@@ -42,6 +42,8 @@ import {
 } from '@mui/icons-material';
 import { useApiGet, useApiPost, useApiDelete, useApiPut } from '@/hooks/useApiQuery';
 import AdminLayout from '@/layouts/AdminLayout';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface ApiKey {
   keyId: string;
@@ -104,6 +106,7 @@ function UsageBar({ used, total, label }: { used: number; total: number; label: 
 }
 
 export default function ApiKeysPage() {
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt } = useFeatureGate();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -121,6 +124,10 @@ export default function ApiKeysPage() {
     queryKey: 'api-keys',
     staleTime: 30000,
   });
+
+  // Check API access
+  const apiAccessCheck = canAccess('apiAccess');
+  const apiKeysLimitCheck = canAccess('apiKeysLimit');
 
   const createMutation = useApiPost<CreateKeyResponse>({
     relatedQueryKeys: ['api-keys'],
@@ -151,6 +158,15 @@ export default function ApiKeysPage() {
   });
 
   const handleCreateKey = () => {
+    // Check if user has reached API keys limit
+    const currentKeysCount = data?.apiKeys?.length || 0;
+    const limit = apiKeysLimitCheck.limit;
+    
+    if (limit !== -1 && currentKeysCount >= limit) {
+      openUpgradePrompt('API Keys', apiKeysLimitCheck.requiredTier);
+      return;
+    }
+
     createMutation.mutate({
       url: 'admin/apikeyscreate',
       data: {
@@ -235,6 +251,11 @@ export default function ApiKeysPage() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => {
+              // Check API access first
+              if (!apiAccessCheck.allowed) {
+                openUpgradePrompt('API Access', apiAccessCheck.requiredTier);
+                return;
+              }
               setSelectedPermissions([]);
               setNewKeyName('');
               setCreateDialogOpen(true);
@@ -243,6 +264,20 @@ export default function ApiKeysPage() {
             Create Key
           </Button>
         </Box>
+
+        {/* API Access Alert */}
+        {!apiAccessCheck.allowed && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            API access is available for {apiAccessCheck.requiredTier}+ plans. Upgrade your plan to create API keys and access the LinkToMe API programmatically.
+          </Alert>
+        )}
+
+        {/* API Keys Limit Alert */}
+        {apiAccessCheck.allowed && !apiKeysLimitCheck.allowed && data?.apiKeys && data.apiKeys.length >= apiKeysLimitCheck.limit && (
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            You've reached your API key limit ({apiKeysLimitCheck.limit} keys). Upgrade to {apiKeysLimitCheck.requiredTier}+ to create more API keys.
+          </Alert>
+        )}
 
         {/* Usage & Limits Card */}
         <Card sx={{ mb: 3 }}>
@@ -585,6 +620,14 @@ export default function ApiKeysPage() {
           onClose={() => setCopySuccess(false)}
           message="Copied to clipboard"
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        />
+
+        {/* Upgrade Prompt */}
+        <UpgradePrompt
+          open={showUpgrade}
+          onClose={closeUpgradePrompt}
+          requiredTier={upgradeInfo.requiredTier}
+          featureName={upgradeInfo.featureName}
         />
       </Container>
     </AdminLayout>

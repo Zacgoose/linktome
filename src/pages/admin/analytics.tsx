@@ -9,14 +9,18 @@ import {
   CircularProgress,
   Grid,
   Stack,
+  Button,
 } from '@mui/material';
 import {
   Visibility as ViewsIcon,
   TouchApp as ClicksIcon,
   TrendingUp as TrendingIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface ClicksByDay {
   date: string;
@@ -71,12 +75,59 @@ interface AnalyticsData {
 type AnalyticsResponse = AnalyticsData;
 
 export default function AnalyticsPage() {
-
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt } = useFeatureGate();
 
   const { data: analytics, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
     queryKey: 'admin-analytics',
   });
+
+  const analyticsExportCheck = canAccess('analyticsExport');
+
+  // Function to export analytics data
+  const handleExportAnalytics = () => {
+    if (!analyticsExportCheck.allowed) {
+      openUpgradePrompt('Analytics Export', analyticsExportCheck.requiredTier);
+      return;
+    }
+
+    if (!analytics) return;
+
+    // Convert analytics data to CSV
+    const csvData = [
+      // Summary data
+      ['Summary'],
+      ['Total Page Views', analytics.summary.totalPageViews],
+      ['Total Link Clicks', analytics.summary.totalLinkClicks],
+      ['Unique Visitors', analytics.summary.uniqueVisitors],
+      [''],
+      // Views by day
+      ['Views by Day'],
+      ['Date', 'Views'],
+      ...analytics.viewsByDay.map(v => [v.date, v.count]),
+      [''],
+      // Clicks by day
+      ['Clicks by Day'],
+      ['Date', 'Clicks'],
+      ...analytics.clicksByDay.map(c => [c.date, c.count]),
+      [''],
+      // Link performance
+      ['Link Performance'],
+      ['Link Title', 'Link URL', 'Click Count'],
+      ...analytics.linkClicksByLink.map(l => [l.linkTitle, l.linkUrl, l.clickCount]),
+    ];
+
+    const csv = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `linktome-analytics-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   // Calculate click-through rate using summary fields
   let clickThroughRateDisplay = '0.0';
@@ -103,12 +154,24 @@ export default function AnalyticsPage() {
 
       <AdminLayout>
         <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
-            Analytics
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Track your profile performance and link engagement
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
+                Analytics
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Track your profile performance and link engagement
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportAnalytics}
+              disabled={!analytics || isLoading}
+            >
+              Export Data
+            </Button>
+          </Box>
 
 
           {!analytics?.summary.totalPageViews && !analytics?.summary.totalLinkClicks && (
@@ -339,6 +402,14 @@ export default function AnalyticsPage() {
               </Card>
             </Grid>
           </Grid>
+
+          {/* Upgrade Prompt */}
+          <UpgradePrompt
+            open={showUpgrade}
+            onClose={closeUpgradePrompt}
+            requiredTier={upgradeInfo.requiredTier}
+            featureName={upgradeInfo.featureName}
+          />
         </Container>
       </AdminLayout>
     </>
