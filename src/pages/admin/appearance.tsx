@@ -199,10 +199,9 @@ interface ThemeCardProps {
   selected: boolean;
   onClick: () => void;
   userTier: any;
-  openUpgradePrompt: (feature: string, requiredTier: UserTier) => void;
 }
 
-function ThemeCard({ theme, selected, onClick, userTier, openUpgradePrompt }: ThemeCardProps) {
+function ThemeCard({ theme, selected, onClick, userTier }: ThemeCardProps) {
   const renderPreview = () => {
     if (theme.id === 'custom') {
       return (
@@ -300,17 +299,10 @@ function ThemeCard({ theme, selected, onClick, userTier, openUpgradePrompt }: Th
 
   return (
     <Box
-      onClick={() => {
-        const themeAccess = canUseTheme(userTier, theme.isPro);
-        if (themeAccess.allowed) {
-          onClick();
-        } else if (themeAccess.requiredTier) {
-          openUpgradePrompt('Premium Theme', themeAccess.requiredTier);
-        }
-      }}
+      onClick={onClick}
       sx={{
-        cursor: (!canUseTheme(userTier, theme.isPro).allowed) ? 'not-allowed' : 'pointer',
-        opacity: (!canUseTheme(userTier, theme.isPro).allowed) ? 0.7 : 1,
+        cursor: 'pointer',
+        opacity: (!canUseTheme(userTier, theme.isPro).allowed) ? 0.8 : 1,
         position: 'relative',
       }}
     >
@@ -324,8 +316,8 @@ function ThemeCard({ theme, selected, onClick, userTier, openUpgradePrompt }: Th
           borderColor: selected ? 'primary.main' : 'divider',
           transition: 'all 0.2s',
           '&:hover': {
-            borderColor: (!canUseTheme(userTier, theme.isPro).allowed) ? 'divider' : 'primary.light',
-            transform: (!canUseTheme(userTier, theme.isPro).allowed) ? 'none' : 'scale(1.02)',
+            borderColor: 'primary.light',
+            transform: 'scale(1.02)',
           },
         }}
       >
@@ -423,6 +415,43 @@ export default function AppearancePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if user is trying to use premium features they don't have access to
+    const premiumFeaturesUsed: { feature: string; requiredTier: any }[] = [];
+    
+    // Check if using a premium theme
+    const selectedTheme = THEME_PRESETS.find(t => t.id === formData.theme);
+    if (selectedTheme?.isPro) {
+      const themeAccess = canUseTheme(userTier, selectedTheme.isPro);
+      if (!themeAccess.allowed && themeAccess.requiredTier) {
+        premiumFeaturesUsed.push({ feature: 'Premium Theme', requiredTier: themeAccess.requiredTier });
+      }
+    }
+    
+    // Check if using premium fonts
+    const titleFont = FONT_OPTIONS.find(f => f.value === formData.text.titleFont);
+    if (titleFont?.isPro) {
+      const fontAccess = canUseFontFamily(userTier, titleFont.isPro);
+      if (!fontAccess.allowed && fontAccess.requiredTier) {
+        premiumFeaturesUsed.push({ feature: 'Premium Font (Title)', requiredTier: fontAccess.requiredTier });
+      }
+    }
+    
+    const bodyFont = FONT_OPTIONS.find(f => f.value === formData.text.bodyFont);
+    if (bodyFont?.isPro) {
+      const fontAccess = canUseFontFamily(userTier, bodyFont.isPro);
+      if (!fontAccess.allowed && fontAccess.requiredTier) {
+        premiumFeaturesUsed.push({ feature: 'Premium Font (Body)', requiredTier: fontAccess.requiredTier });
+      }
+    }
+    
+    // If premium features are used without access, show upgrade prompt
+    if (premiumFeaturesUsed.length > 0) {
+      const firstFeature = premiumFeaturesUsed[0];
+      openUpgradePrompt(firstFeature.feature, firstFeature.requiredTier);
+      return; // Don't save
+    }
+    
     updateAppearance.mutate({
       url: 'admin/UpdateAppearance',
       data: formData as unknown as Record<string, unknown>,
@@ -458,15 +487,7 @@ export default function AppearancePage() {
   };
 
   const handleThemeSelect = (theme: AppearanceTheme) => {
-    // Check tier access for premium themes
-    const themeAccess = canUseTheme(userTier, theme.isPro);
-    if (!themeAccess.allowed) {
-      if (themeAccess.requiredTier) {
-        openUpgradePrompt('Premium Theme', themeAccess.requiredTier);
-      }
-      return;
-    }
-
+    // Allow selection - validation will happen on save
     setFormData(prev => {
       const next = {
         ...prev,
@@ -692,7 +713,6 @@ export default function AppearancePage() {
                                 selected={formData.theme === theme.id}
                                 onClick={() => handleThemeSelect(theme)}
                                 userTier={userTier}
-                                openUpgradePrompt={openUpgradePrompt}
                               />
                             </Grid>
                           ))}
@@ -896,17 +916,12 @@ export default function AppearancePage() {
                             <Autocomplete
                               fullWidth
                               size="small"
-                              options={FONT_OPTIONS.filter(f => canUseFontFamily(userTier, f.isPro).allowed)}
+                              options={FONT_OPTIONS}
                               getOptionLabel={(option) => option.label}
                               value={FONT_OPTIONS.find(f => f.value === formData.text.titleFont) || FONT_OPTIONS[0]}
                               onChange={(_, newValue) => {
                                 if (newValue) {
-                                  const fontAccess = canUseFontFamily(userTier, newValue.isPro);
-                                  if (fontAccess.allowed) {
-                                    updateText({ titleFont: newValue.value });
-                                  } else if (fontAccess.requiredTier) {
-                                    openUpgradePrompt('Premium Font', fontAccess.requiredTier);
-                                  }
+                                  updateText({ titleFont: newValue.value });
                                 }
                               }}
                               renderInput={(params) => (
@@ -949,17 +964,12 @@ export default function AppearancePage() {
                             <Autocomplete
                               fullWidth
                               size="small"
-                              options={FONT_OPTIONS.filter(f => canUseFontFamily(userTier, f.isPro).allowed)}
+                              options={FONT_OPTIONS}
                               getOptionLabel={(option) => option.label}
                               value={FONT_OPTIONS.find(f => f.value === formData.text.bodyFont) || FONT_OPTIONS[0]}
                               onChange={(_, newValue) => {
                                 if (newValue) {
-                                  const fontAccess = canUseFontFamily(userTier, newValue.isPro);
-                                  if (fontAccess.allowed) {
-                                    updateText({ bodyFont: newValue.value });
-                                  } else if (fontAccess.requiredTier) {
-                                    openUpgradePrompt('Premium Font', fontAccess.requiredTier);
-                                  }
+                                  updateText({ bodyFont: newValue.value });
                                 }
                               }}
                               renderInput={(params) => (

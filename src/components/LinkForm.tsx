@@ -165,6 +165,49 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check if user is trying to use premium features they don't have access to
+    const premiumFeaturesUsed: { feature: string; requiredTier: any }[] = [];
+    
+    // Check custom layouts
+    if (formData.layout !== 'classic') {
+      const access = canAccess('customLayouts');
+      if (!access.allowed && access.requiredTier) {
+        premiumFeaturesUsed.push({ feature: 'Custom Link Layout', requiredTier: access.requiredTier });
+      }
+    }
+    
+    // Check animations
+    if (formData.animation !== 'none') {
+      const access = canAccess('linkAnimations');
+      if (!access.allowed && access.requiredTier) {
+        premiumFeaturesUsed.push({ feature: 'Link Animations', requiredTier: access.requiredTier });
+      }
+    }
+    
+    // Check scheduling
+    if (formData.schedule.enabled) {
+      const access = canAccess('linkScheduling');
+      if (!access.allowed && access.requiredTier) {
+        premiumFeaturesUsed.push({ feature: 'Link Scheduling', requiredTier: access.requiredTier });
+      }
+    }
+    
+    // Check locking
+    if (formData.lock.enabled) {
+      const access = canAccess('linkLocking');
+      if (!access.allowed && access.requiredTier) {
+        premiumFeaturesUsed.push({ feature: 'Link Locking', requiredTier: access.requiredTier });
+      }
+    }
+    
+    // If premium features are used without access, show upgrade prompt
+    if (premiumFeaturesUsed.length > 0) {
+      // Show prompt for the first premium feature (or you could combine them)
+      const firstFeature = premiumFeaturesUsed[0];
+      openUpgradePrompt(firstFeature.feature, firstFeature.requiredTier);
+      return; // Don't save
+    }
+    
     const linkData: Partial<Link> = {
       ...(link?.id && { id: link.id }),
       title: formData.title,
@@ -378,8 +421,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
               </Typography>
 
               {!canAccess('customLayouts').allowed && (
-                <Alert severity="warning" icon={<LockOutlinedIcon />}>
-                  Custom layouts are a premium feature. Upgrade to unlock featured and thumbnail layouts.
+                <Alert severity="info" icon={<LockOutlinedIcon />}>
+                  Custom layouts are a premium feature. You can select them, but you'll need to upgrade to save.
                 </Alert>
               )}
 
@@ -393,19 +436,15 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                     <Grid item xs={6} key={layout.value}>
                       <Paper
                         onClick={() => {
-                          if (isLocked && access.requiredTier) {
-                            openUpgradePrompt('Custom Link Layout', access.requiredTier);
-                          } else {
-                            setFormData({ ...formData, layout: layout.value as typeof formData.layout });
-                          }
+                          setFormData({ ...formData, layout: layout.value as typeof formData.layout });
                         }}
                         sx={{
                           p: 2,
                           cursor: 'pointer',
                           border: 2,
                           borderColor: formData.layout === layout.value ? 'primary.main' : 'transparent',
-                          '&:hover': { borderColor: isLocked ? 'error.light' : 'primary.light' },
-                          opacity: isLocked ? 0.6 : 1,
+                          '&:hover': { borderColor: 'primary.light' },
+                          opacity: isLocked ? 0.8 : 1,
                           position: 'relative',
                         }}
                       >
@@ -446,8 +485,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
               </Typography>
 
               {!canAccess('linkAnimations').allowed && (
-                <Alert severity="warning" icon={<LockOutlinedIcon />}>
-                  Link animations are a premium feature. Upgrade to add eye-catching effects to your links.
+                <Alert severity="info" icon={<LockOutlinedIcon />}>
+                  Link animations are a premium feature. You can select them, but you'll need to upgrade to save.
                 </Alert>
               )}
 
@@ -457,12 +496,7 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   value={formData.animation}
                   onChange={(e) => {
                     const newValue = e.target.value as typeof formData.animation;
-                    const access = canAccess('linkAnimations');
-                    if (newValue !== 'none' && !access.allowed && access.requiredTier) {
-                      openUpgradePrompt('Link Animations', access.requiredTier);
-                    } else {
-                      setFormData({ ...formData, animation: newValue });
-                    }
+                    setFormData({ ...formData, animation: newValue });
                   }}
                   label="Animation"
                 >
@@ -519,8 +553,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
           <TabPanel value={tabValue} index={4}>
             <Stack spacing={3}>
               {!canAccess('linkScheduling').allowed && (
-                <Alert severity="warning" icon={<LockOutlinedIcon />}>
-                  Link scheduling is a premium feature. Upgrade to show links during specific dates and times.
+                <Alert severity="info" icon={<LockOutlinedIcon />}>
+                  Link scheduling is a premium feature. You can enable it, but you'll need to upgrade to save.
                 </Alert>
               )}
               
@@ -529,14 +563,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   <Switch
                     checked={formData.schedule.enabled}
                     onChange={(e) => {
-                      const access = canAccess('linkScheduling');
-                      if (e.target.checked && !access.allowed && access.requiredTier) {
-                        openUpgradePrompt('Link Scheduling', access.requiredTier);
-                      } else {
-                        updateSchedule({ enabled: e.target.checked });
-                      }
+                      updateSchedule({ enabled: e.target.checked });
                     }}
-                    disabled={!canAccess('linkScheduling').allowed}
                   />
                 }
                 label={
@@ -588,8 +616,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
           <TabPanel value={tabValue} index={5}>
             <Stack spacing={3}>
               {!canAccess('linkLocking').allowed && (
-                <Alert severity="warning" icon={<LockOutlinedIcon />}>
-                  Link locking is a premium feature. Upgrade to add access restrictions to your links.
+                <Alert severity="info" icon={<LockOutlinedIcon />}>
+                  Link locking is a premium feature. You can enable it, but you'll need to upgrade to save.
                 </Alert>
               )}
               
@@ -598,14 +626,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   <Switch
                     checked={formData.lock.enabled}
                     onChange={(e) => {
-                      const access = canAccess('linkLocking');
-                      if (e.target.checked && !access.allowed && access.requiredTier) {
-                        openUpgradePrompt('Link Locking', access.requiredTier);
-                      } else {
-                        updateLock({ enabled: e.target.checked });
-                      }
+                      updateLock({ enabled: e.target.checked });
                     }}
-                    disabled={!canAccess('linkLocking').allowed}
                   />
                 }
                 label={
