@@ -22,6 +22,7 @@ import {
   MenuItem,
   Stack,
   Alert,
+  Chip,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -33,8 +34,13 @@ import {
   Link as LinkIcon,
   EmojiEmotions as EmojiIcon,
   Delete as DeleteIcon,
+  LockOutlined as LockOutlinedIcon,
 } from '@mui/icons-material';
 import { Link } from '@/types/links';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { usePremiumValidation } from '@/hooks/usePremiumValidation';
+import UpgradePrompt from './UpgradePrompt';
+import PremiumFeatureWrapper from './PremiumFeatureWrapper';
 
 interface LinkFormProps {
   open: boolean;
@@ -80,6 +86,9 @@ const LOCK_TYPES = [
 
 export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps) {
   const [tabValue, setTabValue] = useState(0);
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
+  const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
+  
   const [formData, setFormData] = useState({
     title: '',
     url: '',
@@ -159,6 +168,35 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate premium features using the hook
+    const isValid = validateFeatures([
+      {
+        featureKey: 'customLayouts',
+        featureName: 'Custom Link Layout',
+        isUsing: formData.layout !== 'classic',
+      },
+      {
+        featureKey: 'linkAnimations',
+        featureName: 'Link Animations',
+        isUsing: formData.animation !== 'none',
+      },
+      {
+        featureKey: 'linkScheduling',
+        featureName: 'Link Scheduling',
+        isUsing: formData.schedule.enabled,
+      },
+      {
+        featureKey: 'linkLocking',
+        featureName: 'Link Locking',
+        isUsing: formData.lock.enabled,
+      },
+    ]);
+    
+    // If validation fails, don't save
+    if (!isValid) {
+      return;
+    }
+    
     const linkData: Partial<Link> = {
       ...(link?.id && { id: link.id }),
       title: formData.title,
@@ -168,8 +206,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
       animation: formData.animation,
       ...(formData.icon && { icon: formData.icon }),
       ...(formData.thumbnail && { thumbnail: formData.thumbnail, thumbnailType: formData.thumbnailType }),
-      ...(formData.schedule.enabled && { schedule: formData.schedule }),
-      ...(formData.lock.enabled && { lock: formData.lock }),
+      schedule: formData.schedule,
+      lock: formData.lock,
       ...(link?.order != null && { order: link.order }),
     };
 
@@ -366,33 +404,56 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
 
           {/* Layout Tab */}
           <TabPanel value={tabValue} index={2}>
-            <Stack spacing={3}>
-              <Typography variant="body2" color="text.secondary">
-                Choose how your link appears on your profile
-              </Typography>
+            <PremiumFeatureWrapper
+              featureKey="customLayouts"
+              featureName="Custom layouts"
+            >
+              <Stack spacing={3}>
+                <Typography variant="body2" color="text.secondary">
+                  Choose how your link appears on your profile
+                </Typography>
 
-              <Grid container spacing={2}>
-                {LAYOUT_OPTIONS.map((layout) => (
-                  <Grid item xs={6} key={layout.value}>
-                    <Paper
-                      onClick={() => setFormData({ ...formData, layout: layout.value as typeof formData.layout })}
-                      sx={{
-                        p: 2,
-                        cursor: 'pointer',
-                        border: 2,
-                        borderColor: formData.layout === layout.value ? 'primary.main' : 'transparent',
-                        '&:hover': { borderColor: 'primary.light' },
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={500}>
-                        {layout.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {layout.description}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                ))}
+                <Grid container spacing={2}>
+                  {LAYOUT_OPTIONS.map((layout) => {
+                    const isPremium = layout.value !== 'classic';
+                    const access = canAccess('customLayouts');
+                    const isLocked = isPremium && !access.allowed;
+                    
+                    return (
+                      <Grid item xs={6} key={layout.value}>
+                        <Paper
+                          onClick={() => {
+                            setFormData({ ...formData, layout: layout.value as typeof formData.layout });
+                          }}
+                          sx={{
+                            p: 2,
+                            cursor: 'pointer',
+                            border: 2,
+                            borderColor: formData.layout === layout.value ? 'primary.main' : 'transparent',
+                            '&:hover': { borderColor: 'primary.light' },
+                          opacity: isLocked ? 0.8 : 1,
+                          position: 'relative',
+                        }}
+                      >
+                        {isLocked && (
+                          <Chip
+                            icon={<LockOutlinedIcon />}
+                            label="Premium"
+                            size="small"
+                            color="warning"
+                            sx={{ position: 'absolute', top: 8, right: 8 }}
+                          />
+                        )}
+                        <Typography variant="body2" fontWeight={500}>
+                          {layout.label}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {layout.description}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  );
+                })}
               </Grid>
 
               {(formData.layout === 'featured' || formData.layout?.includes('thumbnail')) && (
@@ -400,26 +461,37 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   This layout works best with a thumbnail image
                 </Alert>
               )}
-            </Stack>
+              </Stack>
+            </PremiumFeatureWrapper>
           </TabPanel>
 
           {/* Effects Tab */}
           <TabPanel value={tabValue} index={3}>
-            <Stack spacing={3}>
-              <Typography variant="body2" color="text.secondary">
-                Add animation to draw attention to your link
-              </Typography>
+            <PremiumFeatureWrapper
+              featureKey="linkAnimations"
+              featureName="Link animations"
+            >
+              <Stack spacing={3}>
+                <Typography variant="body2" color="text.secondary">
+                  Add animation to draw attention to your link
+                </Typography>
 
-              <FormControl fullWidth>
+                <FormControl fullWidth>
                 <InputLabel>Animation</InputLabel>
                 <Select
                   value={formData.animation}
-                  onChange={(e) => setFormData({ ...formData, animation: e.target.value as typeof formData.animation })}
+                  onChange={(e) => {
+                    const newValue = e.target.value as typeof formData.animation;
+                    setFormData({ ...formData, animation: newValue });
+                  }}
                   label="Animation"
                 >
                   {ANIMATION_OPTIONS.map((anim) => (
                     <MenuItem key={anim.value} value={anim.value}>
                       {anim.label}
+                      {anim.value !== 'none' && !canAccess('linkAnimations').allowed && (
+                        <LockOutlinedIcon sx={{ ml: 1, fontSize: 16, color: 'warning.main' }} />
+                      )}
                     </MenuItem>
                   ))}
                 </Select>
@@ -460,23 +532,33 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   </Button>
                 </Paper>
               )}
-            </Stack>
+              </Stack>
+            </PremiumFeatureWrapper>
           </TabPanel>
 
           {/* Schedule Tab */}
           <TabPanel value={tabValue} index={4}>
-            <Stack spacing={3}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.schedule.enabled}
-                    onChange={(e) => updateSchedule({ enabled: e.target.checked })}
-                  />
-                }
+            <PremiumFeatureWrapper
+              featureKey="linkScheduling"
+              featureName="Link scheduling"
+            >
+              <Stack spacing={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.schedule.enabled}
+                      onChange={(e) => {
+                        updateSchedule({ enabled: e.target.checked });
+                      }}
+                    />
+                  }
                 label={
                   <Box>
                     <Typography variant="body2" fontWeight={500}>
                       Enable scheduling
+                      {!canAccess('linkScheduling').allowed && (
+                        <LockOutlinedIcon sx={{ ml: 1, fontSize: 16, verticalAlign: 'middle', color: 'warning.main' }} />
+                      )}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Show this link only during specific dates/times
@@ -512,23 +594,33 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   </Alert>
                 </>
               )}
-            </Stack>
+              </Stack>
+            </PremiumFeatureWrapper>
           </TabPanel>
 
           {/* Lock Tab */}
           <TabPanel value={tabValue} index={5}>
-            <Stack spacing={3}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.lock.enabled}
-                    onChange={(e) => updateLock({ enabled: e.target.checked })}
+            <PremiumFeatureWrapper
+              featureKey="linkLocking"
+              featureName="Link locking"
+            >
+              <Stack spacing={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.lock.enabled}
+                      onChange={(e) => {
+                        updateLock({ enabled: e.target.checked });
+                      }}
                   />
                 }
                 label={
                   <Box>
                     <Typography variant="body2" fontWeight={500}>
                       Lock this link
+                      {!canAccess('linkLocking').allowed && (
+                        <LockOutlinedIcon sx={{ ml: 1, fontSize: 16, verticalAlign: 'middle', color: 'warning.main' }} />
+                      )}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Require visitors to take an action before viewing
@@ -591,7 +683,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   />
                 </>
               )}
-            </Stack>
+              </Stack>
+            </PremiumFeatureWrapper>
           </TabPanel>
         </DialogContent>
 
@@ -606,6 +699,17 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
           </Button>
         </DialogActions>
       </form>
+      
+      {/* Upgrade Prompt Dialog */}
+      {showUpgrade && upgradeInfo && (
+        <UpgradePrompt
+          open={showUpgrade}
+          onClose={closeUpgradePrompt}
+          feature={upgradeInfo.feature}
+          requiredTier={upgradeInfo.requiredTier!}
+          currentTier={upgradeInfo.currentTier}
+        />
+      )}
     </Dialog>
   );
 }

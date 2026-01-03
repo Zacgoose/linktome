@@ -83,29 +83,15 @@ import {
   LinksResponse,
   AppearanceData,
   DEFAULT_APPEARANCE,
+  LinkOperation,
+  GroupOperation,
+  UpdateLinksRequest,
 } from '@/types/links';
+import { UserProfile } from '@/types/api';
 import { useToast } from '@/context/ToastContext';
-
-// Operation types for bulk API
-interface LinkOperation extends Partial<Link> {
-  operation: 'add' | 'update' | 'remove';
-}
-
-interface GroupOperation extends Partial<LinkGroup> {
-  operation: 'add' | 'update' | 'remove';
-}
-
-interface UpdateLinksRequest {
-  links?: LinkOperation[];
-  groups?: GroupOperation[];
-}
-
-interface UserProfile {
-  username: string;
-  displayName: string;
-  bio: string;
-  avatar: string;
-}
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { usePremiumValidation } from '@/hooks/usePremiumValidation';
+import UpgradePrompt from '@/components/UpgradePrompt';
 
 interface SortableLinkCardProps {
   link: Link;
@@ -490,12 +476,16 @@ function SortableGroup({
 
 export default function LinksPage() {
   const { showToast } = useToast();
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
+  const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<LinkGroup | null>(null);
   const [newGroupTitle, setNewGroupTitle] = useState('');
+
+  const maxLinkGroupsCheck = canAccess('maxLinkGroups');
 
   // Fetch links and groups
   const { data: linksData, isLoading, refetch } = useApiGet<LinksResponse>({
@@ -504,9 +494,18 @@ export default function LinksPage() {
   });
 
   // Fetch appearance for preview
-  const { data: appearanceData } = useApiGet<AppearanceData>({
+  const { data: appearanceData, refetch: refetchAppearance } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
     queryKey: 'admin-appearance',
+  });
+  
+  // Appearance update mutation for footer toggle
+  const updateAppearance = useApiPut<any, AppearanceData>({
+    relatedQueryKeys: ['admin-appearance'],
+    onSuccess: () => {
+      showToast('Appearance updated', 'success');
+      refetchAppearance();
+    },
   });
 
   const { data: profileData } = useApiGet<UserProfile>({
@@ -638,6 +637,15 @@ export default function LinksPage() {
   };
 
   const handleAddCollection = () => {
+    // Check if user has reached link groups limit
+    const currentGroupsCount = groups.length;
+    const limit = maxLinkGroupsCheck.limit;
+    
+    if (limit !== -1 && currentGroupsCount >= limit) {
+      openUpgradePrompt('Link Collections', maxLinkGroupsCheck.requiredTier);
+      return;
+    }
+
     setSelectedGroup(null);
     setNewGroupTitle('New Collection');
     setGroupDialogOpen(true);
@@ -702,6 +710,31 @@ export default function LinksPage() {
     });
     // Optimistic update
     setGroups(prev => prev.map(g => g.id === id ? { ...g, active } : g));
+  };
+  
+  const handleToggleFooter = (checked: boolean) => {
+    // Validate if user is trying to enable hideFooter
+    if (checked) {
+      const isValid = validateFeatures([
+        {
+          featureKey: 'removeFooter',
+          featureName: 'Remove Footer',
+          isUsing: true,
+        },
+      ]);
+      
+      if (!isValid) {
+        return; // Upgrade prompt will show, don't toggle
+      }
+    }
+    
+    // Update appearance with new hideFooter value
+    if (appearanceData) {
+      updateAppearance.mutate({
+        url: 'admin/UpdateAppearance',
+        data: { ...appearanceData, hideFooter: checked } as unknown as Record<string, unknown>,
+      });
+    }
   };
 
   const handleOpenSettings = (link: Link, setting: string) => {
@@ -943,7 +976,10 @@ export default function LinksPage() {
                     sx={{ height: 20, fontSize: 10 }}
                   />
                 </Box>
-                <Switch disabled />
+                <Switch
+                  checked={appearanceData?.hideFooter || false}
+                  onChange={(e) => handleToggleFooter(e.target.checked)}
+                />
               </CardContent>
             </Card>
           </Box>
@@ -1031,6 +1067,17 @@ export default function LinksPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Upgrade Prompt */}
+      {showUpgrade && upgradeInfo && (
+        <UpgradePrompt
+          open={showUpgrade}
+          onClose={closeUpgradePrompt}
+          feature={upgradeInfo.feature}
+          requiredTier={upgradeInfo.requiredTier!}
+          currentTier={upgradeInfo.currentTier}
+        />
+      )}
     </>
   );
 }

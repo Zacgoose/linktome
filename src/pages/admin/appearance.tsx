@@ -27,6 +27,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Alert,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -45,6 +46,7 @@ import {
   Lock as LockIcon,
   Person as PersonIcon,
   AspectRatio as LayoutIcon,
+  LockOutlined as LockOutlinedIcon,
 } from '@mui/icons-material';
 import Autocomplete from '@mui/material/Autocomplete';
 import AdminLayout from '@/layouts/AdminLayout';
@@ -65,6 +67,10 @@ import {
 } from '@/types/links';
 import { useToast } from '@/context/ToastContext';
 import { getBackgroundStyle, getButtonStyle } from '@/utils/appearanceUtils';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { usePremiumValidation } from '@/hooks/usePremiumValidation';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import { canUseFontFamily, canUseTheme } from '@/utils/tierValidation';
 
 interface SectionProps {
   title: string;
@@ -193,9 +199,10 @@ interface ThemeCardProps {
   theme: AppearanceTheme;
   selected: boolean;
   onClick: () => void;
+  userTier: any;
 }
 
-function ThemeCard({ theme, selected, onClick }: ThemeCardProps) {
+function ThemeCard({ theme, selected, onClick, userTier }: ThemeCardProps) {
   const renderPreview = () => {
     if (theme.id === 'custom') {
       return (
@@ -293,10 +300,10 @@ function ThemeCard({ theme, selected, onClick }: ThemeCardProps) {
 
   return (
     <Box
-      onClick={theme.isPro ? undefined : onClick}
+      onClick={onClick}
       sx={{
-        cursor: theme.isPro ? 'not-allowed' : 'pointer',
-        opacity: theme.isPro ? 0.7 : 1,
+        cursor: 'pointer',
+        opacity: (!canUseTheme(userTier, theme.isPro).allowed) ? 0.8 : 1,
         position: 'relative',
       }}
     >
@@ -310,16 +317,16 @@ function ThemeCard({ theme, selected, onClick }: ThemeCardProps) {
           borderColor: selected ? 'primary.main' : 'divider',
           transition: 'all 0.2s',
           '&:hover': {
-            borderColor: theme.isPro ? 'divider' : 'primary.light',
-            transform: theme.isPro ? 'none' : 'scale(1.02)',
+            borderColor: 'primary.light',
+            transform: 'scale(1.02)',
           },
         }}
       >
         {renderPreview()}
-        {theme.isPro && (
+        {theme.isPro && !canUseTheme(userTier, theme.isPro).allowed && (
           <Chip
             icon={<LockIcon sx={{ fontSize: 12 }} />}
-            label="Pro"
+            label="Premium"
             size="small"
             sx={{
               position: 'absolute',
@@ -363,6 +370,8 @@ export default function AppearancePage() {
   const router = useRouter();
   const { showToast } = useToast();
   const [themeTab, setThemeTab] = useState(0);
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
+  const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
 
   const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
@@ -408,6 +417,66 @@ export default function AppearancePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prepare premium feature checks
+    const selectedTheme = THEME_PRESETS.find(t => t.id === formData.theme);
+    const titleFont = FONT_OPTIONS.find(f => f.value === formData.text.titleFont);
+    const bodyFont = FONT_OPTIONS.find(f => f.value === formData.text.bodyFont);
+    
+    // Validate premium features using the hook
+    const isValid = validateFeatures([
+      {
+        featureKey: 'customThemes',
+        featureName: 'Premium Theme',
+        isUsing: selectedTheme?.isPro === true,
+      },
+      {
+        featureKey: 'premiumFonts',
+        featureName: 'Premium Font (Title)',
+        isUsing: titleFont?.isPro === true,
+      },
+      {
+        featureKey: 'premiumFonts',
+        featureName: 'Premium Font (Body)',
+        isUsing: bodyFont?.isPro === true,
+      },
+      {
+        featureKey: 'videoBackgrounds',
+        featureName: 'Video Background',
+        isUsing: formData.wallpaper.type === 'video',
+      },
+      {
+        featureKey: 'videoBackgrounds',
+        featureName: 'Image Background',
+        isUsing: formData.wallpaper.type === 'image',
+      },
+      {
+        featureKey: 'removeFooter',
+        featureName: 'Remove Footer',
+        isUsing: formData.hideFooter === true,
+      },
+      {
+        featureKey: 'customLogos',
+        featureName: 'Custom Logo (Title Style)',
+        isUsing: formData.header.titleStyle === 'logo',
+      },
+      {
+        featureKey: 'customLayouts',
+        featureName: 'Hero Profile Layout',
+        isUsing: formData.header.profileImageLayout === 'hero',
+      },
+      {
+        featureKey: 'customLayouts',
+        featureName: 'Large Title Size',
+        isUsing: formData.text.titleSize === 'large',
+      },
+    ]);
+    
+    // If validation fails, don't save
+    if (!isValid) {
+      return;
+    }
+    
     updateAppearance.mutate({
       url: 'admin/UpdateAppearance',
       data: formData as unknown as Record<string, unknown>,
@@ -443,8 +512,7 @@ export default function AppearancePage() {
   };
 
   const handleThemeSelect = (theme: AppearanceTheme) => {
-    if (theme.isPro) return;
-
+    // Allow selection - validation will happen on save
     setFormData(prev => {
       const next = {
         ...prev,
@@ -531,15 +599,14 @@ export default function AppearancePage() {
                             {['classic', 'hero'].map((layout) => (
                               <Grid item xs={6} key={layout}>
                                 <Paper
-                                  onClick={() => layout !== 'hero' && updateHeader({ profileImageLayout: layout as 'classic' | 'hero' })}
+                                  onClick={() => updateHeader({ profileImageLayout: layout as 'classic' | 'hero' })}
                                   sx={{
                                     p: 2,
-                                    cursor: layout === 'hero' ? 'not-allowed' : 'pointer',
+                                    cursor: 'pointer',
                                     border: 2,
                                     borderColor: formData.header.profileImageLayout === layout ? 'primary.main' : 'transparent',
-                                    opacity: layout === 'hero' ? 0.6 : 1,
                                     '&:hover': {
-                                      borderColor: layout === 'hero' ? 'transparent' : 'primary.light',
+                                      borderColor: 'primary.light',
                                     },
                                     position: 'relative',
                                   }}
@@ -591,13 +658,15 @@ export default function AppearancePage() {
                             {['text', 'logo'].map((style) => (
                               <Grid item xs={6} key={style}>
                                 <Paper
-                                  onClick={() => style !== 'logo' && updateHeader({ titleStyle: style as 'text' | 'logo' })}
+                                  onClick={() => updateHeader({ titleStyle: style as 'text' | 'logo' })}
                                   sx={{
                                     p: 2,
-                                    cursor: style === 'logo' ? 'not-allowed' : 'pointer',
+                                    cursor: 'pointer',
                                     border: 2,
                                     borderColor: formData.header.titleStyle === style ? 'primary.main' : 'transparent',
-                                    opacity: style === 'logo' ? 0.6 : 1,
+                                    '&:hover': {
+                                      borderColor: 'primary.light',
+                                    },
                                     position: 'relative',
                                   }}
                                 >
@@ -669,6 +738,7 @@ export default function AppearancePage() {
                                 theme={theme}
                                 selected={formData.theme === theme.id}
                                 onClick={() => handleThemeSelect(theme)}
+                                userTier={userTier}
                               />
                             </Grid>
                           ))}
@@ -693,13 +763,15 @@ export default function AppearancePage() {
                             ].map((item) => (
                               <Grid item xs={4} sm={2} key={item.type}>
                                 <Paper
-                                  onClick={() => !item.pro && updateWallpaper({ type: item.type as WallpaperStyle['type'] })}
+                                  onClick={() => updateWallpaper({ type: item.type as WallpaperStyle['type'] })}
                                   sx={{
                                     p: 1.5,
-                                    cursor: item.pro ? 'not-allowed' : 'pointer',
+                                    cursor: 'pointer',
                                     border: 2,
                                     borderColor: formData.wallpaper.type === item.type ? 'primary.main' : 'transparent',
-                                    opacity: item.pro ? 0.6 : 1,
+                                    '&:hover': {
+                                      borderColor: 'primary.light',
+                                    },
                                     textAlign: 'center',
                                     position: 'relative',
                                   }}
@@ -872,11 +944,13 @@ export default function AppearancePage() {
                             <Autocomplete
                               fullWidth
                               size="small"
-                              options={FONT_OPTIONS.filter(f => !f.isPro)}
+                              options={FONT_OPTIONS}
                               getOptionLabel={(option) => option.label}
                               value={FONT_OPTIONS.find(f => f.value === formData.text.titleFont) || FONT_OPTIONS[0]}
                               onChange={(_, newValue) => {
-                                if (newValue) updateText({ titleFont: newValue.value });
+                                if (newValue) {
+                                  updateText({ titleFont: newValue.value });
+                                }
                               }}
                               renderInput={(params) => (
                                 <TextField {...params} label="Title font" />
@@ -884,6 +958,9 @@ export default function AppearancePage() {
                               renderOption={(props, option) => (
                                 <li {...props} style={{ fontFamily: option.fontFamily }}>
                                   {option.label}
+                                  {option.isPro && !canUseFontFamily(userTier, option.isPro).allowed && (
+                                    <LockOutlinedIcon sx={{ ml: 1, fontSize: 14, verticalAlign: 'middle' }} />
+                                  )}
                                 </li>
                               )}
                               isOptionEqualToValue={(option, value) => option.value === value.value}
@@ -915,11 +992,13 @@ export default function AppearancePage() {
                             <Autocomplete
                               fullWidth
                               size="small"
-                              options={FONT_OPTIONS.filter(f => !f.isPro)}
+                              options={FONT_OPTIONS}
                               getOptionLabel={(option) => option.label}
                               value={FONT_OPTIONS.find(f => f.value === formData.text.bodyFont) || FONT_OPTIONS[0]}
                               onChange={(_, newValue) => {
-                                if (newValue) updateText({ bodyFont: newValue.value });
+                                if (newValue) {
+                                  updateText({ bodyFont: newValue.value });
+                                }
                               }}
                               renderInput={(params) => (
                                 <TextField {...params} label="Body font" />
@@ -927,6 +1006,9 @@ export default function AppearancePage() {
                               renderOption={(props, option) => (
                                 <li {...props} style={{ fontFamily: option.fontFamily }}>
                                   {option.label}
+                                  {option.isPro && !canUseFontFamily(userTier, option.isPro).allowed && (
+                                    <LockOutlinedIcon sx={{ ml: 1, fontSize: 14, verticalAlign: 'middle' }} />
+                                  )}
                                 </li>
                               )}
                               isOptionEqualToValue={(option, value) => option.value === value.value}
@@ -985,13 +1067,15 @@ export default function AppearancePage() {
                             {['small', 'large'].map((size) => (
                               <Grid item xs={6} key={size}>
                                 <Paper
-                                  onClick={() => size !== 'large' && updateText({ titleSize: size as 'small' | 'large' })}
+                                  onClick={() => updateText({ titleSize: size as 'small' | 'large' })}
                                   sx={{
                                     p: 2,
-                                    cursor: size === 'large' ? 'not-allowed' : 'pointer',
+                                    cursor: 'pointer',
                                     border: 2,
                                     borderColor: formData.text.titleSize === size ? 'primary.main' : 'transparent',
-                                    opacity: size === 'large' ? 0.6 : 1,
+                                    '&:hover': {
+                                      borderColor: 'primary.light',
+                                    },
                                     textAlign: 'center',
                                     position: 'relative',
                                   }}
@@ -1271,7 +1355,6 @@ export default function AppearancePage() {
                           <Switch
                             checked={formData.hideFooter}
                             onChange={(e) => setFormData(prev => ({ ...prev, hideFooter: e.target.checked }))}
-                            disabled
                           />
                         </Box>
                       </Paper>
@@ -1341,6 +1424,17 @@ export default function AppearancePage() {
           </Box>
         </Container>
       </AdminLayout>
+      
+      {/* Upgrade Prompt Dialog */}
+      {showUpgrade && upgradeInfo && (
+        <UpgradePrompt
+          open={showUpgrade}
+          onClose={closeUpgradePrompt}
+          feature={upgradeInfo.feature}
+          requiredTier={upgradeInfo.requiredTier!}
+          currentTier={upgradeInfo.currentTier}
+        />
+      )}
     </>
   );
 }
