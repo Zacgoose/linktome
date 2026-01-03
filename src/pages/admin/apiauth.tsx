@@ -57,7 +57,6 @@ interface ApiKey {
 interface ApiKeysResponse {
   keys: ApiKey[];
   availablePermissions: string[];
-  tier: string;
   rateLimits: {
     requestsPerMinute: number;
     requestsPerDay: number;
@@ -106,7 +105,7 @@ function UsageBar({ used, total, label }: { used: number; total: number; label: 
 }
 
 export default function ApiKeysPage() {
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt } = useFeatureGate();
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -159,7 +158,7 @@ export default function ApiKeysPage() {
 
   const handleCreateKey = () => {
     // Check if user has reached API keys limit
-    const currentKeysCount = data?.apiKeys?.length || 0;
+    const currentKeysCount = data?.keys?.length || 0;
     const limit = apiKeysLimitCheck.limit;
     
     if (limit !== -1 && currentKeysCount >= limit) {
@@ -273,7 +272,7 @@ export default function ApiKeysPage() {
         )}
 
         {/* API Keys Limit Alert */}
-        {apiAccessCheck.allowed && !apiKeysLimitCheck.allowed && data?.apiKeys && data.apiKeys.length >= apiKeysLimitCheck.limit && (
+        {apiAccessCheck.allowed && !apiKeysLimitCheck.allowed && data?.keys && data.keys.length >= apiKeysLimitCheck.limit && (
           <Alert severity="warning" sx={{ mb: 3 }}>
             You've reached your API key limit ({apiKeysLimitCheck.limit} keys). Upgrade to {apiKeysLimitCheck.requiredTier}+ to create more API keys.
           </Alert>
@@ -286,7 +285,7 @@ export default function ApiKeysPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Typography variant="h6">Usage & Limits</Typography>
                 <Chip
-                  label={data?.tier || 'free'}
+                  label={userTier}
                   color="primary"
                   size="small"
                   sx={{ textTransform: 'capitalize' }}

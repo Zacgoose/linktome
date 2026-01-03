@@ -6,6 +6,23 @@ This document provides a comprehensive overview of all tier-based validations im
 
 The frontend tier validation system checks user subscription tiers before allowing access to premium features. All validations happen at **save time** or when attempting to access restricted pages/features, allowing users to explore premium options before upgrading.
 
+## Important: User Tier Source
+
+**The frontend uses the user's tier from the authentication context/JWT token, NOT from individual API responses.**
+
+- User tier is stored in browser storage as part of the auth user object
+- All components access tier via `useFeatureGate()` hook which reads from `useAuthContext()`
+- API responses should **NOT** include a `tier` field - tier comes from auth token
+- This ensures consistent tier display across all pages and prevents discrepancies
+
+### Backend Implementation
+
+The backend should:
+1. Include `tier` field in the JWT token when user authenticates
+2. Read tier from the authenticated user's token for all validation logic
+3. **Do NOT** return tier in individual API responses (analytics, API keys list, etc.)
+4. Validate all premium features based on the authenticated user's tier from token
+
 ## Feature Keys Reference
 
 All feature keys correspond to the `TierLimits` interface in `src/types/tiers.ts`:
@@ -210,6 +227,25 @@ if (appearance.hideFooter === true) {
 
 ### 3. API Access Features
 **File:** `src/pages/admin/apiauth.tsx`
+
+**Note:** The API keys list endpoint should NOT return a `tier` field. User tier comes from auth context.
+
+**Expected Response Structure:**
+```typescript
+{
+  keys: ApiKey[],
+  availablePermissions: string[],
+  rateLimits: {
+    requestsPerMinute: number,
+    requestsPerDay: number
+  },
+  usage: {
+    dailyUsed: number,
+    dailyRemaining: number,
+    perKey: Record<string, { minuteUsed: number, minuteRemaining: number }>
+  }
+}
+```
 
 #### API Access
 - **Feature Key:** `apiAccess`
