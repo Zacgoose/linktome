@@ -38,6 +38,7 @@ export interface UserManagement {
   state: string;
   direction: 'manager' | 'managed';
   permissions: string[];
+  tier?: UserTier; // Managed user's subscription tier
   created?: string;
   updated?: string;
 }

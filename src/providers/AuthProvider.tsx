@@ -56,6 +56,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             state: um.state,
             direction: um.direction,
             permissions: Array.isArray(um.permissions) ? um.permissions : [],
+            tier: um.tier, // Include tier from managed user
             created: um.created,
             updated: um.updated,
           }))
