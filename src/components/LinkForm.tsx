@@ -37,9 +37,8 @@ import {
   LockOutlined as LockOutlinedIcon,
 } from '@mui/icons-material';
 import { Link } from '@/types/links';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useTierProtection } from '@/hooks/useTierProtection';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
-import UpgradePrompt from './UpgradePrompt';
 import PremiumFeatureWrapper from './PremiumFeatureWrapper';
 
 interface LinkFormProps {
@@ -86,7 +85,7 @@ const LOCK_TYPES = [
 
 export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps) {
   const [tabValue, setTabValue] = useState(0);
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
+  const { canAccess, userTier, openUpgradePrompt, UpgradePromptComponent } = useTierProtection();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
   
   const [formData, setFormData] = useState({
@@ -700,16 +699,7 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
         </DialogActions>
       </form>
       
-      {/* Upgrade Prompt Dialog */}
-      {showUpgrade && upgradeInfo && (
-        <UpgradePrompt
-          open={showUpgrade}
-          onClose={closeUpgradePrompt}
-          feature={upgradeInfo.feature}
-          requiredTier={upgradeInfo.requiredTier!}
-          currentTier={upgradeInfo.currentTier}
-        />
-      )}
+      <UpgradePromptComponent />
     </Dialog>
   );
 }
