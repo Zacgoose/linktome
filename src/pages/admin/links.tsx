@@ -89,9 +89,9 @@ import {
 } from '@/types/links';
 import { UserProfile } from '@/types/api';
 import { useToast } from '@/context/ToastContext';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useTierProtection } from '@/hooks/useTierProtection';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
-import UpgradePrompt from '@/components/UpgradePrompt';
+import { TierLimitAlert } from '@/components/tier';
 
 interface SortableLinkCardProps {
   link: Link;
@@ -476,7 +476,7 @@ function SortableGroup({
 
 export default function LinksPage() {
   const { showToast } = useToast();
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
+  const { canAccess, openUpgradePrompt, userTier, UpgradePromptComponent } = useTierProtection();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
@@ -637,15 +637,6 @@ export default function LinksPage() {
   };
 
   const handleAddCollection = () => {
-    // Check if user has reached link groups limit
-    const currentGroupsCount = groups.length;
-    const limit = maxLinkGroupsCheck.limit;
-    
-    if (limit !== -1 && currentGroupsCount >= limit) {
-      openUpgradePrompt('Link Collections', maxLinkGroupsCheck.requiredTier);
-      return;
-    }
-
     setSelectedGroup(null);
     setNewGroupTitle('New Collection');
     setGroupDialogOpen(true);
@@ -875,6 +866,13 @@ export default function LinksPage() {
 
             {/* Collection & Archive Controls */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <TierLimitAlert
+                limitKey="maxLinkGroups"
+                limitName="Link Collections"
+                currentCount={groups.length}
+              />
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Button
                 variant="outlined"
                 startIcon={<Folder />}
@@ -1068,16 +1066,7 @@ export default function LinksPage() {
         </DialogActions>
       </Dialog>
 
-      {/* Upgrade Prompt */}
-      {showUpgrade && upgradeInfo && (
-        <UpgradePrompt
-          open={showUpgrade}
-          onClose={closeUpgradePrompt}
-          feature={upgradeInfo.feature}
-          requiredTier={upgradeInfo.requiredTier!}
-          currentTier={upgradeInfo.currentTier}
-        />
-      )}
+      <UpgradePromptComponent />
     </>
   );
 }
