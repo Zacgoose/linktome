@@ -20,7 +20,7 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
-import { UpgradePrompt } from '@/components/UpgradePrompt';
+import UpgradePrompt from '@/components/UpgradePrompt';
 
 interface ClicksByDay {
   date: string;
@@ -404,12 +404,15 @@ export default function AnalyticsPage() {
           </Grid>
 
           {/* Upgrade Prompt */}
-          <UpgradePrompt
-            open={showUpgrade}
-            onClose={closeUpgradePrompt}
-            requiredTier={upgradeInfo.requiredTier}
-            featureName={upgradeInfo.featureName}
-          />
+          {showUpgrade && upgradeInfo && (
+            <UpgradePrompt
+              open={showUpgrade}
+              onClose={closeUpgradePrompt}
+              feature={upgradeInfo.feature}
+              requiredTier={upgradeInfo.requiredTier!}
+              currentTier={upgradeInfo.currentTier}
+            />
+          )}
         </Container>
       </AdminLayout>
     </>

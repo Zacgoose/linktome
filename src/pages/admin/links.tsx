@@ -86,7 +86,7 @@ import {
 } from '@/types/links';
 import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
-import { UpgradePrompt } from '@/components/UpgradePrompt';
+import UpgradePrompt from '@/components/UpgradePrompt';
 
 // Operation types for bulk API
 interface LinkOperation extends Partial<Link> {
@@ -1047,12 +1047,15 @@ export default function LinksPage() {
       </Dialog>
 
       {/* Upgrade Prompt */}
-      <UpgradePrompt
-        open={showUpgrade}
-        onClose={closeUpgradePrompt}
-        requiredTier={upgradeInfo.requiredTier}
-        featureName={upgradeInfo.featureName}
-      />
+      {showUpgrade && upgradeInfo && (
+        <UpgradePrompt
+          open={showUpgrade}
+          onClose={closeUpgradePrompt}
+          feature={upgradeInfo.feature}
+          requiredTier={upgradeInfo.requiredTier!}
+          currentTier={upgradeInfo.currentTier}
+        />
+      )}
     </>
   );
 }

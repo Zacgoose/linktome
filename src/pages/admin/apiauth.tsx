@@ -43,7 +43,7 @@ import {
 import { useApiGet, useApiPost, useApiDelete, useApiPut } from '@/hooks/useApiQuery';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
-import { UpgradePrompt } from '@/components/UpgradePrompt';
+import UpgradePrompt from '@/components/UpgradePrompt';
 
 interface ApiKey {
   keyId: string;
@@ -623,12 +623,15 @@ export default function ApiKeysPage() {
         />
 
         {/* Upgrade Prompt */}
-        <UpgradePrompt
-          open={showUpgrade}
-          onClose={closeUpgradePrompt}
-          requiredTier={upgradeInfo.requiredTier}
-          featureName={upgradeInfo.featureName}
-        />
+        {showUpgrade && upgradeInfo && (
+          <UpgradePrompt
+            open={showUpgrade}
+            onClose={closeUpgradePrompt}
+            feature={upgradeInfo.feature}
+            requiredTier={upgradeInfo.requiredTier!}
+            currentTier={upgradeInfo.currentTier}
+          />
+        )}
       </Container>
     </AdminLayout>
   );
