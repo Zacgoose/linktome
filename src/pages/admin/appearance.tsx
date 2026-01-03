@@ -68,6 +68,7 @@ import {
 import { useToast } from '@/context/ToastContext';
 import { getBackgroundStyle, getButtonStyle } from '@/utils/appearanceUtils';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { usePremiumValidation } from '@/hooks/usePremiumValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { canUseFontFamily, canUseTheme } from '@/utils/tierValidation';
 
@@ -369,7 +370,8 @@ export default function AppearancePage() {
   const router = useRouter();
   const { showToast } = useToast();
   const [themeTab, setThemeTab] = useState(0);
-  const { canAccess, openUpgradePrompt, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
+  const { validateFeatures } = usePremiumValidation();
 
   const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
@@ -416,40 +418,48 @@ export default function AppearancePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if user is trying to use premium features they don't have access to
-    const premiumFeaturesUsed: { feature: string; requiredTier: any }[] = [];
-    
-    // Check if using a premium theme
+    // Prepare premium feature checks
     const selectedTheme = THEME_PRESETS.find(t => t.id === formData.theme);
-    if (selectedTheme?.isPro) {
-      const themeAccess = canUseTheme(userTier, selectedTheme.isPro);
-      if (!themeAccess.allowed && themeAccess.requiredTier) {
-        premiumFeaturesUsed.push({ feature: 'Premium Theme', requiredTier: themeAccess.requiredTier });
-      }
-    }
-    
-    // Check if using premium fonts
     const titleFont = FONT_OPTIONS.find(f => f.value === formData.text.titleFont);
-    if (titleFont?.isPro) {
-      const fontAccess = canUseFontFamily(userTier, titleFont.isPro);
-      if (!fontAccess.allowed && fontAccess.requiredTier) {
-        premiumFeaturesUsed.push({ feature: 'Premium Font (Title)', requiredTier: fontAccess.requiredTier });
-      }
-    }
-    
     const bodyFont = FONT_OPTIONS.find(f => f.value === formData.text.bodyFont);
-    if (bodyFont?.isPro) {
-      const fontAccess = canUseFontFamily(userTier, bodyFont.isPro);
-      if (!fontAccess.allowed && fontAccess.requiredTier) {
-        premiumFeaturesUsed.push({ feature: 'Premium Font (Body)', requiredTier: fontAccess.requiredTier });
-      }
-    }
     
-    // If premium features are used without access, show upgrade prompt
-    if (premiumFeaturesUsed.length > 0) {
-      const firstFeature = premiumFeaturesUsed[0];
-      openUpgradePrompt(firstFeature.feature, firstFeature.requiredTier);
-      return; // Don't save
+    // Validate premium features using the hook
+    const isValid = validateFeatures([
+      {
+        featureKey: 'customThemes',
+        featureName: 'Premium Theme',
+        isUsing: selectedTheme?.isPro === true,
+      },
+      {
+        featureKey: 'premiumFonts',
+        featureName: 'Premium Font (Title)',
+        isUsing: titleFont?.isPro === true,
+      },
+      {
+        featureKey: 'premiumFonts',
+        featureName: 'Premium Font (Body)',
+        isUsing: bodyFont?.isPro === true,
+      },
+      {
+        featureKey: 'videoBackgrounds',
+        featureName: 'Video Background',
+        isUsing: formData.wallpaper.type === 'video',
+      },
+      {
+        featureKey: 'removeFooter',
+        featureName: 'Remove Footer',
+        isUsing: formData.hideFooter === true,
+      },
+      {
+        featureKey: 'customLogos',
+        featureName: 'Custom Logo',
+        isUsing: formData.header.titleStyle === 'logo' && !!formData.header.logoUrl,
+      },
+    ]);
+    
+    // If validation fails, don't save
+    if (!isValid) {
+      return;
     }
     
     updateAppearance.mutate({

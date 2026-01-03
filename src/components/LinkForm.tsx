@@ -38,7 +38,9 @@ import {
 } from '@mui/icons-material';
 import { Link } from '@/types/links';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { usePremiumValidation } from '@/hooks/usePremiumValidation';
 import UpgradePrompt from './UpgradePrompt';
+import PremiumFeatureWrapper from './PremiumFeatureWrapper';
 
 interface LinkFormProps {
   open: boolean;
@@ -84,7 +86,8 @@ const LOCK_TYPES = [
 
 export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps) {
   const [tabValue, setTabValue] = useState(0);
-  const { canAccess, openUpgradePrompt, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
+  const { validateFeatures } = usePremiumValidation();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -165,47 +168,33 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if user is trying to use premium features they don't have access to
-    const premiumFeaturesUsed: { feature: string; requiredTier: any }[] = [];
+    // Validate premium features using the hook
+    const isValid = validateFeatures([
+      {
+        featureKey: 'customLayouts',
+        featureName: 'Custom Link Layout',
+        isUsing: formData.layout !== 'classic',
+      },
+      {
+        featureKey: 'linkAnimations',
+        featureName: 'Link Animations',
+        isUsing: formData.animation !== 'none',
+      },
+      {
+        featureKey: 'linkScheduling',
+        featureName: 'Link Scheduling',
+        isUsing: formData.schedule.enabled,
+      },
+      {
+        featureKey: 'linkLocking',
+        featureName: 'Link Locking',
+        isUsing: formData.lock.enabled,
+      },
+    ]);
     
-    // Check custom layouts
-    if (formData.layout !== 'classic') {
-      const access = canAccess('customLayouts');
-      if (!access.allowed && access.requiredTier) {
-        premiumFeaturesUsed.push({ feature: 'Custom Link Layout', requiredTier: access.requiredTier });
-      }
-    }
-    
-    // Check animations
-    if (formData.animation !== 'none') {
-      const access = canAccess('linkAnimations');
-      if (!access.allowed && access.requiredTier) {
-        premiumFeaturesUsed.push({ feature: 'Link Animations', requiredTier: access.requiredTier });
-      }
-    }
-    
-    // Check scheduling
-    if (formData.schedule.enabled) {
-      const access = canAccess('linkScheduling');
-      if (!access.allowed && access.requiredTier) {
-        premiumFeaturesUsed.push({ feature: 'Link Scheduling', requiredTier: access.requiredTier });
-      }
-    }
-    
-    // Check locking
-    if (formData.lock.enabled) {
-      const access = canAccess('linkLocking');
-      if (!access.allowed && access.requiredTier) {
-        premiumFeaturesUsed.push({ feature: 'Link Locking', requiredTier: access.requiredTier });
-      }
-    }
-    
-    // If premium features are used without access, show upgrade prompt
-    if (premiumFeaturesUsed.length > 0) {
-      // Show prompt for the first premium feature (or you could combine them)
-      const firstFeature = premiumFeaturesUsed[0];
-      openUpgradePrompt(firstFeature.feature, firstFeature.requiredTier);
-      return; // Don't save
+    // If validation fails, don't save
+    if (!isValid) {
+      return;
     }
     
     const linkData: Partial<Link> = {
@@ -415,35 +404,33 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
 
           {/* Layout Tab */}
           <TabPanel value={tabValue} index={2}>
-            <Stack spacing={3}>
-              <Typography variant="body2" color="text.secondary">
-                Choose how your link appears on your profile
-              </Typography>
+            <PremiumFeatureWrapper
+              featureKey="customLayouts"
+              featureName="Custom layouts"
+            >
+              <Stack spacing={3}>
+                <Typography variant="body2" color="text.secondary">
+                  Choose how your link appears on your profile
+                </Typography>
 
-              {!canAccess('customLayouts').allowed && (
-                <Alert severity="info" icon={<LockOutlinedIcon />}>
-                  Custom layouts are a premium feature. You can select them, but you'll need to upgrade to save.
-                </Alert>
-              )}
-
-              <Grid container spacing={2}>
-                {LAYOUT_OPTIONS.map((layout) => {
-                  const isPremium = layout.value !== 'classic';
-                  const access = canAccess('customLayouts');
-                  const isLocked = isPremium && !access.allowed;
-                  
-                  return (
-                    <Grid item xs={6} key={layout.value}>
-                      <Paper
-                        onClick={() => {
-                          setFormData({ ...formData, layout: layout.value as typeof formData.layout });
-                        }}
-                        sx={{
-                          p: 2,
-                          cursor: 'pointer',
-                          border: 2,
-                          borderColor: formData.layout === layout.value ? 'primary.main' : 'transparent',
-                          '&:hover': { borderColor: 'primary.light' },
+                <Grid container spacing={2}>
+                  {LAYOUT_OPTIONS.map((layout) => {
+                    const isPremium = layout.value !== 'classic';
+                    const access = canAccess('customLayouts');
+                    const isLocked = isPremium && !access.allowed;
+                    
+                    return (
+                      <Grid item xs={6} key={layout.value}>
+                        <Paper
+                          onClick={() => {
+                            setFormData({ ...formData, layout: layout.value as typeof formData.layout });
+                          }}
+                          sx={{
+                            p: 2,
+                            cursor: 'pointer',
+                            border: 2,
+                            borderColor: formData.layout === layout.value ? 'primary.main' : 'transparent',
+                            '&:hover': { borderColor: 'primary.light' },
                           opacity: isLocked ? 0.8 : 1,
                           position: 'relative',
                         }}
@@ -474,23 +461,22 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   This layout works best with a thumbnail image
                 </Alert>
               )}
-            </Stack>
+              </Stack>
+            </PremiumFeatureWrapper>
           </TabPanel>
 
           {/* Effects Tab */}
           <TabPanel value={tabValue} index={3}>
-            <Stack spacing={3}>
-              <Typography variant="body2" color="text.secondary">
-                Add animation to draw attention to your link
-              </Typography>
+            <PremiumFeatureWrapper
+              featureKey="linkAnimations"
+              featureName="Link animations"
+            >
+              <Stack spacing={3}>
+                <Typography variant="body2" color="text.secondary">
+                  Add animation to draw attention to your link
+                </Typography>
 
-              {!canAccess('linkAnimations').allowed && (
-                <Alert severity="info" icon={<LockOutlinedIcon />}>
-                  Link animations are a premium feature. You can select them, but you'll need to upgrade to save.
-                </Alert>
-              )}
-
-              <FormControl fullWidth>
+                <FormControl fullWidth>
                 <InputLabel>Animation</InputLabel>
                 <Select
                   value={formData.animation}
@@ -546,27 +532,26 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   </Button>
                 </Paper>
               )}
-            </Stack>
+              </Stack>
+            </PremiumFeatureWrapper>
           </TabPanel>
 
           {/* Schedule Tab */}
           <TabPanel value={tabValue} index={4}>
-            <Stack spacing={3}>
-              {!canAccess('linkScheduling').allowed && (
-                <Alert severity="info" icon={<LockOutlinedIcon />}>
-                  Link scheduling is a premium feature. You can enable it, but you'll need to upgrade to save.
-                </Alert>
-              )}
-              
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.schedule.enabled}
-                    onChange={(e) => {
-                      updateSchedule({ enabled: e.target.checked });
-                    }}
-                  />
-                }
+            <PremiumFeatureWrapper
+              featureKey="linkScheduling"
+              featureName="Link scheduling"
+            >
+              <Stack spacing={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.schedule.enabled}
+                      onChange={(e) => {
+                        updateSchedule({ enabled: e.target.checked });
+                      }}
+                    />
+                  }
                 label={
                   <Box>
                     <Typography variant="body2" fontWeight={500}>
@@ -609,25 +594,24 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   </Alert>
                 </>
               )}
-            </Stack>
+              </Stack>
+            </PremiumFeatureWrapper>
           </TabPanel>
 
           {/* Lock Tab */}
           <TabPanel value={tabValue} index={5}>
-            <Stack spacing={3}>
-              {!canAccess('linkLocking').allowed && (
-                <Alert severity="info" icon={<LockOutlinedIcon />}>
-                  Link locking is a premium feature. You can enable it, but you'll need to upgrade to save.
-                </Alert>
-              )}
-              
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.lock.enabled}
-                    onChange={(e) => {
-                      updateLock({ enabled: e.target.checked });
-                    }}
+            <PremiumFeatureWrapper
+              featureKey="linkLocking"
+              featureName="Link locking"
+            >
+              <Stack spacing={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.lock.enabled}
+                      onChange={(e) => {
+                        updateLock({ enabled: e.target.checked });
+                      }}
                   />
                 }
                 label={
@@ -699,7 +683,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
                   />
                 </>
               )}
-            </Stack>
+              </Stack>
+            </PremiumFeatureWrapper>
           </TabPanel>
         </DialogContent>
 
