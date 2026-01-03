@@ -865,13 +865,12 @@ export default function LinksPage() {
             </Button>
 
             {/* Collection & Archive Controls */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <TierLimitAlert
-                limitKey="maxLinkGroups"
-                limitName="Link Collections"
-                currentCount={groups.length}
-              />
-            </Box>
+            <TierLimitAlert
+              limitKey="maxLinkGroups"
+              limitName="Link Collections"
+              currentCount={groups.length}
+            />
+            
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Button
                 variant="outlined"
