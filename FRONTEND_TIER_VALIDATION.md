@@ -15,13 +15,36 @@ The frontend tier validation system checks user subscription tiers before allowi
 - API responses should **NOT** include a `tier` field - tier comes from auth token
 - This ensures consistent tier display across all pages and prevents discrepancies
 
+### Tier-Based Layout Rendering
+
+**The frontend determines page layouts based on user tier, then populates with API data.**
+
+- Components check tier using `canAccess()` to determine which sections to render
+- API responses return the same data structure for all users
+- Frontend conditionally renders sections based on tier access
+- Example: Analytics page shows basic stats to all users, but advanced analytics sections only to Pro+ users
+
+**Pattern:**
+```typescript
+const { canAccess, userTier } = useFeatureGate();
+const advancedAnalyticsCheck = canAccess('advancedAnalytics');
+
+// Determine layout based on tier
+{advancedAnalyticsCheck.allowed ? (
+  <AdvancedAnalyticsSection data={apiData} />
+) : (
+  <UpgradePromptSection feature="Advanced Analytics" />
+)}
+```
+
 ### Backend Implementation
 
 The backend should:
 1. Include `tier` field in the JWT token when user authenticates
 2. Read tier from the authenticated user's token for all validation logic
 3. **Do NOT** return tier in individual API responses (analytics, API keys list, etc.)
-4. Validate all premium features based on the authenticated user's tier from token
+4. **Return the same data structure** for all users - let frontend handle tier-based rendering
+5. Validate all premium features based on the authenticated user's tier from token
 
 ## Feature Keys Reference
 

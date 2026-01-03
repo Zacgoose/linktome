@@ -75,7 +75,7 @@ interface AnalyticsData {
 type AnalyticsResponse = AnalyticsData;
 
 export default function AnalyticsPage() {
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt } = useFeatureGate();
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
 
   const { data: analytics, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
@@ -83,6 +83,7 @@ export default function AnalyticsPage() {
   });
 
   const analyticsExportCheck = canAccess('analyticsExport');
+  const advancedAnalyticsCheck = canAccess('advancedAnalytics');
 
   // Function to export analytics data
   const handleExportAnalytics = () => {
@@ -241,166 +242,203 @@ export default function AnalyticsPage() {
               </Card>
             </Grid>
 
-            {/* Top Links */}
-            <Grid item xs={12} md={6}>
-              <Card sx={{ bgcolor: (theme) => theme.palette.background.paper }}>
-                <CardContent>
-                  <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
-                    Top Performing Links
-                  </Typography>
-                  {analytics?.linkClicksByLink && analytics.linkClicksByLink.length > 0 ? (
-                    <Stack spacing={2} mt={2}>
-                      {analytics.linkClicksByLink.slice(0, 5).map((link, index) => (
-                        <Box
-                          key={link.linkId}
-                          display="flex"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          p={2}
-                          sx={{ bgcolor: (theme) => theme.palette.background.default, borderRadius: 1 }}
-                        >
-                          <Box display="flex" alignItems="center" gap={2}>
-                            <Typography
-                              variant="h6"
-                              fontWeight={700}
-                              sx={{
-                                width: 32,
-                                height: 32,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                borderRadius: '50%',
-                                bgcolor: 'primary.main',
-                                color: 'white',
-                              }}
+            {/* Advanced Analytics Section - Pro+ Only */}
+            {advancedAnalyticsCheck.allowed ? (
+              <>
+                {/* Top Links */}
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ bgcolor: (theme) => theme.palette.background.paper }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
+                        Top Performing Links
+                      </Typography>
+                      {analytics?.linkClicksByLink && analytics.linkClicksByLink.length > 0 ? (
+                        <Stack spacing={2} mt={2}>
+                          {analytics.linkClicksByLink.slice(0, 5).map((link, index) => (
+                            <Box
+                              key={link.linkId}
+                              display="flex"
+                              justifyContent="space-between"
+                              alignItems="center"
+                              p={2}
+                              sx={{ bgcolor: (theme) => theme.palette.background.default, borderRadius: 1 }}
                             >
-                              {index + 1}
-                            </Typography>
-                            <Typography fontWeight={500} color="text.primary">{link.linkTitle + " (" + link.linkUrl + ")"}</Typography>
-                          </Box>
-                          <Typography variant="h6" fontWeight={600} color="primary">
-                            {link.clickCount}
-                          </Typography>
-                        </Box>
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Box textAlign="center" py={4}>
-                      <Typography color="text.secondary">
-                        No link clicks yet
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Recent Link Clicks */}
-            <Grid item xs={12} md={6}>
-              <Card sx={{ bgcolor: (theme) => theme.palette.background.paper }}>
-                <CardContent>
-                  <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
-                    Recent Link Clicks
-                  </Typography>
-                  {analytics?.recentLinkClicks && analytics.recentLinkClicks.length > 0 ? (
-                    <Stack spacing={2} mt={2} sx={{ maxHeight: 400, overflowY: 'auto' }}>
-                      {analytics.recentLinkClicks.slice(0, 10).map((click) => (
-                        <Box
-                          key={click.linkId + click.timestamp}
-                          p={2}
-                          sx={{ bgcolor: (theme) => theme.palette.background.default, borderRadius: 1 }}
-                        >
-                          <Typography fontWeight={600} gutterBottom color="text.primary">
-                            {click.linkTitle + " (" + click.linkUrl + ")"}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(click.timestamp).toLocaleString()}
-                          </Typography>
-                        </Box>
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Box textAlign="center" py={4}>
-                      <Typography color="text.secondary">
-                        No recent clicks
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Clicks by Day Chart */}
-            <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    Clicks Over Time (Last 30 Days)
-                  </Typography>
-                  {analytics?.clicksByDay && analytics.clicksByDay.length > 0 ? (
-                    <Box sx={{ mt: 3 }}>
-                      <Stack spacing={1}>
-                        {(() => {
-                          const maxClicks = Math.max(...analytics.clicksByDay!.map(d => d.count));
-                          return analytics.clicksByDay.map((day) => {
-                            const widthPercent = maxClicks > 0 
-                              ? Math.min((day.count / maxClicks) * 100, 100)
-                              : 0;
-                            return (
-                              <Box
-                                key={day.date}
-                                display="flex"
-                                alignItems="center"
-                                gap={2}
-                              >
+                              <Box display="flex" alignItems="center" gap={2}>
                                 <Typography
-                                  variant="body2"
-                                  sx={{ minWidth: 100, color: 'text.secondary' }}
-                                >
-                                  {new Date(day.date).toLocaleDateString()}
-                                </Typography>
-                                <Box
+                                  variant="h6"
+                                  fontWeight={700}
                                   sx={{
-                                    flex: 1,
-                                    height: 24,
-                                    bgcolor: 'grey.100',
-                                    borderRadius: 1,
-                                    position: 'relative',
-                                    overflow: 'hidden',
+                                    width: 32,
+                                    height: 32,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: '50%',
+                                    bgcolor: 'primary.main',
+                                    color: 'white',
                                   }}
                                 >
-                                  <Box
-                                    sx={{
-                                      height: '100%',
-                                      bgcolor: 'primary.main',
-                                      width: `${widthPercent}%`,
-                                      transition: 'width 0.3s ease',
-                                    }}
-                                  />
-                                </Box>
-                                <Typography
-                                  variant="body2"
-                                  fontWeight={600}
-                                  sx={{ minWidth: 40, textAlign: 'right' }}
-                                >
-                                  {day.count}
+                                  {index + 1}
                                 </Typography>
+                                <Typography fontWeight={500} color="text.primary">{link.linkTitle + " (" + link.linkUrl + ")"}</Typography>
                               </Box>
-                            );
-                          });
-                        })()}
-                      </Stack>
-                    </Box>
-                  ) : (
-                    <Box textAlign="center" py={4}>
-                      <Typography color="text.secondary">
-                        No click data available
+                              <Typography variant="h6" fontWeight={600} color="primary">
+                                {link.clickCount}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Box textAlign="center" py={4}>
+                          <Typography color="text.secondary">
+                            No link clicks yet
+                          </Typography>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Recent Link Clicks */}
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ bgcolor: (theme) => theme.palette.background.paper }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
+                        Recent Link Clicks
                       </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
+                      {analytics?.recentLinkClicks && analytics.recentLinkClicks.length > 0 ? (
+                        <Stack spacing={2} mt={2} sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                          {analytics.recentLinkClicks.slice(0, 10).map((click) => (
+                            <Box
+                              key={click.linkId + click.timestamp}
+                              p={2}
+                              sx={{ bgcolor: (theme) => theme.palette.background.default, borderRadius: 1 }}
+                            >
+                              <Typography fontWeight={600} gutterBottom color="text.primary">
+                                {click.linkTitle + " (" + click.linkUrl + ")"}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(click.timestamp).toLocaleString()}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Box textAlign="center" py={4}>
+                          <Typography color="text.secondary">
+                            No recent clicks
+                          </Typography>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Clicks by Day Chart */}
+                <Grid item xs={12}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight={600} gutterBottom>
+                        Clicks Over Time (Last 30 Days)
+                      </Typography>
+                      {analytics?.clicksByDay && analytics.clicksByDay.length > 0 ? (
+                        <Box sx={{ mt: 3 }}>
+                          <Stack spacing={1}>
+                            {(() => {
+                              const maxClicks = Math.max(...analytics.clicksByDay!.map(d => d.count));
+                              return analytics.clicksByDay.map((day) => {
+                                const widthPercent = maxClicks > 0 
+                                  ? Math.min((day.count / maxClicks) * 100, 100)
+                                  : 0;
+                                return (
+                                  <Box
+                                    key={day.date}
+                                    display="flex"
+                                    alignItems="center"
+                                    gap={2}
+                                  >
+                                    <Typography
+                                      variant="body2"
+                                      sx={{ minWidth: 100, color: 'text.secondary' }}
+                                    >
+                                      {new Date(day.date).toLocaleDateString()}
+                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        flex: 1,
+                                        height: 24,
+                                        bgcolor: 'grey.100',
+                                        borderRadius: 1,
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                      }}
+                                    >
+                                      <Box
+                                        sx={{
+                                          height: '100%',
+                                          bgcolor: 'primary.main',
+                                          width: `${widthPercent}%`,
+                                          transition: 'width 0.3s ease',
+                                        }}
+                                      />
+                                    </Box>
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight={600}
+                                      sx={{ minWidth: 40, textAlign: 'right' }}
+                                    >
+                                      {day.count}
+                                    </Typography>
+                                  </Box>
+                                );
+                              });
+                            })()}
+                          </Stack>
+                        </Box>
+                      ) : (
+                        <Box textAlign="center" py={4}>
+                          <Typography color="text.secondary">
+                            No click data available
+                          </Typography>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </>
+            ) : (
+              // Free tier - Show upgrade prompt for advanced analytics
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      Upgrade to Pro to unlock advanced analytics including:
+                    </Alert>
+                    <Stack spacing={1} sx={{ pl: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        • Top performing links analysis
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        • Recent link clicks tracking
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        • Clicks over time visualization
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        • Extended analytics retention (90 days vs 30 days)
+                      </Typography>
+                    </Stack>
+                    <Button
+                      variant="contained"
+                      sx={{ mt: 3 }}
+                      onClick={() => openUpgradePrompt('Advanced Analytics', advancedAnalyticsCheck.requiredTier)}
+                    >
+                      Upgrade to Pro
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
           </Grid>
 
           {/* Upgrade Prompt */}
