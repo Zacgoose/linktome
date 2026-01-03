@@ -21,6 +21,7 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 import { useAuthContext } from '@/providers/AuthProvider';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import TierBadge from '@/components/TierBadge';
 
 interface UserProfile {
@@ -43,6 +44,7 @@ interface DashboardStatsResponse {
 export default function Dashboard() {
   const router = useRouter();
   const { user } = useAuthContext();
+  const { userTier } = useFeatureGate();
 
   const { data: profileData, isLoading: profileLoading } = useApiGet<UserProfile>({
     url: 'admin/GetProfile',
@@ -88,7 +90,7 @@ export default function Dashboard() {
                 Manage your LinkToMe profile and track your performance
               </Typography>
             </Box>
-            <TierBadge tier={user?.tier} size="medium" />
+            <TierBadge tier={userTier} size="medium" />
           </Box>
           
           {/* Stats Overview */}
