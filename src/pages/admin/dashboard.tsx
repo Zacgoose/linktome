@@ -20,7 +20,6 @@ import {
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
-import { useAuthContext } from '@/providers/AuthProvider';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import TierBadge from '@/components/TierBadge';
 
@@ -43,7 +42,6 @@ interface DashboardStatsResponse {
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user } = useAuthContext();
   const { userTier } = useFeatureGate();
 
   const { data: profileData, isLoading: profileLoading } = useApiGet<UserProfile>({
