@@ -83,31 +83,14 @@ import {
   LinksResponse,
   AppearanceData,
   DEFAULT_APPEARANCE,
+  LinkOperation,
+  GroupOperation,
+  UpdateLinksRequest,
 } from '@/types/links';
+import { UserProfile } from '@/types/api';
 import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import UpgradePrompt from '@/components/UpgradePrompt';
-
-// Operation types for bulk API
-interface LinkOperation extends Partial<Link> {
-  operation: 'add' | 'update' | 'remove';
-}
-
-interface GroupOperation extends Partial<LinkGroup> {
-  operation: 'add' | 'update' | 'remove';
-}
-
-interface UpdateLinksRequest {
-  links?: LinkOperation[];
-  groups?: GroupOperation[];
-}
-
-interface UserProfile {
-  username: string;
-  displayName: string;
-  bio: string;
-  avatar: string;
-}
 
 interface SortableLinkCardProps {
   link: Link;

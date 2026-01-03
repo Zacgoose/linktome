@@ -44,40 +44,7 @@ import { useApiGet, useApiPost, useApiDelete, useApiPut } from '@/hooks/useApiQu
 import AdminLayout from '@/layouts/AdminLayout';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import UpgradePrompt from '@/components/UpgradePrompt';
-
-interface ApiKey {
-  keyId: string;
-  name: string;
-  permissions: string[];
-  createdAt: string;
-  lastUsedAt: string | null;
-  lastUsedIP: string | null;
-}
-
-interface ApiKeysResponse {
-  keys: ApiKey[];
-  availablePermissions: string[];
-  rateLimits: {
-    requestsPerMinute: number;
-    requestsPerDay: number;
-  };
-  usage: {
-    dailyUsed: number;
-    dailyRemaining: number;
-    perKey: Record<string, { minuteUsed: number; minuteRemaining: number }>;
-  };
-}
-
-interface CreateKeyResponse {
-  message: string;
-  key: {
-    keyId: string;
-    key: string;
-    name: string;
-    permissions: string[];
-    createdAt: string;
-  };
-}
+import { ApiKey, ApiKeysResponse, CreateKeyResponse } from '@/types/api';
 
 function UsageBar({ used, total, label }: { used: number; total: number; label: string }) {
   const percentage = total > 0 ? Math.min((used / total) * 100, 100) : 0;

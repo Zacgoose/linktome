@@ -21,58 +21,16 @@ import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import UpgradePrompt from '@/components/UpgradePrompt';
-
-interface ClicksByDay {
-  date: string;
-  count: number;
-}
-
-interface ViewsByDay {
-  date: string;
-  count: number;
-}
-
-interface RecentPageView {
-  ipAddress: string;
-  userAgent: string;
-  referrer: string;
-  timestamp: string;
-}
-
-interface RecentLinkClick {
-  linkTitle: string;
-  userAgent: string;
-  timestamp: string;
-  linkUrl: string;
-  referrer: string;
-  ipAddress: string;
-  linkId: string;
-}
-
-interface LinkClicksByLink {
-  linkId: string;
-  clickCount: number;
-  linkTitle: string;
-  linkUrl: string;
-}
-
-interface AnalyticsSummary {
-  totalLinkClicks: number;
-  uniqueVisitors: number;
-  totalPageViews: number;
-}
-
-interface AnalyticsData {
-  clicksByDay: ClicksByDay[];
-  recentPageViews: RecentPageView[];
-  linkClicksByLink: LinkClicksByLink[];
-  summary: AnalyticsSummary;
-  viewsByDay: ViewsByDay[];
-  recentLinkClicks: RecentLinkClick[];
-}
-
-// The API response is now the AnalyticsData object directly, not wrapped in a summary property
-type AnalyticsResponse = AnalyticsData;
+import {
+  ClicksByDay,
+  ViewsByDay,
+  RecentPageView,
+  RecentLinkClick,
+  LinkClicksByLink,
+  AnalyticsSummary,
+  AnalyticsData,
+  AnalyticsResponse
+} from '@/types/api';
 
 export default function AnalyticsPage() {
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();

@@ -442,6 +442,22 @@ export const SOCIAL_PLATFORMS = [
   { value: 'discord', label: 'Discord', icon: 'Forum' },
 ];
 
+/**
+ * Link operation types for bulk updates
+ */
+export interface LinkOperation extends Partial<Link> {
+  operation: 'add' | 'update' | 'remove';
+}
+
+export interface GroupOperation extends Partial<LinkGroup> {
+  operation: 'add' | 'update' | 'remove';
+}
+
+export interface UpdateLinksRequest {
+  links?: LinkOperation[];
+  groups?: GroupOperation[];
+}
+
 // Default values
 export const DEFAULT_APPEARANCE: AppearanceData = {
   theme: 'custom',
