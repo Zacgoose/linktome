@@ -457,8 +457,18 @@ export default function AppearancePage() {
       },
       {
         featureKey: 'customLogos',
-        featureName: 'Custom Logo',
-        isUsing: formData.header.titleStyle === 'logo' && !!formData.header.logoUrl,
+        featureName: 'Custom Logo (Title Style)',
+        isUsing: formData.header.titleStyle === 'logo',
+      },
+      {
+        featureKey: 'customLayouts',
+        featureName: 'Hero Profile Layout',
+        isUsing: formData.header.profileImageLayout === 'hero',
+      },
+      {
+        featureKey: 'customLayouts',
+        featureName: 'Large Title Size',
+        isUsing: formData.text.titleSize === 'large',
       },
     ]);
     

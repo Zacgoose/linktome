@@ -90,6 +90,7 @@ import {
 import { UserProfile } from '@/types/api';
 import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { usePremiumValidation } from '@/hooks/usePremiumValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
 
 interface SortableLinkCardProps {
@@ -475,7 +476,8 @@ function SortableGroup({
 
 export default function LinksPage() {
   const { showToast } = useToast();
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt } = useFeatureGate();
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
+  const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -492,9 +494,18 @@ export default function LinksPage() {
   });
 
   // Fetch appearance for preview
-  const { data: appearanceData } = useApiGet<AppearanceData>({
+  const { data: appearanceData, refetch: refetchAppearance } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
     queryKey: 'admin-appearance',
+  });
+  
+  // Appearance update mutation for footer toggle
+  const updateAppearance = useApiPut<any, AppearanceData>({
+    relatedQueryKeys: ['admin-appearance'],
+    onSuccess: () => {
+      showToast('Appearance updated', 'success');
+      refetchAppearance();
+    },
   });
 
   const { data: profileData } = useApiGet<UserProfile>({
@@ -699,6 +710,31 @@ export default function LinksPage() {
     });
     // Optimistic update
     setGroups(prev => prev.map(g => g.id === id ? { ...g, active } : g));
+  };
+  
+  const handleToggleFooter = (checked: boolean) => {
+    // Validate if user is trying to enable hideFooter
+    if (checked) {
+      const isValid = validateFeatures([
+        {
+          featureKey: 'removeFooter',
+          featureName: 'Remove Footer',
+          isUsing: true,
+        },
+      ]);
+      
+      if (!isValid) {
+        return; // Upgrade prompt will show, don't toggle
+      }
+    }
+    
+    // Update appearance with new hideFooter value
+    if (appearanceData) {
+      updateAppearance.mutate({
+        url: 'admin/UpdateAppearance',
+        data: { ...appearanceData, hideFooter: checked } as unknown as Record<string, unknown>,
+      });
+    }
   };
 
   const handleOpenSettings = (link: Link, setting: string) => {
@@ -940,7 +976,10 @@ export default function LinksPage() {
                     sx={{ height: 20, fontSize: 10 }}
                   />
                 </Box>
-                <Switch disabled />
+                <Switch
+                  checked={appearanceData?.hideFooter || false}
+                  onChange={(e) => handleToggleFooter(e.target.checked)}
+                />
               </CardContent>
             </Card>
           </Box>
