@@ -206,8 +206,8 @@ export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps)
       animation: formData.animation,
       ...(formData.icon && { icon: formData.icon }),
       ...(formData.thumbnail && { thumbnail: formData.thumbnail, thumbnailType: formData.thumbnailType }),
-      ...(formData.schedule.enabled && { schedule: formData.schedule }),
-      ...(formData.lock.enabled && { lock: formData.lock }),
+      schedule: formData.schedule,
+      lock: formData.lock,
       ...(link?.order != null && { order: link.order }),
     };
 
