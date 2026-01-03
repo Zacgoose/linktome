@@ -86,8 +86,8 @@ const LOCK_TYPES = [
 
 export default function LinkForm({ open, link, onClose, onSave }: LinkFormProps) {
   const [tabValue, setTabValue] = useState(0);
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
-  const { validateFeatures } = usePremiumValidation();
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
+  const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
   
   const [formData, setFormData] = useState({
     title: '',

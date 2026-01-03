@@ -4,8 +4,8 @@
  */
 
 import { useCallback } from 'react';
-import { useFeatureGate } from './useFeatureGate';
-import { TierLimits } from '@/types/tiers';
+import { TierLimits, UserTier } from '@/types/tiers';
+import { canAccessFeature } from '@/utils/tierValidation';
 
 export interface PremiumFeatureCheck {
   featureKey: keyof TierLimits;
@@ -13,13 +13,16 @@ export interface PremiumFeatureCheck {
   isUsing: boolean;
 }
 
+interface UsePremiumValidationProps {
+  userTier: UserTier;
+  openUpgradePrompt: (feature: string, requiredTier: UserTier) => void;
+}
+
 /**
  * Hook to validate premium features before saving
  * Returns a function that checks all features and shows upgrade prompt if needed
  */
-export function usePremiumValidation() {
-  const { canAccess, openUpgradePrompt } = useFeatureGate();
-
+export function usePremiumValidation({ userTier, openUpgradePrompt }: UsePremiumValidationProps) {
   /**
    * Validates an array of premium feature checks
    * Returns true if validation passes (can save), false if blocked (shows upgrade prompt)
@@ -30,7 +33,7 @@ export function usePremiumValidation() {
 
       for (const check of checks) {
         if (check.isUsing) {
-          const access = canAccess(check.featureKey);
+          const access = canAccessFeature(userTier, check.featureKey);
           if (!access.allowed && access.requiredTier) {
             blockedFeatures.push({
               feature: check.featureName,
@@ -49,7 +52,7 @@ export function usePremiumValidation() {
 
       return true; // Allow save
     },
-    [canAccess, openUpgradePrompt]
+    [userTier, openUpgradePrompt]
   );
 
   return { validateFeatures };

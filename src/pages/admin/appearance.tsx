@@ -370,8 +370,8 @@ export default function AppearancePage() {
   const router = useRouter();
   const { showToast } = useToast();
   const [themeTab, setThemeTab] = useState(0);
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier } = useFeatureGate();
-  const { validateFeatures } = usePremiumValidation();
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
+  const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
 
   const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
