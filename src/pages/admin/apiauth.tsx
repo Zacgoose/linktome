@@ -27,8 +27,7 @@ import {
   Checkbox,
   Tooltip,
   Skeleton,
-  Snackbar,
-  LinearProgress
+  Snackbar
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -42,37 +41,12 @@ import {
 } from '@mui/icons-material';
 import { useApiGet, useApiPost, useApiDelete, useApiPut } from '@/hooks/useApiQuery';
 import AdminLayout from '@/layouts/AdminLayout';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
-import UpgradePrompt from '@/components/UpgradePrompt';
+import { useTierProtection } from '@/hooks/useTierProtection';
+import { TierLimitAlert, UsageBar } from '@/components/tier';
 import { ApiKey, ApiKeysResponse, CreateKeyResponse } from '@/types/api';
 
-function UsageBar({ used, total, label }: { used: number; total: number; label: string }) {
-  const percentage = total > 0 ? Math.min((used / total) * 100, 100) : 0;
-  const isHigh = percentage > 80;
-  const isMedium = percentage > 50;
-
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography variant="body2" color="text.secondary">
-          {label}
-        </Typography>
-        <Typography variant="body2" fontWeight={600}>
-          {used.toLocaleString()} / {total.toLocaleString()}
-        </Typography>
-      </Box>
-      <LinearProgress
-        variant="determinate"
-        value={percentage}
-        color={isHigh ? 'error' : isMedium ? 'warning' : 'primary'}
-        sx={{ height: 8, borderRadius: 1 }}
-      />
-    </Box>
-  );
-}
-
 export default function ApiKeysPage() {
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
+  const { canAccess, openUpgradePrompt, userTier, UpgradePromptComponent } = useTierProtection();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -239,11 +213,11 @@ export default function ApiKeysPage() {
         )}
 
         {/* API Keys Limit Alert */}
-        {apiAccessCheck.allowed && !apiKeysLimitCheck.allowed && data?.keys && data.keys.length >= apiKeysLimitCheck.limit && (
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            You've reached your API key limit ({apiKeysLimitCheck.limit} keys). Upgrade to {apiKeysLimitCheck.requiredTier}+ to create more API keys.
-          </Alert>
-        )}
+        <TierLimitAlert
+          limitKey="apiKeysLimit"
+          limitName="API Keys"
+          currentCount={data?.keys?.length || 0}
+        />
 
         {/* Usage & Limits Card */}
         <Card sx={{ mb: 3 }}>
@@ -588,16 +562,7 @@ export default function ApiKeysPage() {
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         />
 
-        {/* Upgrade Prompt */}
-        {showUpgrade && upgradeInfo && (
-          <UpgradePrompt
-            open={showUpgrade}
-            onClose={closeUpgradePrompt}
-            feature={upgradeInfo.feature}
-            requiredTier={upgradeInfo.requiredTier!}
-            currentTier={upgradeInfo.currentTier}
-          />
-        )}
+        <UpgradePromptComponent />
       </Container>
     </AdminLayout>
   );

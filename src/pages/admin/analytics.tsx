@@ -19,8 +19,8 @@ import {
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
-import UpgradePrompt from '@/components/UpgradePrompt';
+import { useTierProtection } from '@/hooks/useTierProtection';
+import { TierProtectedSection, TierProtectedButton } from '@/components/tier';
 import {
   ClicksByDay,
   ViewsByDay,
@@ -33,7 +33,7 @@ import {
 } from '@/types/api';
 
 export default function AnalyticsPage() {
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
+  const { canAccess, openUpgradePrompt, UpgradePromptComponent } = useTierProtection();
 
   const { data: analytics, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
@@ -45,11 +45,6 @@ export default function AnalyticsPage() {
 
   // Function to export analytics data
   const handleExportAnalytics = () => {
-    if (!analyticsExportCheck.allowed) {
-      openUpgradePrompt('Analytics Export', analyticsExportCheck.requiredTier);
-      return;
-    }
-
     if (!analytics) return;
 
     // Convert analytics data to CSV
@@ -122,14 +117,16 @@ export default function AnalyticsPage() {
                 Track your profile performance and link engagement
               </Typography>
             </Box>
-            <Button
+            <TierProtectedButton
+              featureKey="analyticsExport"
+              featureName="Analytics Export"
+              onClick={handleExportAnalytics}
               variant="outlined"
               startIcon={<DownloadIcon />}
-              onClick={handleExportAnalytics}
               disabled={!analytics || isLoading}
             >
               Export Data
-            </Button>
+            </TierProtectedButton>
           </Box>
 
 
@@ -201,7 +198,49 @@ export default function AnalyticsPage() {
             </Grid>
 
             {/* Advanced Analytics Section - Pro+ Only */}
-            {advancedAnalyticsCheck.allowed ? (
+            <TierProtectedSection
+              featureKey="advancedAnalytics"
+              featureName="Advanced Analytics"
+              benefits={[
+                'Top performing links analysis',
+                'Recent link clicks tracking',
+                'Clicks over time visualization',
+                'Extended analytics retention (90 days vs 30 days)',
+              ]}
+              fallback={
+                <Grid item xs={12}>
+                  <Card>
+                    <CardContent>
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        Upgrade to Pro to unlock advanced analytics including:
+                      </Alert>
+                      <Stack spacing={1} sx={{ pl: 2 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          • Top performing links analysis
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          • Recent link clicks tracking
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          • Clicks over time visualization
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          • Extended analytics retention (90 days vs 30 days)
+                        </Typography>
+                      </Stack>
+                      <Button
+                        variant="contained"
+                        sx={{ mt: 3 }}
+                        onClick={() => openUpgradePrompt('Advanced Analytics', advancedAnalyticsCheck.requiredTier)}
+                      >
+                        Upgrade to Pro
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              }
+            >
+              {/* Content wrapped in fragment to maintain Grid structure */}
               <>
                 {/* Top Links */}
                 <Grid item xs={12} md={6}>
@@ -364,51 +403,10 @@ export default function AnalyticsPage() {
                   </Card>
                 </Grid>
               </>
-            ) : (
-              // Free tier - Show upgrade prompt for advanced analytics
-              <Grid item xs={12}>
-                <Card>
-                  <CardContent>
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                      Upgrade to Pro to unlock advanced analytics including:
-                    </Alert>
-                    <Stack spacing={1} sx={{ pl: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        • Top performing links analysis
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        • Recent link clicks tracking
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        • Clicks over time visualization
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        • Extended analytics retention (90 days vs 30 days)
-                      </Typography>
-                    </Stack>
-                    <Button
-                      variant="contained"
-                      sx={{ mt: 3 }}
-                      onClick={() => openUpgradePrompt('Advanced Analytics', advancedAnalyticsCheck.requiredTier)}
-                    >
-                      Upgrade to Pro
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-            )}
+            </TierProtectedSection>
           </Grid>
 
-          {/* Upgrade Prompt */}
-          {showUpgrade && upgradeInfo && (
-            <UpgradePrompt
-              open={showUpgrade}
-              onClose={closeUpgradePrompt}
-              feature={upgradeInfo.feature}
-              requiredTier={upgradeInfo.requiredTier!}
-              currentTier={upgradeInfo.currentTier}
-            />
-          )}
+          <UpgradePromptComponent />
         </Container>
       </AdminLayout>
     </>

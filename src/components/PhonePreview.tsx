@@ -127,7 +127,7 @@ export default function PhonePreview({
   compact = false,
   className,
 }: PhonePreviewProps) {
-  const { theme: _theme, customTheme: _customTheme, ...appearanceProps } = appearance || {};
+  const { ...appearanceProps } = appearance || {};
 
   const wallpaper = appearanceProps.wallpaper || DEFAULT_WALLPAPER;
   const buttons = appearanceProps.buttons || DEFAULT_BUTTONS;
@@ -319,7 +319,7 @@ export default function PhonePreview({
                   {/* Social Icons */}
                   {socialIcons.length > 0 && (
                     <Stack direction="row" spacing={0.5} justifyContent="center" sx={{ mb: 2 }}>
-                      {socialIcons.filter(s => s.active).slice(0, 5).map((social, idx) => (
+                      {socialIcons.filter(s => s.active).map((social, idx) => (
                         <IconButton key={idx} size="small" sx={{ color: text.pageTextColor }}>
                           {getSocialIcon(social.platform)}
                         </IconButton>
@@ -330,7 +330,7 @@ export default function PhonePreview({
                   {/* Links */}
                   <Stack spacing={compact ? 1 : 1.5}>
                     {ungroupedLinks.length > 0 ? (
-                      ungroupedLinks.slice(0, compact ? 3 : 5).map((link) => (
+                      ungroupedLinks.map((link) => (
                         <PreviewLinkButton
                           key={link.id}
                           link={link}
@@ -484,7 +484,7 @@ export default function PhonePreview({
                 {/* Social Icons */}
                 {socialIcons.length > 0 && (
                   <Stack direction="row" spacing={0.5} justifyContent="center" sx={{ mb: 2 }}>
-                    {socialIcons.filter(s => s.active).slice(0, 5).map((social, idx) => (
+                    {socialIcons.filter(s => s.active).map((social, idx) => (
                       <IconButton
                         key={idx}
                         size="small"
@@ -499,7 +499,7 @@ export default function PhonePreview({
                 {/* Links */}
                 <Stack spacing={compact ? 1 : 1.5}>
                   {ungroupedLinks.length > 0 ? (
-                    ungroupedLinks.slice(0, compact ? 3 : 5).map((link) => (
+                    ungroupedLinks.map((link) => (
                       <PreviewLinkButton
                         key={link.id}
                         link={link}
@@ -544,7 +544,7 @@ export default function PhonePreview({
                   )}
 
                   {/* Groups */}
-                  {!compact && activeGroups.slice(0, 2).map((group) => {
+                  {!compact && activeGroups.map((group) => {
                     const groupLinks = getGroupLinks(group.id);
                     if (groupLinks.length === 0) return null;
                     
@@ -558,7 +558,7 @@ export default function PhonePreview({
                           {group.title}
                         </Typography>
                         <Stack spacing={1}>
-                          {groupLinks.slice(0, 2).map((link) => (
+                          {groupLinks.map((link) => (
                             <PreviewLinkButton
                               key={link.id}
                               link={link}

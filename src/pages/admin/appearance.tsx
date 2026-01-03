@@ -67,9 +67,8 @@ import {
 } from '@/types/links';
 import { useToast } from '@/context/ToastContext';
 import { getBackgroundStyle, getButtonStyle } from '@/utils/appearanceUtils';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useTierProtection } from '@/hooks/useTierProtection';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
-import UpgradePrompt from '@/components/UpgradePrompt';
 import { canUseFontFamily, canUseTheme } from '@/utils/tierValidation';
 
 interface SectionProps {
@@ -370,7 +369,7 @@ export default function AppearancePage() {
   const router = useRouter();
   const { showToast } = useToast();
   const [themeTab, setThemeTab] = useState(0);
-  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
+  const { canAccess, userTier, openUpgradePrompt, UpgradePromptComponent } = useTierProtection();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
 
   const { data, isLoading } = useApiGet<AppearanceData>({
@@ -1425,16 +1424,7 @@ export default function AppearancePage() {
         </Container>
       </AdminLayout>
       
-      {/* Upgrade Prompt Dialog */}
-      {showUpgrade && upgradeInfo && (
-        <UpgradePrompt
-          open={showUpgrade}
-          onClose={closeUpgradePrompt}
-          feature={upgradeInfo.feature}
-          requiredTier={upgradeInfo.requiredTier!}
-          currentTier={upgradeInfo.currentTier}
-        />
-      )}
+      <UpgradePromptComponent />
     </>
   );
 }
