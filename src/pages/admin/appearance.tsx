@@ -446,6 +446,11 @@ export default function AppearancePage() {
         isUsing: formData.wallpaper.type === 'video',
       },
       {
+        featureKey: 'videoBackgrounds',
+        featureName: 'Image Background',
+        isUsing: formData.wallpaper.type === 'image',
+      },
+      {
         featureKey: 'removeFooter',
         featureName: 'Remove Footer',
         isUsing: formData.hideFooter === true,
@@ -584,15 +589,14 @@ export default function AppearancePage() {
                             {['classic', 'hero'].map((layout) => (
                               <Grid item xs={6} key={layout}>
                                 <Paper
-                                  onClick={() => layout !== 'hero' && updateHeader({ profileImageLayout: layout as 'classic' | 'hero' })}
+                                  onClick={() => updateHeader({ profileImageLayout: layout as 'classic' | 'hero' })}
                                   sx={{
                                     p: 2,
-                                    cursor: layout === 'hero' ? 'not-allowed' : 'pointer',
+                                    cursor: 'pointer',
                                     border: 2,
                                     borderColor: formData.header.profileImageLayout === layout ? 'primary.main' : 'transparent',
-                                    opacity: layout === 'hero' ? 0.6 : 1,
                                     '&:hover': {
-                                      borderColor: layout === 'hero' ? 'transparent' : 'primary.light',
+                                      borderColor: 'primary.light',
                                     },
                                     position: 'relative',
                                   }}
@@ -644,13 +648,15 @@ export default function AppearancePage() {
                             {['text', 'logo'].map((style) => (
                               <Grid item xs={6} key={style}>
                                 <Paper
-                                  onClick={() => style !== 'logo' && updateHeader({ titleStyle: style as 'text' | 'logo' })}
+                                  onClick={() => updateHeader({ titleStyle: style as 'text' | 'logo' })}
                                   sx={{
                                     p: 2,
-                                    cursor: style === 'logo' ? 'not-allowed' : 'pointer',
+                                    cursor: 'pointer',
                                     border: 2,
                                     borderColor: formData.header.titleStyle === style ? 'primary.main' : 'transparent',
-                                    opacity: style === 'logo' ? 0.6 : 1,
+                                    '&:hover': {
+                                      borderColor: 'primary.light',
+                                    },
                                     position: 'relative',
                                   }}
                                 >
@@ -747,13 +753,15 @@ export default function AppearancePage() {
                             ].map((item) => (
                               <Grid item xs={4} sm={2} key={item.type}>
                                 <Paper
-                                  onClick={() => !item.pro && updateWallpaper({ type: item.type as WallpaperStyle['type'] })}
+                                  onClick={() => updateWallpaper({ type: item.type as WallpaperStyle['type'] })}
                                   sx={{
                                     p: 1.5,
-                                    cursor: item.pro ? 'not-allowed' : 'pointer',
+                                    cursor: 'pointer',
                                     border: 2,
                                     borderColor: formData.wallpaper.type === item.type ? 'primary.main' : 'transparent',
-                                    opacity: item.pro ? 0.6 : 1,
+                                    '&:hover': {
+                                      borderColor: 'primary.light',
+                                    },
                                     textAlign: 'center',
                                     position: 'relative',
                                   }}
@@ -1049,13 +1057,15 @@ export default function AppearancePage() {
                             {['small', 'large'].map((size) => (
                               <Grid item xs={6} key={size}>
                                 <Paper
-                                  onClick={() => size !== 'large' && updateText({ titleSize: size as 'small' | 'large' })}
+                                  onClick={() => updateText({ titleSize: size as 'small' | 'large' })}
                                   sx={{
                                     p: 2,
-                                    cursor: size === 'large' ? 'not-allowed' : 'pointer',
+                                    cursor: 'pointer',
                                     border: 2,
                                     borderColor: formData.text.titleSize === size ? 'primary.main' : 'transparent',
-                                    opacity: size === 'large' ? 0.6 : 1,
+                                    '&:hover': {
+                                      borderColor: 'primary.light',
+                                    },
                                     textAlign: 'center',
                                     position: 'relative',
                                   }}
@@ -1335,7 +1345,6 @@ export default function AppearancePage() {
                           <Switch
                             checked={formData.hideFooter}
                             onChange={(e) => setFormData(prev => ({ ...prev, hideFooter: e.target.checked }))}
-                            disabled
                           />
                         </Box>
                       </Paper>
