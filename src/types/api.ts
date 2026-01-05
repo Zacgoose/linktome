@@ -51,8 +51,9 @@ export interface UserManagement {
  * HTTP Status: 200 (success) or 400/401 (error)
  */
 export interface LoginResponse {
-  user: UserAuth;
+  user?: UserAuth;
   requires2FA?: boolean;
+  requiresTwoFactor?: boolean; // Backend uses this field name
   twoFactorMethod?: 'email' | 'totp' | 'both';
   availableMethods?: ('email' | 'totp')[]; // Array of available 2FA methods when user has multiple enabled
   sessionId?: string;

@@ -92,8 +92,9 @@ export default function LoginPage() {
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
-      // Check if 2FA is required
-      if (data.requires2FA && data.sessionId && data.twoFactorMethod) {
+      // Check if 2FA is required (backend uses requiresTwoFactor)
+      const needs2FA = data.requires2FA || data.requiresTwoFactor;
+      if (needs2FA && data.sessionId && data.twoFactorMethod) {
         setShow2FA(true);
         setTwoFactorMethod(data.twoFactorMethod);
         setTwoFactorSessionId(data.sessionId);
@@ -119,8 +120,9 @@ export default function LoginPage() {
 
   const signupMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
-      // Check if 2FA is required
-      if (data.requires2FA && data.sessionId && data.twoFactorMethod) {
+      // Check if 2FA is required (backend uses requiresTwoFactor)
+      const needs2FA = data.requires2FA || data.requiresTwoFactor;
+      if (needs2FA && data.sessionId && data.twoFactorMethod) {
         setShow2FA(true);
         setTwoFactorMethod(data.twoFactorMethod);
         setTwoFactorSessionId(data.sessionId);
