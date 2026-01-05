@@ -64,13 +64,9 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         
-        // Check if user should be prompted to setup 2FA
-        if (!data.user.twoFactorEnabled) {
-          setPendingUser(data.user);
-          setShowSetupPrompt(true);
-        } else {
-          router.push('/admin/dashboard');
-        }
+        // User just completed 2FA verification, so they definitely have 2FA enabled
+        // No need to show setup prompt - go straight to dashboard
+        router.push('/admin/dashboard');
       }
     },
     onError: (error: string) => {
