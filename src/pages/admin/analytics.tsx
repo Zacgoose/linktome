@@ -21,6 +21,7 @@ import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import { UserTier } from '@/types/tiers';
 import {
   ClicksByDay,
   ViewsByDay,
@@ -46,7 +47,7 @@ export default function AnalyticsPage() {
   // Function to export analytics data
   const handleExportAnalytics = () => {
     if (!analyticsExportCheck.allowed) {
-      openUpgradePrompt('Analytics Export', analyticsExportCheck.requiredTier);
+      openUpgradePrompt('Analytics Export', analyticsExportCheck.requiredTier || UserTier.PRO);
       return;
     }
 
@@ -389,7 +390,7 @@ export default function AnalyticsPage() {
                     <Button
                       variant="contained"
                       sx={{ mt: 3 }}
-                      onClick={() => openUpgradePrompt('Advanced Analytics', advancedAnalyticsCheck.requiredTier)}
+                      onClick={() => openUpgradePrompt('Advanced Analytics', advancedAnalyticsCheck.requiredTier || UserTier.PRO)}
                     >
                       Upgrade to Pro
                     </Button>

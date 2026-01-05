@@ -25,6 +25,9 @@ export interface UserAuth {
   permissions: string[];
   userManagements: UserManagement[];
   tier?: UserTier; // User's subscription tier
+  twoFactorEnabled?: boolean; // Whether user has 2FA enabled
+  twoFactorEmailEnabled?: boolean; // Whether email 2FA is enabled
+  twoFactorTotpEnabled?: boolean; // Whether TOTP 2FA is enabled
 }
 
 /**
@@ -48,7 +51,30 @@ export interface UserManagement {
  * HTTP Status: 200 (success) or 400/401 (error)
  */
 export interface LoginResponse {
-  user: UserAuth;
+  user?: UserAuth;
+  requires2FA?: boolean;
+  requiresTwoFactor?: boolean; // Backend uses this field name
+  twoFactorMethod?: 'email' | 'totp' | 'both';
+  availableMethods?: ('email' | 'totp')[]; // Array of available 2FA methods when user has multiple enabled
+  sessionId?: string;
+}
+
+/**
+ * 2FA verification request
+ */
+export interface TwoFactorVerifyRequest {
+  sessionId: string;
+  token: string; // 6-digit code (email/TOTP) or backup code
+  method: 'email' | 'totp' | 'backup'; // Type of verification
+}
+
+/**
+ * 2FA setup response for TOTP
+ */
+export interface TotpSetupResponse {
+  secret: string;
+  qrCode: string;
+  backupCodes?: string[];
 }
 
 /**
