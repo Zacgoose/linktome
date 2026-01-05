@@ -2,16 +2,31 @@
 
 This document outlines the backend API endpoints that need to be implemented in the PowerShell Azure Functions to support the 2FA frontend functionality.
 
+## ⚠️ CRITICAL: Security Requirements
+
+**Before implementing, READ**: `2FA_SECURITY_REQUIREMENTS.md`
+
+Key security requirements:
+- ✅ Encrypt TOTP secrets with AES-256 (use Azure Key Vault)
+- ✅ Hash email 2FA codes before storage
+- ✅ Implement backup codes for recovery
+- ✅ Make 2FA optional (user opt-in)
+- ✅ Never log sensitive data (secrets, codes)
+
 ## Overview
 
 The 2FA implementation supports two methods:
 - **Email OTP**: 6-digit code sent via email
 - **TOTP**: Time-based One-Time Password using authenticator apps (Google Authenticator, Authy, etc.)
 
-**Important**: Users can have **both methods enabled simultaneously** and choose which one to use during login. The system should support:
-- Users with only email 2FA enabled
-- Users with only TOTP 2FA enabled
-- Users with both email and TOTP enabled (can use either method to verify)
+**Important**: 
+- **2FA is OPTIONAL** - users must explicitly enable it
+- Users can have **both methods enabled simultaneously** and choose which one to use during login
+- The system should support:
+  - Users with 2FA disabled (default)
+  - Users with only email 2FA enabled
+  - Users with only TOTP 2FA enabled
+  - Users with both email and TOTP enabled (can use either method to verify)
 
 ## API Endpoint Structure
 
@@ -29,9 +44,21 @@ All 2FA operations use a **single endpoint** with URL query parameters:
 - `POST /api/public/Signup`
 
 **Modified Behavior**:
-When a user attempts to login/signup and has 2FA enabled, instead of immediately returning the user object, return a 2FA challenge response.
+**Check if user has 2FA enabled first** - if not, proceed with normal login. If 2FA is enabled, return a 2FA challenge response instead of immediately returning the user object.
 
-**New Response Format** (when 2FA is required):
+**Response Format when 2FA is NOT enabled** (default for all users):
+```json
+{
+  "user": {
+    "UserId": "...",
+    "email": "...",
+    "username": "...",
+    // ... other user fields
+  }
+}
+```
+
+**Response Format when 2FA IS enabled** (user opted in):
 ```json
 {
   "requires2FA": true,
@@ -42,6 +69,8 @@ When a user attempts to login/signup and has 2FA enabled, instead of immediately
 ```
 
 **Important Notes on Multi-Method Support**:
+- **2FA is optional** - Only check if `user.twoFactorEnabled` is true
+- If user has 2FA disabled (default): Return user object directly, skip 2FA
 - If user has only email enabled: `twoFactorMethod: "email"` - Email code sent immediately
 - If user has only TOTP enabled: `twoFactorMethod: "totp"` - No email sent
 - If user has **both enabled**: `twoFactorMethod: "both"` and include `availableMethods: ["email", "totp"]`
@@ -53,19 +82,6 @@ When a user attempts to login/signup and has 2FA enabled, instead of immediately
 - Session should store which method(s) are available for that user
 
 **HTTP Status**: 200 OK
-
-**Existing Response Format** (when 2FA is NOT required):
-```json
-{
-  "user": {
-    "UserId": "...",
-    "email": "...",
-    "username": "...",
-    "userRole": "...",
-    // ... other user fields
-  }
-}
-```
 
 **Implementation Notes**:
 - Check if user has 2FA enabled in the database
@@ -139,12 +155,14 @@ When a user attempts to login/signup and has 2FA enabled, instead of immediately
 **Implementation Notes**:
 - For email method: Compare provided token with stored token for the session
 - For TOTP method: Verify token using TOTP algorithm with user's secret key
+- **For backup codes**: Check if token matches any of the user's hashed backup codes (see `2FA_SECURITY_REQUIREMENTS.md`)
 - **For users with both methods enabled**: 
-  - Accept verification from either method
-  - Check if provided token matches email code OR TOTP code
+  - Accept verification from either method OR backup code
+  - Check if provided token matches email code OR TOTP code OR backup code
   - User can use whichever method they prefer
 - Rate limit verification attempts (e.g., max 5 attempts per session)
 - Invalidate session after successful verification
+- If backup code used, remove it from user's list (single-use)
 - Set authentication cookies on success (access token, refresh token)
 - Store user session in database as usual
 
