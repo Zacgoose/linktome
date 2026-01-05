@@ -49,6 +49,27 @@ export interface UserManagement {
  */
 export interface LoginResponse {
   user: UserAuth;
+  requires2FA?: boolean;
+  twoFactorMethod?: 'email' | 'totp';
+  sessionId?: string;
+}
+
+/**
+ * 2FA verification request
+ */
+export interface TwoFactorVerifyRequest {
+  sessionId: string;
+  token: string;
+  method: 'email' | 'totp';
+}
+
+/**
+ * 2FA setup response for TOTP
+ */
+export interface TotpSetupResponse {
+  secret: string;
+  qrCode: string;
+  backupCodes?: string[];
 }
 
 /**

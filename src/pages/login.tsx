@@ -16,7 +16,9 @@ import {
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { useApiPost } from '@/hooks/useApiQuery';
 import { useAuthContext } from '@/providers/AuthProvider';
-import type { LoginResponse } from '@/types/api';
+import type { LoginResponse, TwoFactorVerifyRequest } from '@/types/api';
+import TwoFactorAuth from '@/components/TwoFactorAuth';
+import { apiPost } from '@/utils/api';
 
 // Use test key in development, real key in production
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
@@ -37,6 +39,12 @@ export default function LoginPage() {
   const [turnstileStatus, setTurnstileStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const turnstileRef = useRef<TurnstileInstance>(null);
 
+  // 2FA state
+  const [show2FA, setShow2FA] = useState<boolean>(false);
+  const [twoFactorMethod, setTwoFactorMethod] = useState<'email' | 'totp'>('email');
+  const [twoFactorSessionId, setTwoFactorSessionId] = useState<string>('');
+  const [twoFactorLoading, setTwoFactorLoading] = useState<boolean>(false);
+
   const sessionExpired = router.query.session === 'expired';
 
   const resetTurnstile = () => {
@@ -46,7 +54,12 @@ export default function LoginPage() {
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
-      if (data.user) {
+      // Check if 2FA is required
+      if (data.requires2FA && data.sessionId && data.twoFactorMethod) {
+        setShow2FA(true);
+        setTwoFactorMethod(data.twoFactorMethod);
+        setTwoFactorSessionId(data.sessionId);
+      } else if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
@@ -61,7 +74,12 @@ export default function LoginPage() {
 
   const signupMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
-      if (data.user) {
+      // Check if 2FA is required
+      if (data.requires2FA && data.sessionId && data.twoFactorMethod) {
+        setShow2FA(true);
+        setTwoFactorMethod(data.twoFactorMethod);
+        setTwoFactorSessionId(data.sessionId);
+      } else if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         router.push('/admin/dashboard');
@@ -96,7 +114,49 @@ export default function LoginPage() {
     }
   };
 
-  const loading = loginMutation.isPending || signupMutation.isPending;
+  const handle2FAVerify = async (token: string, sessionId: string) => {
+    setTwoFactorLoading(true);
+    setError('');
+    
+    try {
+      const response = await apiPost('public/2fatoken/verify', {
+        sessionId,
+        token,
+        method: twoFactorMethod,
+      }) as LoginResponse;
+
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setUser(response.user);
+        router.push('/admin/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Invalid verification code');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  };
+
+  const handle2FAResend = async () => {
+    try {
+      await apiPost('public/2fatoken/resend', {
+        sessionId: twoFactorSessionId,
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend code');
+      setTimeout(() => setError(''), 5000);
+    }
+  };
+
+  const handle2FABack = () => {
+    setShow2FA(false);
+    setTwoFactorSessionId('');
+    setError('');
+    resetTurnstile();
+  };
+
+  const loading = loginMutation.isPending || signupMutation.isPending || twoFactorLoading;
   const canSubmit = turnstileToken && !loading && turnstileStatus === 'ready';
 
   return (
@@ -115,131 +175,147 @@ export default function LoginPage() {
         <Container maxWidth="sm">
           <Card elevation={4}>
             <CardContent sx={{ p: 5 }}>
-              <Typography variant="h4" align="center" gutterBottom fontWeight={700}>
-                {derivedMode === 'login' ? 'Welcome Back' : 'Create Account'}
-              </Typography>
-              <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  type="email"
-                  value={email}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                  required
-                  margin="normal"
+              {show2FA ? (
+                // Show 2FA verification form
+                <TwoFactorAuth
+                  method={twoFactorMethod}
+                  sessionId={twoFactorSessionId}
+                  onVerify={handle2FAVerify}
+                  onResendEmail={twoFactorMethod === 'email' ? handle2FAResend : undefined}
+                  loading={twoFactorLoading}
+                  error={error}
+                  onBack={handle2FABack}
                 />
-                {derivedMode === 'signup' && (
-                  <TextField
-                    fullWidth
-                    label="Username"
-                    value={username}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-                    required
-                    margin="normal"
-                  />
-                )}
-                <TextField
-                  fullWidth
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                  required
-                  margin="normal"
-                />
-                
-                {/* Turnstile Widget */}
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', minHeight: 65 }}>
-                  {turnstileStatus === 'loading' && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                      <CircularProgress size={20} />
-                      <Typography variant="body2">Loading security check...</Typography>
+              ) : (
+                // Show login/signup form
+                <>
+                  <Typography variant="h4" align="center" gutterBottom fontWeight={700}>
+                    {derivedMode === 'login' ? 'Welcome Back' : 'Create Account'}
+                  </Typography>
+                  <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+                    <TextField
+                      fullWidth
+                      label="Email"
+                      type="email"
+                      value={email}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                      required
+                      margin="normal"
+                    />
+                    {derivedMode === 'signup' && (
+                      <TextField
+                        fullWidth
+                        label="Username"
+                        value={username}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
+                        required
+                        margin="normal"
+                      />
+                    )}
+                    <TextField
+                      fullWidth
+                      label="Password"
+                      type="password"
+                      value={password}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                      required
+                      margin="normal"
+                    />
+                    
+                    {/* Turnstile Widget */}
+                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', minHeight: 65 }}>
+                      {turnstileStatus === 'loading' && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                          <CircularProgress size={20} />
+                          <Typography variant="body2">Loading security check...</Typography>
+                        </Box>
+                      )}
+                      <Turnstile
+                        ref={turnstileRef}
+                        siteKey={TURNSTILE_SITE_KEY}
+                        onSuccess={(token) => {
+                          setTurnstileToken(token);
+                          setTurnstileStatus('ready');
+                        }}
+                        onError={() => {
+                          setTurnstileStatus('error');
+                          setError('Security verification failed to load. Please refresh the page.');
+                        }}
+                        onExpire={() => {
+                          setTurnstileToken(null);
+                          // Widget auto-refreshes, but we could manually reset if needed
+                        }}
+                        onLoad={() => {
+                          setTurnstileStatus('ready');
+                        }}
+                        options={{
+                          theme: 'light',
+                          size: 'normal',
+                        }}
+                      />
                     </Box>
-                  )}
-                  <Turnstile
-                    ref={turnstileRef}
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => {
-                      setTurnstileToken(token);
-                      setTurnstileStatus('ready');
-                    }}
-                    onError={() => {
-                      setTurnstileStatus('error');
-                      setError('Security verification failed to load. Please refresh the page.');
-                    }}
-                    onExpire={() => {
-                      setTurnstileToken(null);
-                      // Widget auto-refreshes, but we could manually reset if needed
-                    }}
-                    onLoad={() => {
-                      setTurnstileStatus('ready');
-                    }}
-                    options={{
-                      theme: 'light',
-                      size: 'normal',
-                    }}
-                  />
-                </Box>
 
-                {error && (
-                  <Alert severity="error" sx={{ mt: 2 }}>
-                    {error}
-                  </Alert>
-                )}
-                {!error && sessionExpired && (
-                  <Alert severity="error" sx={{ mt: 2 }}>
-                    Your session has expired. Please log in again.
-                  </Alert>
-                )}
-                {turnstileStatus === 'error' && !error && (
-                  <Alert severity="warning" sx={{ mt: 2 }}>
-                    Security verification unavailable. Please refresh the page.
-                  </Alert>
-                )}
-                
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  type="submit"
-                  disabled={!canSubmit}
-                  sx={{ mt: 3 }}
-                >
-                  {loading ? 'Please wait...' : derivedMode === 'login' ? 'Login' : 'Sign Up'}
-                </Button>
-              </Box>
-              <Box textAlign="center" mt={3}>
-                <Typography variant="body2" color="text.secondary">
-                  {derivedMode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-                  <MuiLink
-                    component="button"
-                    variant="body2"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.preventDefault();
-                      resetTurnstile(); // Reset when switching modes
-                      router.replace({
-                        pathname: router.pathname,
-                        query: {
-                          ...router.query,
-                          signup: derivedMode === 'login' ? 'true' : undefined
-                        }
-                      });
-                    }}
-                  >
-                    {derivedMode === 'login' ? 'Sign Up' : 'Login'}
-                  </MuiLink>
-                </Typography>
-              </Box>
-              {derivedMode === 'login' && (
-                <Alert severity="info" sx={{ mt: 3 }}>
-                  <Typography variant="caption" display="block">
-                    <strong>Demo credentials:</strong>
-                  </Typography>
-                  <Typography variant="caption" component="pre" sx={{ fontFamily: 'monospace' }}>
-                    Email: demo@example.com{'\n'}
-                    Password: password123
-                  </Typography>
-                </Alert>
+                    {error && (
+                      <Alert severity="error" sx={{ mt: 2 }}>
+                        {error}
+                      </Alert>
+                    )}
+                    {!error && sessionExpired && (
+                      <Alert severity="error" sx={{ mt: 2 }}>
+                        Your session has expired. Please log in again.
+                      </Alert>
+                    )}
+                    {turnstileStatus === 'error' && !error && (
+                      <Alert severity="warning" sx={{ mt: 2 }}>
+                        Security verification unavailable. Please refresh the page.
+                      </Alert>
+                    )}
+                    
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      size="large"
+                      type="submit"
+                      disabled={!canSubmit}
+                      sx={{ mt: 3 }}
+                    >
+                      {loading ? 'Please wait...' : derivedMode === 'login' ? 'Login' : 'Sign Up'}
+                    </Button>
+                  </Box>
+                  <Box textAlign="center" mt={3}>
+                    <Typography variant="body2" color="text.secondary">
+                      {derivedMode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                      <MuiLink
+                        component="button"
+                        variant="body2"
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.preventDefault();
+                          resetTurnstile(); // Reset when switching modes
+                          router.replace({
+                            pathname: router.pathname,
+                            query: {
+                              ...router.query,
+                              signup: derivedMode === 'login' ? 'true' : undefined
+                            }
+                          });
+                        }}
+                      >
+                        {derivedMode === 'login' ? 'Sign Up' : 'Login'}
+                      </MuiLink>
+                    </Typography>
+                  </Box>
+                  {derivedMode === 'login' && (
+                    <Alert severity="info" sx={{ mt: 3 }}>
+                      <Typography variant="caption" display="block">
+                        <strong>Demo credentials:</strong>
+                      </Typography>
+                      <Typography variant="caption" component="pre" sx={{ fontFamily: 'monospace' }}>
+                        Email: demo@example.com{'\n'}
+                        Password: password123
+                      </Typography>
+                    </Alert>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

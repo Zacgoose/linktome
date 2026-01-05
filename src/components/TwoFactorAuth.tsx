@@ -1,0 +1,223 @@
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  CircularProgress,
+  Link as MuiLink,
+  Stack,
+  Paper,
+} from '@mui/material';
+import { Email as EmailIcon, Security as SecurityIcon } from '@mui/icons-material';
+
+interface TwoFactorAuthProps {
+  method: 'email' | 'totp';
+  sessionId: string;
+  onVerify: (token: string, sessionId: string) => void;
+  onResendEmail?: () => void;
+  loading?: boolean;
+  error?: string;
+  onBack?: () => void;
+}
+
+export default function TwoFactorAuth({
+  method,
+  sessionId,
+  onVerify,
+  onResendEmail,
+  loading = false,
+  error = '',
+  onBack,
+}: TwoFactorAuthProps) {
+  const [token, setToken] = useState<string>('');
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const cooldownInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-focus first input on mount
+  useEffect(() => {
+    if (inputRefs.current[0]) {
+      inputRefs.current[0].focus();
+    }
+  }, []);
+
+  // Cleanup cooldown interval on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownInterval.current) {
+        clearInterval(cooldownInterval.current);
+      }
+    };
+  }, []);
+
+  const handleTokenChange = (index: number, value: string) => {
+    // Only allow digits
+    const digit = value.replace(/\D/g, '').slice(0, 1);
+    
+    const newToken = token.split('');
+    newToken[index] = digit;
+    const updatedToken = newToken.join('').slice(0, 6);
+    setToken(updatedToken);
+
+    // Auto-focus next input
+    if (digit && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Backspace' && !token[index] && index > 0) {
+      // Move to previous input on backspace if current is empty
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'Enter' && token.length === 6) {
+      handleSubmit(e as any);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    setToken(pastedData);
+    
+    // Focus the last filled input or the first empty one
+    const nextIndex = Math.min(pastedData.length, 5);
+    inputRefs.current[nextIndex]?.focus();
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (token.length === 6 && !loading) {
+      onVerify(token, sessionId);
+    }
+  };
+
+  const handleResend = () => {
+    if (onResendEmail && resendCooldown === 0) {
+      onResendEmail();
+      setResendCooldown(60);
+      cooldownInterval.current = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            if (cooldownInterval.current) {
+              clearInterval(cooldownInterval.current);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  };
+
+  const canSubmit = token.length === 6 && !loading;
+
+  return (
+    <Box component="form" onSubmit={handleSubmit}>
+      <Box sx={{ textAlign: 'center', mb: 3 }}>
+        {method === 'email' ? (
+          <EmailIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+        ) : (
+          <SecurityIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+        )}
+        <Typography variant="h5" fontWeight={700} gutterBottom>
+          Two-Factor Authentication
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {method === 'email'
+            ? 'Enter the 6-digit code sent to your email'
+            : 'Enter the 6-digit code from your authenticator app'}
+        </Typography>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Stack direction="row" spacing={1.5} justifyContent="center" sx={{ mb: 3 }}>
+        {[0, 1, 2, 3, 4, 5].map((index) => (
+          <TextField
+            key={index}
+            inputRef={(el) => (inputRefs.current[index] = el)}
+            value={token[index] || ''}
+            onChange={(e) => handleTokenChange(index, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(index, e)}
+            onPaste={handlePaste}
+            inputProps={{
+              maxLength: 1,
+              style: {
+                textAlign: 'center',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                padding: '12px 0',
+              },
+            }}
+            sx={{
+              width: 56,
+              '& input': {
+                textAlign: 'center',
+              },
+            }}
+            variant="outlined"
+            disabled={loading}
+          />
+        ))}
+      </Stack>
+
+      <Button
+        fullWidth
+        variant="contained"
+        size="large"
+        type="submit"
+        disabled={!canSubmit}
+        sx={{ mb: 2 }}
+      >
+        {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify'}
+      </Button>
+
+      {method === 'email' && onResendEmail && (
+        <Box textAlign="center" sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            Didn't receive the code?{' '}
+            {resendCooldown > 0 ? (
+              <Typography component="span" variant="body2" color="text.disabled">
+                Resend in {resendCooldown}s
+              </Typography>
+            ) : (
+              <MuiLink
+                component="button"
+                variant="body2"
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  e.preventDefault();
+                  handleResend();
+                }}
+                disabled={loading}
+              >
+                Resend Code
+              </MuiLink>
+            )}
+          </Typography>
+        </Box>
+      )}
+
+      {onBack && (
+        <Box textAlign="center">
+          <MuiLink
+            component="button"
+            variant="body2"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.preventDefault();
+              onBack();
+            }}
+            disabled={loading}
+          >
+            Back to login
+          </MuiLink>
+        </Box>
+      )}
+    </Box>
+  );
+}
