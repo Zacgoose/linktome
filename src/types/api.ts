@@ -25,6 +25,9 @@ export interface UserAuth {
   permissions: string[];
   userManagements: UserManagement[];
   tier?: UserTier; // User's subscription tier
+  twoFactorEnabled?: boolean; // Whether user has 2FA enabled
+  twoFactorEmailEnabled?: boolean; // Whether email 2FA is enabled
+  twoFactorTotpEnabled?: boolean; // Whether TOTP 2FA is enabled
 }
 
 /**

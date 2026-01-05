@@ -18,6 +18,7 @@ import { useApiPost } from '@/hooks/useApiQuery';
 import { useAuthContext } from '@/providers/AuthProvider';
 import type { LoginResponse, TwoFactorVerifyRequest } from '@/types/api';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
+import TwoFactorSetupPrompt from '@/components/TwoFactorSetupPrompt';
 
 // Use test key in development, real key in production
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
@@ -42,6 +43,10 @@ export default function LoginPage() {
   const [show2FA, setShow2FA] = useState<boolean>(false);
   const [twoFactorMethod, setTwoFactorMethod] = useState<'email' | 'totp' | 'both'>('email');
   const [twoFactorSessionId, setTwoFactorSessionId] = useState<string>('');
+  
+  // 2FA setup prompt state
+  const [showSetupPrompt, setShowSetupPrompt] = useState<boolean>(false);
+  const [pendingUser, setPendingUser] = useState<any>(null);
 
   const sessionExpired = router.query.session === 'expired';
 
@@ -56,7 +61,14 @@ export default function LoginPage() {
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
-        router.push('/admin/dashboard');
+        
+        // Check if user should be prompted to setup 2FA
+        if (!data.user.twoFactorEnabled) {
+          setPendingUser(data.user);
+          setShowSetupPrompt(true);
+        } else {
+          router.push('/admin/dashboard');
+        }
       }
     },
     onError: (error: string) => {
@@ -86,7 +98,14 @@ export default function LoginPage() {
       } else if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
-        router.push('/admin/dashboard');
+        
+        // Check if user should be prompted to setup 2FA
+        if (!data.user.twoFactorEnabled) {
+          setPendingUser(data.user);
+          setShowSetupPrompt(true);
+        } else {
+          router.push('/admin/dashboard');
+        }
       }
     },
     onError: (error: string) => {
@@ -106,7 +125,14 @@ export default function LoginPage() {
       } else if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
-        router.push('/admin/dashboard');
+        
+        // Check if user should be prompted to setup 2FA
+        if (!data.user.twoFactorEnabled) {
+          setPendingUser(data.user);
+          setShowSetupPrompt(true);
+        } else {
+          router.push('/admin/dashboard');
+        }
       }
     },
     onError: (error: string) => {
@@ -163,6 +189,19 @@ export default function LoginPage() {
     setTwoFactorSessionId('');
     setError('');
     resetTurnstile();
+  };
+
+  const handleSetup2FA = () => {
+    setShowSetupPrompt(false);
+    // Navigate to a 2FA setup page (to be created) or settings
+    router.push('/admin/settings?tab=security&action=setup2fa');
+  };
+
+  const handleSkip2FA = () => {
+    setShowSetupPrompt(false);
+    setPendingUser(null);
+    // Continue to dashboard
+    router.push('/admin/dashboard');
   };
 
   const loading = loginMutation.isPending || signupMutation.isPending || verify2FAMutation.isPending;
@@ -329,6 +368,14 @@ export default function LoginPage() {
           </Card>
         </Container>
       </Box>
+      
+      {/* 2FA Setup Prompt */}
+      <TwoFactorSetupPrompt
+        open={showSetupPrompt}
+        onClose={handleSkip2FA}
+        onSetup={handleSetup2FA}
+        onSkip={handleSkip2FA}
+      />
     </>
   );
 }
