@@ -50,7 +50,8 @@ export interface UserManagement {
 export interface LoginResponse {
   user: UserAuth;
   requires2FA?: boolean;
-  twoFactorMethod?: 'email' | 'totp';
+  twoFactorMethod?: 'email' | 'totp' | 'both';
+  availableMethods?: ('email' | 'totp')[]; // Array of available 2FA methods when user has multiple enabled
   sessionId?: string;
 }
 

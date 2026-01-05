@@ -14,8 +14,7 @@ import { Email as EmailIcon, Security as SecurityIcon } from '@mui/icons-materia
 
 interface TwoFactorAuthProps {
   method: 'email' | 'totp';
-  sessionId: string;
-  onVerify: (token: string, sessionId: string) => void;
+  onVerify: (token: string) => void;
   onResendEmail?: () => void;
   loading?: boolean;
   error?: string;
@@ -24,7 +23,6 @@ interface TwoFactorAuthProps {
 
 export default function TwoFactorAuth({
   method,
-  sessionId,
   onVerify,
   onResendEmail,
   loading = false,
@@ -89,7 +87,7 @@ export default function TwoFactorAuth({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (token.length === 6 && !loading) {
-      onVerify(token, sessionId);
+      onVerify(token);
     }
   };
 

@@ -40,7 +40,7 @@ export default function LoginPage() {
 
   // 2FA state
   const [show2FA, setShow2FA] = useState<boolean>(false);
-  const [twoFactorMethod, setTwoFactorMethod] = useState<'email' | 'totp'>('email');
+  const [twoFactorMethod, setTwoFactorMethod] = useState<'email' | 'totp' | 'both'>('email');
   const [twoFactorSessionId, setTwoFactorSessionId] = useState<string>('');
 
   const sessionExpired = router.query.session === 'expired';
@@ -138,13 +138,13 @@ export default function LoginPage() {
     }
   };
 
-  const handle2FAVerify = (token: string, sessionId: string) => {
+  const handle2FAVerify = (token: string) => {
     verify2FAMutation.mutate({
       url: 'public/2fatoken?action=verify',
       data: {
-        sessionId,
+        sessionId: twoFactorSessionId,
         token,
-        method: twoFactorMethod,
+        method: twoFactorMethod === 'both' ? 'email' : twoFactorMethod, // Default to email when both are available
       },
     });
   };
@@ -187,10 +187,9 @@ export default function LoginPage() {
               {show2FA ? (
                 // Show 2FA verification form
                 <TwoFactorAuth
-                  method={twoFactorMethod}
-                  sessionId={twoFactorSessionId}
+                  method={twoFactorMethod === 'both' ? 'email' : twoFactorMethod}
                   onVerify={handle2FAVerify}
-                  onResendEmail={twoFactorMethod === 'email' ? handle2FAResend : undefined}
+                  onResendEmail={twoFactorMethod === 'email' || twoFactorMethod === 'both' ? handle2FAResend : undefined}
                   loading={verify2FAMutation.isPending}
                   error={error}
                   onBack={handle2FABack}

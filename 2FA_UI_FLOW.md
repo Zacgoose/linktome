@@ -96,6 +96,86 @@ Same flow as login, but starts from signup form:
 6. New code sent to email
 7. User enters new code and verifies
 
+### Scenario 5: User with Both Methods Enabled (Dual 2FA)
+
+1. **Login Page** (`/login`)
+   - User enters email and password
+   - Completes Turnstile security check
+   - Clicks "Login" button
+
+2. **Backend Returns 2FA Challenge with Both Methods**
+   - Response: `{ requires2FA: true, twoFactorMethod: "both", availableMethods: ["email", "totp"], sessionId: '...' }`
+   - Email code is sent automatically
+   - Frontend shows 2FA verification page
+
+3. **2FA Verification Page** (Current Implementation)
+   - Shows email icon and instructions by default
+   - Displays: "Enter the 6-digit code sent to your email"
+   - User can enter EITHER:
+     - The 6-digit code from their email
+     - The 6-digit code from their authenticator app
+   - Backend will accept whichever code is valid
+   - "Resend Code" link available (only resends email)
+
+4. **User Actions:**
+   - Option A: Check email, enter email code, verify ✓
+   - Option B: Open authenticator app, enter TOTP code, verify ✓
+   - Both work equally well
+   - If incorrect code: Error message, can retry with either method
+
+5. **Future Enhancement**:
+   - Show "Use authenticator app instead" link
+   - Allow user to switch methods
+   - UI updates to show TOTP instructions when switched
+   - Remember user's preference for next login
+
+### Scenario 6: Switching Methods (Future Feature)
+
+1. User is on 2FA verification page with both methods available
+2. Currently showing email input
+3. Clicks "Use authenticator app instead" link
+4. UI updates:
+   - Changes icon from email to security/lock
+   - Updates text: "Enter the 6-digit code from your authenticator app"
+   - Hides "Resend Code" link (not applicable to TOTP)
+5. User enters TOTP code from their app
+6. Clicks "Verify"
+7. If needed, can click "Use email code instead" to switch back
+
+### Scenario 5: User with Both Methods Enabled
+
+1. **Login Page** (`/login`)
+   - User enters email and password
+   - Completes Turnstile security check
+   - Clicks "Login" button
+
+2. **Backend Returns 2FA Challenge with Both Methods**
+   - Response: `{ requires2FA: true, twoFactorMethod: "both", availableMethods: ["email", "totp"], sessionId: '...' }`
+   - Email code is sent automatically
+   - Frontend shows 2FA verification page
+
+3. **2FA Verification Page** (Current Implementation)
+   - Shows email icon and instructions by default
+   - User can enter EITHER:
+     - The 6-digit code from their email
+     - The 6-digit code from their authenticator app
+   - Backend will accept whichever code is valid
+
+4. **Future Enhancement**:
+   - Show "Use authenticator app instead" link
+   - Allow user to switch between methods
+   - UI changes to show TOTP instructions when switched
+   - Remember user's preference for next login
+
+### Scenario 6: Switching Methods (Future Feature)
+
+1. User is on 2FA verification page with both methods available
+2. Currently showing email input
+3. Clicks "Use authenticator app instead" link
+4. UI updates to show TOTP instructions and icon
+5. User enters TOTP code from their app
+6. If needed, can click "Use email code instead" to switch back
+
 ## Code Structure
 
 ### Login Page State Management
@@ -207,10 +287,20 @@ const [twoFactorLoading, setTwoFactorLoading] = useState<boolean>(false);
 
 ## Future Enhancements
 
-1. **TOTP Setup Flow**: Allow users to enable TOTP in settings
-2. **Backup Codes**: Generate and display backup codes
-3. **Remember Device**: Option to skip 2FA on trusted devices
-4. **SMS 2FA**: Add SMS as a third method
-5. **Recovery Options**: Account recovery if 2FA device lost
-6. **2FA Management**: Enable/disable 2FA in user settings
-7. **Activity Log**: Show where and when 2FA was used
+1. **Method Selection UI**: Allow users to choose between email and TOTP when both are enabled
+   - Add "Use authenticator app instead" / "Use email code instead" toggle
+   - Update icons and instructions based on selected method
+   - Only show "Resend Code" for email method
+   
+2. **TOTP Setup Flow**: Allow users to enable TOTP in settings
+3. **Backup Codes**: Generate and display backup codes
+4. **Remember Device**: Option to skip 2FA on trusted devices
+5. **SMS 2FA**: Add SMS as a third method
+6. **Recovery Options**: Account recovery if 2FA device lost
+7. **2FA Management**: Enable/disable individual methods in user settings
+   - Toggle email 2FA on/off
+   - Toggle TOTP 2FA on/off
+   - Require at least one method to be enabled
+8. **Activity Log**: Show where and when 2FA was used
+9. **Preferred Method**: Let users set their default/preferred 2FA method
+10. **Multi-Method Indicator**: Show badge/icon indicating both methods are available
