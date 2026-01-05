@@ -271,12 +271,6 @@ export default function LoginPage() {
                     
                     {/* Turnstile Widget */}
                     <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', minHeight: 65 }}>
-                      {turnstileStatus === 'loading' && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                          <CircularProgress size={20} />
-                          <Typography variant="body2">Loading security check...</Typography>
-                        </Box>
-                      )}
                       <Turnstile
                         ref={turnstileRef}
                         siteKey={TURNSTILE_SITE_KEY}
