@@ -19,6 +19,7 @@ import { useAuthContext } from '@/providers/AuthProvider';
 import type { LoginResponse, TwoFactorVerifyRequest } from '@/types/api';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
 import TwoFactorSetupPrompt from '@/components/TwoFactorSetupPrompt';
+import TwoFactorSetupWizard from '@/components/TwoFactorSetupWizard';
 
 // Use test key in development, real key in production
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
@@ -46,6 +47,7 @@ export default function LoginPage() {
   
   // 2FA setup prompt state
   const [showSetupPrompt, setShowSetupPrompt] = useState<boolean>(false);
+  const [showSetupWizard, setShowSetupWizard] = useState<boolean>(false);
   const [pendingUser, setPendingUser] = useState<any>(null);
 
   const sessionExpired = router.query.session === 'expired';
@@ -193,14 +195,27 @@ export default function LoginPage() {
 
   const handleSetup2FA = () => {
     setShowSetupPrompt(false);
-    // Navigate to a 2FA setup page (to be created) or settings
-    router.push('/admin/settings?tab=security&action=setup2fa');
+    // Show the setup wizard
+    setShowSetupWizard(true);
   };
 
   const handleSkip2FA = () => {
     setShowSetupPrompt(false);
     setPendingUser(null);
     // Continue to dashboard
+    router.push('/admin/dashboard');
+  };
+
+  const handleSetupComplete = () => {
+    setShowSetupWizard(false);
+    setPendingUser(null);
+    // Continue to dashboard after setup is complete
+    router.push('/admin/dashboard');
+  };
+
+  const handleSetupCancel = () => {
+    setShowSetupWizard(false);
+    // Continue to dashboard even if they cancel during setup
     router.push('/admin/dashboard');
   };
 
@@ -369,6 +384,13 @@ export default function LoginPage() {
         onClose={handleSkip2FA}
         onSetup={handleSetup2FA}
         onSkip={handleSkip2FA}
+      />
+      
+      {/* 2FA Setup Wizard */}
+      <TwoFactorSetupWizard
+        open={showSetupWizard}
+        onClose={handleSetupCancel}
+        onComplete={handleSetupComplete}
       />
     </>
   );
