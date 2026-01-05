@@ -9,12 +9,13 @@ import {
   Link as MuiLink,
   Stack,
   Paper,
+  Collapse,
 } from '@mui/material';
-import { Email as EmailIcon, Security as SecurityIcon } from '@mui/icons-material';
+import { Email as EmailIcon, Security as SecurityIcon, VpnKey as KeyIcon } from '@mui/icons-material';
 
 interface TwoFactorAuthProps {
   method: 'email' | 'totp';
-  onVerify: (token: string) => void;
+  onVerify: (token: string, type?: 'email' | 'totp' | 'backup') => void;
   onResendEmail?: () => void;
   loading?: boolean;
   error?: string;
@@ -30,6 +31,8 @@ export default function TwoFactorAuth({
   onBack,
 }: TwoFactorAuthProps) {
   const [token, setToken] = useState<string>('');
+  const [showBackupInput, setShowBackupInput] = useState<boolean>(false);
+  const [backupCode, setBackupCode] = useState<string>('');
   const [resendCooldown, setResendCooldown] = useState<number>(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const cooldownInterval = useRef<NodeJS.Timeout | null>(null);
@@ -87,7 +90,14 @@ export default function TwoFactorAuth({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (token.length === 6 && !loading) {
-      onVerify(token);
+      onVerify(token, method);
+    }
+  };
+
+  const handleBackupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (backupCode.length >= 6 && !loading) {
+      onVerify(backupCode, 'backup');
     }
   };
 
@@ -110,110 +120,226 @@ export default function TwoFactorAuth({
   };
 
   const canSubmit = token.length === 6 && !loading;
+  const canSubmitBackup = backupCode.length >= 6 && !loading;
 
   return (
-    <Box component="form" onSubmit={handleSubmit}>
-      <Box sx={{ textAlign: 'center', mb: 3 }}>
-        {method === 'email' ? (
-          <EmailIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-        ) : (
-          <SecurityIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-        )}
-        <Typography variant="h5" fontWeight={700} gutterBottom>
-          Two-Factor Authentication
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {method === 'email'
-            ? 'Enter the 6-digit code sent to your email'
-            : 'Enter the 6-digit code from your authenticator app'}
-        </Typography>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Stack direction="row" spacing={1.5} justifyContent="center" sx={{ mb: 3 }}>
-        {[0, 1, 2, 3, 4, 5].map((index) => (
-          <TextField
-            key={index}
-            inputRef={(el) => (inputRefs.current[index] = el)}
-            value={token[index] || ''}
-            onChange={(e) => handleTokenChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            onPaste={handlePaste}
-            inputProps={{
-              maxLength: 1,
-              style: {
-                textAlign: 'center',
-                fontSize: '24px',
-                fontWeight: 'bold',
-                padding: '12px 0',
-              },
-            }}
-            sx={{
-              width: 56,
-              '& input': {
-                textAlign: 'center',
-              },
-            }}
-            variant="outlined"
-            disabled={loading}
-          />
-        ))}
-      </Stack>
-
-      <Button
-        fullWidth
-        variant="contained"
-        size="large"
-        type="submit"
-        disabled={!canSubmit}
-        sx={{ mb: 2 }}
-      >
-        {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify'}
-      </Button>
-
-      {method === 'email' && onResendEmail && (
-        <Box textAlign="center" sx={{ mb: 2 }}>
-          <Typography variant="body2" color="text.secondary">
-            Didn't receive the code?{' '}
-            {resendCooldown > 0 ? (
-              <Typography component="span" variant="body2" color="text.disabled">
-                Resend in {resendCooldown}s
-              </Typography>
+    <Box>
+      {!showBackupInput ? (
+        <Box component="form" onSubmit={handleSubmit}>
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            {method === 'email' ? (
+              <EmailIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
             ) : (
+              <SecurityIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+            )}
+            <Typography variant="h5" fontWeight={700} gutterBottom>
+              Two-Factor Authentication
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {method === 'email'
+                ? 'Enter the 6-digit code sent to your email'
+                : 'Enter the 6-digit code from your authenticator app'}
+            </Typography>
+          </Box>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Stack direction="row" spacing={1.5} justifyContent="center" sx={{ mb: 3 }}>
+            {[0, 1, 2, 3, 4, 5].map((index) => (
+              <TextField
+                key={index}
+                inputRef={(el) => (inputRefs.current[index] = el)}
+                value={token[index] || ''}
+                onChange={(e) => handleTokenChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={handlePaste}
+                inputProps={{
+                  maxLength: 1,
+                  style: {
+                    textAlign: 'center',
+                    fontSize: '24px',
+                    fontWeight: 'bold',
+                    padding: '12px 0',
+                  },
+                }}
+                sx={{
+                  width: 56,
+                  '& input': {
+                    textAlign: 'center',
+                  },
+                }}
+                variant="outlined"
+                disabled={loading}
+              />
+            ))}
+          </Stack>
+
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            type="submit"
+            disabled={!canSubmit}
+            sx={{ mb: 2 }}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify'}
+          </Button>
+
+          {method === 'email' && onResendEmail && (
+            <Box textAlign="center" sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Didn't receive the code?{' '}
+                {resendCooldown > 0 ? (
+                  <Typography component="span" variant="body2" color="text.disabled">
+                    Resend in {resendCooldown}s
+                  </Typography>
+                ) : (
+                  <MuiLink
+                    component="button"
+                    variant="body2"
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      e.preventDefault();
+                      handleResend();
+                    }}
+                    disabled={loading}
+                  >
+                    Resend Code
+                  </MuiLink>
+                )}
+              </Typography>
+            </Box>
+          )}
+
+          {/* Backup code option - only show for TOTP */}
+          {method === 'totp' && (
+            <Box textAlign="center" sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Lost access to your authenticator?{' '}
+                <MuiLink
+                  component="button"
+                  variant="body2"
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    setShowBackupInput(true);
+                  }}
+                  disabled={loading}
+                >
+                  Use backup code
+                </MuiLink>
+              </Typography>
+            </Box>
+          )}
+
+          {onBack && (
+            <Box textAlign="center">
               <MuiLink
                 component="button"
                 variant="body2"
                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                   e.preventDefault();
-                  handleResend();
+                  onBack();
                 }}
                 disabled={loading}
               >
-                Resend Code
+                Back to login
               </MuiLink>
-            )}
-          </Typography>
+            </Box>
+          )}
         </Box>
-      )}
+      ) : (
+        <Box component="form" onSubmit={handleBackupSubmit}>
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <KeyIcon sx={{ fontSize: 48, color: 'warning.main', mb: 2 }} />
+            <Typography variant="h5" fontWeight={700} gutterBottom>
+              Use Backup Code
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Enter one of your backup recovery codes
+            </Typography>
+          </Box>
 
-      {onBack && (
-        <Box textAlign="center">
-          <MuiLink
-            component="button"
-            variant="body2"
-            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-              e.preventDefault();
-              onBack();
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              Each backup code can only be used once. After using a code, you'll have one less backup code available.
+            </Typography>
+          </Alert>
+
+          <TextField
+            fullWidth
+            label="Backup Code"
+            placeholder="XXXXXXXX"
+            value={backupCode}
+            onChange={(e) => setBackupCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+            inputProps={{
+              style: {
+                textAlign: 'center',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                letterSpacing: '2px',
+                fontFamily: 'monospace',
+              },
             }}
+            sx={{ mb: 3 }}
+            autoFocus
             disabled={loading}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && canSubmitBackup) {
+                handleBackupSubmit(e as any);
+              }
+            }}
+          />
+
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            type="submit"
+            disabled={!canSubmitBackup}
+            sx={{ mb: 2 }}
           >
-            Back to login
-          </MuiLink>
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify Backup Code'}
+          </Button>
+
+          <Box textAlign="center" sx={{ mb: 2 }}>
+            <MuiLink
+              component="button"
+              variant="body2"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.preventDefault();
+                setShowBackupInput(false);
+                setBackupCode('');
+              }}
+              disabled={loading}
+            >
+              Back to authenticator code
+            </MuiLink>
+          </Box>
+
+          {onBack && (
+            <Box textAlign="center">
+              <MuiLink
+                component="button"
+                variant="body2"
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  e.preventDefault();
+                  onBack();
+                }}
+                disabled={loading}
+              >
+                Back to login
+              </MuiLink>
+            </Box>
+          )}
         </Box>
       )}
     </Box>
