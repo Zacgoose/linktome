@@ -8,6 +8,13 @@ The 2FA implementation supports two methods:
 - **Email OTP**: 6-digit code sent via email
 - **TOTP**: Time-based One-Time Password using authenticator apps (Google Authenticator, Authy, etc.)
 
+## API Endpoint Structure
+
+All 2FA operations use a **single endpoint** with URL query parameters:
+- **Base endpoint**: `POST /api/public/2fatoken`
+- **Action parameter**: `?action=verify` or `?action=resend`
+- The PowerShell function should use switch statements based on the `action` parameter
+
 ## Required API Endpoints
 
 ### 1. Modify Existing Login/Signup Endpoints
@@ -54,7 +61,7 @@ When a user attempts to login/signup and has 2FA enabled, instead of immediately
 
 ### 2. Verify 2FA Token
 
-**Endpoint**: `POST /api/public/2fatoken/verify`
+**Endpoint**: `POST /api/public/2fatoken?action=verify`
 
 **Purpose**: Verify the 2FA code provided by the user and complete the authentication
 
@@ -117,7 +124,7 @@ When a user attempts to login/signup and has 2FA enabled, instead of immediately
 
 ### 3. Resend Email 2FA Code
 
-**Endpoint**: `POST /api/public/2fatoken/resend`
+**Endpoint**: `POST /api/public/2fatoken?action=resend`
 
 **Purpose**: Resend the 2FA code via email (only applicable for email method)
 
@@ -166,13 +173,81 @@ When a user attempts to login/signup and has 2FA enabled, instead of immediately
 
 ---
 
+## PowerShell Implementation Example
+
+The PowerShell Azure Function should use a switch statement to handle different actions:
+
+```powershell
+param($Request, $TriggerMetadata)
+
+# Get the action from query parameters
+$action = $Request.Query.action
+
+# Switch based on action
+switch ($action) {
+    "verify" {
+        # Handle 2FA verification
+        $sessionId = $Request.Body.sessionId
+        $token = $Request.Body.token
+        $method = $Request.Body.method
+        
+        # Verify the token and complete authentication
+        # ... verification logic ...
+        
+        if ($verificationSuccessful) {
+            $body = @{
+                user = @{
+                    UserId = "..."
+                    email = "..."
+                    # ... other user fields ...
+                }
+            }
+            Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+                StatusCode = [HttpStatusCode]::OK
+                Body = $body | ConvertTo-Json
+            })
+        } else {
+            $body = @{ error = "Invalid verification code" }
+            Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+                StatusCode = [HttpStatusCode]::BadRequest
+                Body = $body | ConvertTo-Json
+            })
+        }
+    }
+    
+    "resend" {
+        # Handle resending email code
+        $sessionId = $Request.Body.sessionId
+        
+        # Resend the email code
+        # ... resend logic ...
+        
+        $body = @{ message = "Code resent successfully" }
+        Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+            StatusCode = [HttpStatusCode]::OK
+            Body = $body | ConvertTo-Json
+        })
+    }
+    
+    default {
+        $body = @{ error = "Invalid action parameter" }
+        Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+            StatusCode = [HttpStatusCode]::BadRequest
+            Body = $body | ConvertTo-Json
+        })
+    }
+}
+```
+
+---
+
 ## Future Endpoints (Optional - For TOTP Setup)
 
 These endpoints would be needed for users to enable TOTP 2FA in their account settings:
 
 ### 4. Setup TOTP (Get QR Code)
 
-**Endpoint**: `GET /api/protected/2fatoken/setup-totp`
+**Endpoint**: `GET /api/protected/2fatoken?action=setup-totp`
 
 **Purpose**: Generate TOTP secret and QR code for user to scan with authenticator app
 
@@ -191,7 +266,7 @@ These endpoints would be needed for users to enable TOTP 2FA in their account se
 
 ### 5. Enable TOTP
 
-**Endpoint**: `POST /api/protected/2fatoken/enable-totp`
+**Endpoint**: `POST /api/protected/2fatoken?action=enable-totp`
 
 **Purpose**: Verify TOTP setup and enable 2FA for the user
 
@@ -287,5 +362,14 @@ LinkToMe Team
 - Login/Signup pages updated
 - API types defined
 - State management implemented
+- **Uses URL query parameters**: `?action=verify` and `?action=resend`
 
-⏳ Awaiting backend implementation at `/api/public/2fatoken/`
+⏳ Awaiting backend implementation at `/api/public/2fatoken?action=<action>`
+
+### Frontend API Calls
+
+The frontend makes these calls:
+1. `POST /api/public/2fatoken?action=verify` with body: `{ sessionId, token, method }`
+2. `POST /api/public/2fatoken?action=resend` with body: `{ sessionId }`
+
+The PowerShell function should parse the `action` query parameter and use switch/case logic to handle different actions.

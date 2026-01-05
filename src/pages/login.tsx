@@ -140,7 +140,7 @@ export default function LoginPage() {
 
   const handle2FAVerify = (token: string, sessionId: string) => {
     verify2FAMutation.mutate({
-      url: 'public/2fatoken/verify',
+      url: 'public/2fatoken?action=verify',
       data: {
         sessionId,
         token,
@@ -151,7 +151,7 @@ export default function LoginPage() {
 
   const handle2FAResend = () => {
     resend2FAMutation.mutate({
-      url: 'public/2fatoken/resend',
+      url: 'public/2fatoken?action=resend',
       data: {
         sessionId: twoFactorSessionId,
       },
