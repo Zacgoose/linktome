@@ -144,7 +144,7 @@ export default function LoginPage() {
       data: {
         sessionId: twoFactorSessionId,
         token,
-        method: twoFactorMethod === 'both' ? 'email' : twoFactorMethod, // Default to email when both are available
+        method: twoFactorMethod === 'both' ? 'totp' : twoFactorMethod, // Default to TOTP when both are available (avoid unnecessary emails)
       },
     });
   };
@@ -187,7 +187,7 @@ export default function LoginPage() {
               {show2FA ? (
                 // Show 2FA verification form
                 <TwoFactorAuth
-                  method={twoFactorMethod === 'both' ? 'email' : twoFactorMethod}
+                  method={twoFactorMethod === 'both' ? 'totp' : twoFactorMethod}
                   onVerify={handle2FAVerify}
                   onResendEmail={twoFactorMethod === 'email' || twoFactorMethod === 'both' ? handle2FAResend : undefined}
                   loading={verify2FAMutation.isPending}

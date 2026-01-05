@@ -88,13 +88,13 @@ Same flow as login, but starts from signup form:
 
 ### Scenario 4: Resending Email Code
 
-1. User is on 2FA verification page (email method)
-2. Didn't receive code or it expired
+1. User is on 2FA verification page (email method or dual-method showing TOTP)
+2. For dual-method: Wants to use email instead of TOTP, OR didn't receive code
 3. Clicks "Resend Code" link
-4. Link shows "Resend in Xs" countdown for 60 seconds
-5. After countdown, can click again
-6. New code sent to email
-7. User enters new code and verifies
+4. Email code is generated and sent (first time for dual-method users)
+5. Link shows "Resend in Xs" countdown for 60 seconds
+6. After countdown, can click again to get a new code
+7. User enters email code and verifies
 
 ### Scenario 5: User with Both Methods Enabled (Dual 2FA)
 
@@ -132,17 +132,18 @@ Same flow as login, but starts from signup form:
 ### Scenario 6: Switching Methods (Future Feature)
 
 1. User is on 2FA verification page with both methods available
-2. Currently showing email input
-3. Clicks "Use authenticator app instead" link
+2. Currently showing TOTP by default
+3. Clicks "Use email code instead" link (future feature)
 4. UI updates:
-   - Changes icon from email to security/lock
-   - Updates text: "Enter the 6-digit code from your authenticator app"
-   - Hides "Resend Code" link (not applicable to TOTP)
-5. User enters TOTP code from their app
+   - Changes icon from security/lock to email
+   - Updates text: "Enter the 6-digit code sent to your email"
+   - Triggers email code generation and sending if not already sent
+   - Shows "Resend Code" link
+5. User enters email code
 6. Clicks "Verify"
-7. If needed, can click "Use email code instead" to switch back
+7. If needed, can click "Use authenticator app instead" to switch back to TOTP
 
-### Scenario 5: User with Both Methods Enabled
+### Scenario 5: User with Both Methods Enabled (Dual 2FA)
 
 1. **Login Page** (`/login`)
    - User enters email and password
@@ -151,30 +152,44 @@ Same flow as login, but starts from signup form:
 
 2. **Backend Returns 2FA Challenge with Both Methods**
    - Response: `{ requires2FA: true, twoFactorMethod: "both", availableMethods: ["email", "totp"], sessionId: '...' }`
-   - Email code is sent automatically
+   - **Email code is NOT sent automatically** (to avoid unnecessary emails)
    - Frontend shows 2FA verification page
 
 3. **2FA Verification Page** (Current Implementation)
-   - Shows email icon and instructions by default
+   - **Shows TOTP/security icon and instructions by default** (preferred method)
+   - Displays: "Enter the 6-digit code from your authenticator app"
+   - "Resend Code" link available - clicking it:
+     - Triggers email generation and sending
+     - Allows user to use email method if they prefer or don't have access to their authenticator
    - User can enter EITHER:
-     - The 6-digit code from their email
-     - The 6-digit code from their authenticator app
+     - The 6-digit code from their authenticator app (TOTP)
+     - Request and use the 6-digit code from their email (by clicking Resend Code first)
    - Backend will accept whichever code is valid
 
-4. **Future Enhancement**:
-   - Show "Use authenticator app instead" link
-   - Allow user to switch between methods
-   - UI changes to show TOTP instructions when switched
+4. **User Actions:**
+   - Option A: Open authenticator app, enter TOTP code, verify ✓ (default flow)
+   - Option B: Click "Resend Code" → email is sent → enter email code, verify ✓
+   - Both work equally well
+   - If incorrect code: Error message, can retry with either method
+
+5. **Future Enhancement**:
+   - Show "Use email instead" link to explicitly switch methods
+   - Allow user to toggle between methods before requesting email
    - Remember user's preference for next login
 
 ### Scenario 6: Switching Methods (Future Feature)
 
 1. User is on 2FA verification page with both methods available
-2. Currently showing email input
-3. Clicks "Use authenticator app instead" link
-4. UI updates to show TOTP instructions and icon
-5. User enters TOTP code from their app
-6. If needed, can click "Use email code instead" to switch back
+2. Currently showing TOTP by default
+3. Clicks "Use email code instead" link (future feature)
+4. UI updates:
+   - Changes icon from security/lock to email
+   - Updates text: "Enter the 6-digit code sent to your email"
+   - Triggers email code generation and sending if not already sent
+   - Shows "Resend Code" link
+5. User enters email code
+6. Clicks "Verify"
+7. If needed, can click "Use authenticator app instead" to switch back to TOTP
 
 ## Code Structure
 

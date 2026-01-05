@@ -25,7 +25,7 @@ This document provides a complete summary of the Two-Factor Authentication (2FA)
   - Only email 2FA enabled
   - Only TOTP 2FA enabled
   - **Both methods enabled** (can use either to verify)
-- **Smart Defaults**: When both enabled, UI defaults to email but accepts TOTP codes
+- **Smart Defaults**: When both enabled, UI defaults to TOTP to avoid unnecessary emails
 - **Backend Compatibility**: Ready to handle `twoFactorMethod: "both"` responses
 
 ## 🔜 What's Needed (Backend Implementation)
@@ -47,7 +47,9 @@ This document provides a complete summary of the Two-Factor Authentication (2FA)
 
 **Implementation**:
 - Check if user has 2FA enabled
-- If enabled, send email code (if applicable) and return 2FA challenge
+- If enabled with email only: Send email code and return 2FA challenge
+- If enabled with TOTP only: Return 2FA challenge (no email)
+- **If enabled with both**: Return 2FA challenge with `twoFactorMethod: "both"` but **DO NOT send email automatically**
 - Store temporary session with user info and available methods
 
 #### 2. Verify 2FA Code
