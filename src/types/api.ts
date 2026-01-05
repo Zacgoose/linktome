@@ -64,8 +64,8 @@ export interface LoginResponse {
  */
 export interface TwoFactorVerifyRequest {
   sessionId: string;
-  code: string; // 6-digit code (email/TOTP) or backup code
-  type: 'email' | 'totp' | 'backup'; // Type of verification
+  token: string; // 6-digit code (email/TOTP) or backup code
+  method: 'email' | 'totp' | 'backup'; // Type of verification
 }
 
 /**

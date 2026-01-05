@@ -15,7 +15,7 @@ import { Email as EmailIcon, Security as SecurityIcon, VpnKey as KeyIcon } from 
 
 interface TwoFactorAuthProps {
   method: 'email' | 'totp';
-  onVerify: (token: string, type?: 'email' | 'totp' | 'backup') => void;
+  onVerify: (token: string, method?: 'email' | 'totp' | 'backup') => void;
   onResendEmail?: () => void;
   loading?: boolean;
   error?: string;

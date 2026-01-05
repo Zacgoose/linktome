@@ -164,13 +164,13 @@ export default function LoginPage() {
     }
   };
 
-  const handle2FAVerify = (token: string, type?: 'email' | 'totp' | 'backup') => {
+  const handle2FAVerify = (token: string, method?: 'email' | 'totp' | 'backup') => {
     verify2FAMutation.mutate({
       url: 'public/2fatoken?action=verify',
       data: {
         sessionId: twoFactorSessionId,
-        code: token,
-        type: type || (twoFactorMethod === 'both' ? 'totp' : twoFactorMethod), // Default to TOTP when both are available (avoid unnecessary emails)
+        token: token,
+        method: method || (twoFactorMethod === 'both' ? 'totp' : twoFactorMethod), // Default to TOTP when both are available (avoid unnecessary emails)
       },
     });
   };
