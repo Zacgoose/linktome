@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import {
   Container,
@@ -43,6 +43,23 @@ interface UserSettings {
   twoFactorTotpEnabled?: boolean;
 }
 
+// Password validation helper
+const validatePassword = (
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string
+): { valid: boolean; error?: string } => {
+  if (newPassword !== confirmPassword) {
+    return { valid: false, error: 'New passwords do not match' };
+  }
+
+  if (newPassword.length < 8) {
+    return { valid: false, error: 'New password must be at least 8 characters long' };
+  }
+
+  return { valid: true };
+};
+
 export default function SettingsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -67,6 +84,13 @@ export default function SettingsPage() {
     url: 'admin/GetSettings',
     queryKey: 'user-settings',
   });
+
+  // Initialize phone number from settings when data loads
+  useEffect(() => {
+    if (settings?.phoneNumber) {
+      setPhoneNumber(settings.phoneNumber);
+    }
+  }, [settings]);
 
   const updatePassword = useApiPut({
     onSuccess: () => {
@@ -124,14 +148,14 @@ export default function SettingsPage() {
     setError('');
     setSuccess('');
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('New passwords do not match');
-      setTimeout(() => setError(''), 5000);
-      return;
-    }
+    const validation = validatePassword(
+      passwordData.currentPassword,
+      passwordData.newPassword,
+      passwordData.confirmPassword
+    );
 
-    if (passwordData.newPassword.length < 8) {
-      setError('New password must be at least 8 characters long');
+    if (!validation.valid) {
+      setError(validation.error || 'Invalid password');
       setTimeout(() => setError(''), 5000);
       return;
     }
@@ -411,7 +435,7 @@ export default function SettingsPage() {
                   <TextField
                     fullWidth
                     label="Phone Number"
-                    value={phoneNumber || settings.phoneNumber || ''}
+                    value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="+1 (555) 123-4567"
                     helperText="International format recommended"

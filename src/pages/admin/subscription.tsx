@@ -68,7 +68,7 @@ export default function SubscriptionPage() {
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
-  const { data: subscription, isLoading, refetch } = useApiGet<SubscriptionInfo>({
+  const { data: subscription, isLoading, error: fetchError, refetch } = useApiGet<SubscriptionInfo>({
     url: 'admin/GetSubscription',
     queryKey: 'user-subscription',
   });
@@ -203,26 +203,25 @@ export default function SubscriptionPage() {
     }
   };
 
-  const getTierPrice = (tier: UserTier) => {
-    switch (tier) {
-      case UserTier.FREE:
-        return { monthly: 0, annual: 0 };
-      case UserTier.PRO:
-        return { monthly: 9.99, annual: 99.99 };
-      case UserTier.PREMIUM:
-        return { monthly: 19.99, annual: 199.99 };
-      case UserTier.ENTERPRISE:
-        return { monthly: 49.99, annual: 499.99 };
-    }
-  };
-
-  if (isLoading || !subscription) {
+  if (isLoading) {
     return (
       <AdminLayout>
         <Container maxWidth="lg" sx={{ py: 4 }}>
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
             <CircularProgress />
           </Box>
+        </Container>
+      </AdminLayout>
+    );
+  }
+
+  if (fetchError || !subscription) {
+    return (
+      <AdminLayout>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+          <Alert severity="error">
+            Failed to load subscription information. Please try again later.
+          </Alert>
         </Container>
       </AdminLayout>
     );
@@ -361,7 +360,7 @@ export default function SubscriptionPage() {
             {[UserTier.FREE, UserTier.PRO, UserTier.PREMIUM, UserTier.ENTERPRISE].map((tier) => {
               const info = TIER_INFO[tier];
               const features = getPlanFeatures(tier);
-              const pricing = getTierPrice(tier);
+              const pricing = info.pricing;
               const isCurrent = tier === currentTier;
 
               return (
@@ -488,10 +487,10 @@ export default function SubscriptionPage() {
                   Billing Options:
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  • Monthly: ${getTierPrice(selectedPlan).monthly.toFixed(2)}/month
+                  • Monthly: ${TIER_INFO[selectedPlan].pricing.monthly.toFixed(2)}/month
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  • Annual: ${getTierPrice(selectedPlan).annual.toFixed(2)}/year (17% savings)
+                  • Annual: ${TIER_INFO[selectedPlan].pricing.annual.toFixed(2)}/year (17% savings)
                 </Typography>
               </Box>
             )}
