@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -20,7 +20,6 @@ import {
 } from '@mui/material';
 import {
   Security as SecurityIcon,
-  QrCode2 as QrCodeIcon,
   Email as EmailIcon,
   PhoneIphone as PhoneIcon,
   ContentCopy as CopyIcon,
@@ -106,7 +105,7 @@ export default function TwoFactorSetupWizard({
     
     // Call setup endpoint
     setupMutation.mutate({
-      url: 'public/2fatoken?action=setup',
+      url: 'admin/2fatokensetup?action=setup',
       data: { type: method },
     });
   };
@@ -118,7 +117,7 @@ export default function TwoFactorSetupWizard({
     }
 
     enableMutation.mutate({
-      url: 'public/2fatoken?action=enable',
+      url: 'admin/2fatokensetup?action=enable',
       data: {
         type: setupMethod,
         token: verificationCode,
