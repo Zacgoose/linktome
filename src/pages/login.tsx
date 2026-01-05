@@ -18,7 +18,6 @@ import { useApiPost } from '@/hooks/useApiQuery';
 import { useAuthContext } from '@/providers/AuthProvider';
 import type { LoginResponse, TwoFactorVerifyRequest } from '@/types/api';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
-import { apiPost } from '@/utils/api';
 
 // Use test key in development, real key in production
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
@@ -43,7 +42,6 @@ export default function LoginPage() {
   const [show2FA, setShow2FA] = useState<boolean>(false);
   const [twoFactorMethod, setTwoFactorMethod] = useState<'email' | 'totp'>('email');
   const [twoFactorSessionId, setTwoFactorSessionId] = useState<string>('');
-  const [twoFactorLoading, setTwoFactorLoading] = useState<boolean>(false);
 
   const sessionExpired = router.query.session === 'expired';
 
@@ -51,6 +49,32 @@ export default function LoginPage() {
     setTurnstileToken(null);
     turnstileRef.current?.reset();
   };
+
+  // 2FA verification mutation
+  const verify2FAMutation = useApiPost<LoginResponse>({
+    onSuccess: (data: LoginResponse) => {
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+        router.push('/admin/dashboard');
+      }
+    },
+    onError: (error: string) => {
+      setError(error);
+      setTimeout(() => setError(''), 5000);
+    },
+  });
+
+  // 2FA resend code mutation
+  const resend2FAMutation = useApiPost({
+    onSuccess: () => {
+      // Success message is handled by the component's cooldown timer
+    },
+    onError: (error: string) => {
+      setError(error);
+      setTimeout(() => setError(''), 5000);
+    },
+  });
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
@@ -114,39 +138,24 @@ export default function LoginPage() {
     }
   };
 
-  const handle2FAVerify = async (token: string, sessionId: string) => {
-    setTwoFactorLoading(true);
-    setError('');
-    
-    try {
-      const response = await apiPost('public/2fatoken/verify', {
+  const handle2FAVerify = (token: string, sessionId: string) => {
+    verify2FAMutation.mutate({
+      url: 'public/2fatoken/verify',
+      data: {
         sessionId,
         token,
         method: twoFactorMethod,
-      }) as LoginResponse;
-
-      if (response.user) {
-        localStorage.setItem('user', JSON.stringify(response.user));
-        setUser(response.user);
-        router.push('/admin/dashboard');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Invalid verification code');
-      setTimeout(() => setError(''), 5000);
-    } finally {
-      setTwoFactorLoading(false);
-    }
+      },
+    });
   };
 
-  const handle2FAResend = async () => {
-    try {
-      await apiPost('public/2fatoken/resend', {
+  const handle2FAResend = () => {
+    resend2FAMutation.mutate({
+      url: 'public/2fatoken/resend',
+      data: {
         sessionId: twoFactorSessionId,
-      });
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend code');
-      setTimeout(() => setError(''), 5000);
-    }
+      },
+    });
   };
 
   const handle2FABack = () => {
@@ -156,7 +165,7 @@ export default function LoginPage() {
     resetTurnstile();
   };
 
-  const loading = loginMutation.isPending || signupMutation.isPending || twoFactorLoading;
+  const loading = loginMutation.isPending || signupMutation.isPending || verify2FAMutation.isPending;
   const canSubmit = turnstileToken && !loading && turnstileStatus === 'ready';
 
   return (
@@ -182,7 +191,7 @@ export default function LoginPage() {
                   sessionId={twoFactorSessionId}
                   onVerify={handle2FAVerify}
                   onResendEmail={twoFactorMethod === 'email' ? handle2FAResend : undefined}
-                  loading={twoFactorLoading}
+                  loading={verify2FAMutation.isPending}
                   error={error}
                   onBack={handle2FABack}
                 />
