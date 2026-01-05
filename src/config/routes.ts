@@ -70,6 +70,16 @@ export const ROUTE_CONFIG: RoutePermission[] = [
     allowedFor: 'authenticated',
     requiredPermissions: ['read:apiauth'],
   },
+  {
+    path: '/admin/settings',
+    allowedFor: 'authenticated',
+    requiredPermissions: ['read:profile'],
+  },
+  {
+    path: '/admin/subscription',
+    allowedFor: 'authenticated',
+    requiredPermissions: ['read:profile'],
+  },
 
   // Admin-only routes
   {
