@@ -59,6 +59,7 @@ export default function UsersPage() {
       else if (err instanceof Error) setError(err.message);
       else setError('Failed to send invite');
     },
+    relatedQueryKeys: ['admin-user-manager-list'],
   });
   const { refreshAuth } = useAuthContext();
 
@@ -108,6 +109,7 @@ export default function UsersPage() {
       data = { UserId };
     }
     userManagerAction.mutate({ url, data });
+    
   };
 
   return (
