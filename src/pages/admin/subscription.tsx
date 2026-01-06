@@ -333,7 +333,7 @@ export default function SubscriptionPage() {
           </Card>
 
           {/* Available Plans */}
-          <Typography variant="h5" fontWeight={600} gutterBottom sx={{ mb: 3 }}>
+          <Typography variant="h5" fontWeight={600} gutterBottom color="text.primary" sx={{ mb: 3 }}>
             Available Plans
           </Typography>
 
@@ -436,7 +436,7 @@ export default function SubscriptionPage() {
 
           {/* Feature Comparison */}
           <Box sx={{ mt: 6 }}>
-            <Typography variant="h5" fontWeight={600} gutterBottom sx={{ mb: 3 }}>
+            <Typography variant="h5" fontWeight={600} gutterBottom color="text.primary" sx={{ mb: 3 }}>
               Feature Comparison
             </Typography>
             <Card>
