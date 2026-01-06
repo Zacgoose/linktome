@@ -39,20 +39,13 @@ import TierBadge from '@/components/TierBadge';
 
 interface SubscriptionInfo {
   currentTier: UserTier;
+  status: 'active' | 'cancelled' | 'expired';
+  subscriptionStartedAt?: string;
   billingCycle?: 'monthly' | 'annual';
   nextBillingDate?: string;
   amount?: number;
   currency?: string;
-  status?: 'active' | 'cancelled' | 'past_due' | 'trial';
-  trialEndsAt?: string;
   cancelledAt?: string;
-  paymentMethod?: {
-    type: string;
-    last4: string;
-    brand: string;
-    expiryMonth: number;
-    expiryYear: number;
-  };
 }
 
 interface PlanFeature {
@@ -74,8 +67,9 @@ export default function SubscriptionPage() {
   });
 
   const upgradePlan = useApiPost({
-    onSuccess: () => {
-      setSuccess('Subscription upgraded successfully!');
+    onSuccess: (data) => {
+      // The API returns a note about payment processing not being implemented
+      setSuccess(data?.message || 'Subscription upgrade requested. Payment processing is not yet implemented. Please contact support.');
       setUpgradeDialogOpen(false);
       refetch();
       setTimeout(() => setSuccess(''), 5000);
@@ -87,8 +81,9 @@ export default function SubscriptionPage() {
   });
 
   const cancelSubscription = useApiPost({
-    onSuccess: () => {
-      setSuccess('Subscription cancelled successfully. You can continue using your current plan until the end of the billing period.');
+    onSuccess: (data) => {
+      // The API returns a note about payment processing not being implemented
+      setSuccess(data?.message || 'Subscription cancellation requested. Payment processing is not yet implemented. Please contact support.');
       setCancelDialogOpen(false);
       refetch();
       setTimeout(() => setSuccess(''), 5000);
@@ -283,8 +278,6 @@ export default function SubscriptionPage() {
                       color={
                         subscription.status === 'active'
                           ? 'success'
-                          : subscription.status === 'trial'
-                          ? 'info'
                           : subscription.status === 'cancelled'
                           ? 'warning'
                           : 'error'
@@ -298,6 +291,12 @@ export default function SubscriptionPage() {
                     )}
                   </Box>
 
+                  {subscription.subscriptionStartedAt && (
+                    <Typography variant="body2" color="text.secondary">
+                      Member since: <strong>{new Date(subscription.subscriptionStartedAt).toLocaleDateString()}</strong>
+                    </Typography>
+                  )}
+
                   {subscription.nextBillingDate && subscription.status === 'active' && (
                     <Typography variant="body2" color="text.secondary">
                       Next billing date: <strong>{new Date(subscription.nextBillingDate).toLocaleDateString()}</strong>
@@ -307,31 +306,13 @@ export default function SubscriptionPage() {
                     </Typography>
                   )}
 
-                  {subscription.trialEndsAt && subscription.status === 'trial' && (
-                    <Typography variant="body2" color="text.secondary">
-                      Trial ends: <strong>{new Date(subscription.trialEndsAt).toLocaleDateString()}</strong>
-                    </Typography>
-                  )}
-
                   {subscription.cancelledAt && (
                     <Alert severity="warning">
                       Subscription cancelled on {new Date(subscription.cancelledAt).toLocaleDateString()}.
-                      You can continue using your current plan until{' '}
-                      {subscription.nextBillingDate && new Date(subscription.nextBillingDate).toLocaleDateString()}.
+                      {subscription.nextBillingDate && (
+                        <> You can continue using your current plan until {new Date(subscription.nextBillingDate).toLocaleDateString()}.</>
+                      )}
                     </Alert>
-                  )}
-
-                  {subscription.paymentMethod && (
-                    <Box>
-                      <Typography variant="body2" fontWeight={600} gutterBottom>
-                        Payment Method
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {subscription.paymentMethod.brand} ending in {subscription.paymentMethod.last4}
-                        <br />
-                        Expires: {subscription.paymentMethod.expiryMonth}/{subscription.paymentMethod.expiryYear}
-                      </Typography>
-                    </Box>
                   )}
 
                   {currentTier !== UserTier.FREE && subscription.status === 'active' && !subscription.cancelledAt && (
@@ -494,8 +475,8 @@ export default function SubscriptionPage() {
                 </Typography>
               </Box>
             )}
-            <Alert severity="info" sx={{ mt: 2 }}>
-              You will be redirected to a secure payment page to complete your upgrade.
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              Payment processing is not yet implemented. This will submit your upgrade request, but you will need to contact support to complete the payment.
             </Alert>
           </DialogContent>
           <DialogActions>
@@ -505,7 +486,7 @@ export default function SubscriptionPage() {
               onClick={confirmUpgrade}
               disabled={upgradePlan.isPending}
             >
-              {upgradePlan.isPending ? 'Processing...' : 'Continue to Payment'}
+              {upgradePlan.isPending ? 'Processing...' : 'Request Upgrade'}
             </Button>
           </DialogActions>
         </Dialog>
@@ -517,9 +498,11 @@ export default function SubscriptionPage() {
             <Alert severity="warning" sx={{ mb: 2 }}>
               Are you sure you want to cancel your subscription?
             </Alert>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Payment processing is not yet implemented. This will submit your cancellation request, but you may need to contact support to confirm the cancellation.
+            </Typography>
             <Typography variant="body2" color="text.secondary">
-              Your subscription will remain active until the end of the current billing period.
-              After that, your account will be downgraded to the Free plan.
+              Normally, your subscription would remain active until the end of the current billing period, after which your account would be downgraded to the Free plan.
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -530,7 +513,7 @@ export default function SubscriptionPage() {
               onClick={handleCancelSubscription}
               disabled={cancelSubscription.isPending}
             >
-              {cancelSubscription.isPending ? 'Cancelling...' : 'Cancel Subscription'}
+              {cancelSubscription.isPending ? 'Processing...' : 'Request Cancellation'}
             </Button>
           </DialogActions>
         </Dialog>

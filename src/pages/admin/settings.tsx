@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import {
   Container,
@@ -10,7 +10,6 @@ import {
   Box,
   Alert,
   Stack,
-  Divider,
   IconButton,
   InputAdornment,
   Dialog,
@@ -18,7 +17,6 @@ import {
   DialogContent,
   DialogActions,
   Chip,
-  Grid,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -34,13 +32,16 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPut, useApiPost } from '@/hooks/useApiQuery';
 import TwoFactorSetupWizard from '@/components/TwoFactorSetupWizard';
+import { useAuthContext } from '@/providers/AuthProvider';
 
-interface UserSettings {
+interface UserProfile {
+  UserId: string;
+  username: string;
   email: string;
+  displayName?: string;
+  bio?: string;
+  avatar?: string;
   phoneNumber?: string;
-  twoFactorEnabled?: boolean;
-  twoFactorEmailEnabled?: boolean;
-  twoFactorTotpEnabled?: boolean;
 }
 
 // Password validation helper
@@ -80,17 +81,26 @@ export default function SettingsPage() {
   const [reset2FADialogOpen, setReset2FADialogOpen] = useState(false);
   const [setup2FADialogOpen, setSetup2FADialogOpen] = useState(false);
 
-  const { data: settings, isLoading, refetch } = useApiGet<UserSettings>({
-    url: 'admin/GetSettings',
-    queryKey: 'user-settings',
+  // Track if phone number has been initialized
+  const phoneInitialized = useRef(false);
+
+  // Get 2FA status from auth context
+  const { user } = useAuthContext();
+
+  // Use the existing GetProfile endpoint
+  const { data: profile, isLoading, refetch } = useApiGet<UserProfile>({
+    url: 'admin/GetProfile',
+    queryKey: 'admin-profile',
   });
 
-  // Initialize phone number from settings when data loads
+  // Initialize phone number from profile when data loads (only once)
   useEffect(() => {
-    if (settings?.phoneNumber) {
-      setPhoneNumber(settings.phoneNumber);
+    if (profile?.phoneNumber && !phoneInitialized.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPhoneNumber(profile.phoneNumber);
+      phoneInitialized.current = true;
     }
-  }, [settings]);
+  }, [profile]);
 
   const updatePassword = useApiPut({
     onSuccess: () => {
@@ -106,7 +116,7 @@ export default function SettingsPage() {
 
   const updateEmail = useApiPut({
     onSuccess: () => {
-      setSuccess('Email updated successfully. Please check your new email for verification.');
+      setSuccess('Email updated successfully');
       setEmailData({ newEmail: '', password: '' });
       setChangeEmailDialogOpen(false);
       refetch();
@@ -198,7 +208,7 @@ export default function SettingsPage() {
 
   const handleReset2FA = () => {
     reset2FA.mutate({
-      url: 'admin/Reset2FA',
+      url: 'admin/2fatokensetup?action=disable',
       data: {},
     });
   };
@@ -210,7 +220,7 @@ export default function SettingsPage() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  if (isLoading || !settings) {
+  if (isLoading || !profile) {
     return (
       <AdminLayout>
         <Container maxWidth="md" sx={{ py: 4 }}>
@@ -219,6 +229,11 @@ export default function SettingsPage() {
       </AdminLayout>
     );
   }
+
+  // Get 2FA status from user context (available after login)
+  const twoFactorEnabled = user?.twoFactorEnabled || false;
+  const twoFactorEmailEnabled = user?.twoFactorEmailEnabled || false;
+  const twoFactorTotpEnabled = user?.twoFactorTotpEnabled || false;
 
   return (
     <>
@@ -348,7 +363,7 @@ export default function SettingsPage() {
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Current Email: <strong>{settings.email}</strong>
+                Current Email: <strong>{profile.email}</strong>
               </Typography>
               <Button
                 variant="outlined"
@@ -376,25 +391,25 @@ export default function SettingsPage() {
                 <Box display="flex" alignItems="center" gap={2}>
                   <Typography variant="body2">
                     Status:{' '}
-                    {settings.twoFactorEnabled ? (
+                    {twoFactorEnabled ? (
                       <Chip label="Enabled" color="success" size="small" />
                     ) : (
                       <Chip label="Disabled" color="default" size="small" />
                     )}
                   </Typography>
                 </Box>
-                {settings.twoFactorEnabled && (
+                {twoFactorEnabled && (
                   <Box display="flex" gap={2} flexWrap="wrap">
-                    {settings.twoFactorEmailEnabled && (
+                    {twoFactorEmailEnabled && (
                       <Chip label="Email 2FA" color="primary" size="small" />
                     )}
-                    {settings.twoFactorTotpEnabled && (
+                    {twoFactorTotpEnabled && (
                       <Chip label="Authenticator App" color="primary" size="small" />
                     )}
                   </Box>
                 )}
                 <Box display="flex" gap={2}>
-                  {!settings.twoFactorEnabled && (
+                  {!twoFactorEnabled && (
                     <Button
                       variant="contained"
                       startIcon={<AddIcon />}
@@ -403,7 +418,7 @@ export default function SettingsPage() {
                       Enable 2FA
                     </Button>
                   )}
-                  {settings.twoFactorEnabled && (
+                  {twoFactorEnabled && (
                     <Button
                       variant="outlined"
                       color="warning"
