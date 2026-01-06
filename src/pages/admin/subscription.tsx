@@ -42,13 +42,17 @@ import { useAuthContext } from '@/providers/AuthProvider';
 
 interface SubscriptionInfo {
   currentTier: UserTier;
-  status: 'active' | 'cancelled' | 'expired';
+  effectiveTier: UserTier;
+  status: 'active' | 'cancelled' | 'expired' | 'trial' | 'suspended';
+  isTrial: boolean;
+  hasAccess: boolean;
   subscriptionStartedAt?: string;
   billingCycle?: 'monthly' | 'annual';
   nextBillingDate?: string;
   amount?: number;
   currency?: string;
   cancelledAt?: string;
+  accessUntil?: string;
 }
 
 interface PlanFeature {
@@ -236,7 +240,14 @@ export default function SubscriptionPage() {
   }
 
   const currentTier = subscription.currentTier;
+  const effectiveTier = subscription.effectiveTier;
   const tierInfo = TIER_INFO[currentTier];
+  const effectiveTierInfo = TIER_INFO[effectiveTier];
+  
+  // Check if user can resubscribe (cancelled but has current tier access)
+  const canResubscribe = subscription.status === 'cancelled' && 
+                         subscription.hasAccess && 
+                         currentTier !== UserTier.FREE;
 
   return (
     <>
@@ -272,14 +283,26 @@ export default function SubscriptionPage() {
                 Current Subscription
               </Typography>
               <Box display="flex" alignItems="center" gap={2} mb={3}>
-                <TierBadge tier={currentTier} size="medium" />
+                <TierBadge tier={effectiveTier} size="medium" />
                 <Box>
                   <Typography variant="h5" fontWeight={600}>
                     {tierInfo.displayName} Plan
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {tierInfo.description}
-                  </Typography>
+                  {effectiveTier !== currentTier && (
+                    <Typography variant="body2" color="text.secondary">
+                      Currently using: {effectiveTierInfo.displayName} tier
+                    </Typography>
+                  )}
+                  {!effectiveTier && currentTier && (
+                    <Typography variant="body2" color="text.secondary">
+                      {tierInfo.description}
+                    </Typography>
+                  )}
+                  {effectiveTier && effectiveTier === currentTier && (
+                    <Typography variant="body2" color="text.secondary">
+                      {tierInfo.description}
+                    </Typography>
+                  )}
                 </Box>
               </Box>
 
@@ -291,16 +314,24 @@ export default function SubscriptionPage() {
                       color={
                         subscription.status === 'active'
                           ? 'success'
+                          : subscription.status === 'trial'
+                          ? 'info'
                           : subscription.status === 'cancelled'
                           ? 'warning'
                           : 'error'
                       }
                     />
+                    {subscription.isTrial && (
+                      <Chip label="TRIAL" color="info" variant="outlined" />
+                    )}
                     {subscription.billingCycle && (
                       <Chip
                         label={subscription.billingCycle === 'monthly' ? 'Monthly' : 'Annual'}
                         variant="outlined"
                       />
+                    )}
+                    {!subscription.hasAccess && (
+                      <Chip label="NO ACCESS" color="error" />
                     )}
                   </Box>
 
@@ -319,17 +350,24 @@ export default function SubscriptionPage() {
                     </Typography>
                   )}
 
-                  {subscription.cancelledAt && (
+                  {subscription.cancelledAt && subscription.hasAccess && subscription.accessUntil && (
                     <Alert severity="warning">
                       Subscription cancelled on {new Date(subscription.cancelledAt).toLocaleDateString()}.
-                      {subscription.nextBillingDate && (
-                        <> You can continue using your current plan until {new Date(subscription.nextBillingDate).toLocaleDateString()}.</>
+                      You can continue using your current plan until {new Date(subscription.accessUntil).toLocaleDateString()}.
+                    </Alert>
+                  )}
+                  
+                  {subscription.cancelledAt && !subscription.hasAccess && (
+                    <Alert severity="error">
+                      Subscription cancelled on {new Date(subscription.cancelledAt).toLocaleDateString()}.
+                      {subscription.accessUntil && (
+                        <> Access ended on {new Date(subscription.accessUntil).toLocaleDateString()}.</>
                       )}
                     </Alert>
                   )}
 
-                  {currentTier !== UserTier.FREE && subscription.status === 'active' && !subscription.cancelledAt && (
-                    <Box>
+                  <Box display="flex" gap={2}>
+                    {currentTier !== UserTier.FREE && subscription.status === 'active' && !subscription.cancelledAt && (
                       <Button
                         variant="outlined"
                         color="error"
@@ -338,8 +376,19 @@ export default function SubscriptionPage() {
                       >
                         Cancel Subscription
                       </Button>
-                    </Box>
-                  )}
+                    )}
+                    
+                    {canResubscribe && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<UpgradeIcon />}
+                        onClick={() => handleUpgrade(currentTier)}
+                      >
+                        Resubscribe to {tierInfo.displayName}
+                      </Button>
+                    )}
+                  </Box>
                 </Stack>
               )}
             </CardContent>
@@ -355,7 +404,7 @@ export default function SubscriptionPage() {
               const info = TIER_INFO[tier];
               const features = getPlanFeatures(tier);
               const pricing = info.pricing;
-              const isCurrent = tier === currentTier;
+              const isCurrent = tier === effectiveTier;
 
               return (
                 <Grid item xs={12} md={6} lg={3} key={tier}>
@@ -468,12 +517,16 @@ export default function SubscriptionPage() {
         {/* Upgrade Dialog */}
         <Dialog open={upgradeDialogOpen} onClose={() => setUpgradeDialogOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>
-            {selectedPlan && `Upgrade to ${TIER_INFO[selectedPlan].displayName}`}
+            {selectedPlan && canResubscribe && selectedPlan === currentTier
+              ? `Resubscribe to ${TIER_INFO[selectedPlan].displayName}`
+              : selectedPlan && `Upgrade to ${TIER_INFO[selectedPlan].displayName}`}
           </DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              You are about to upgrade your subscription to the{' '}
-              {selectedPlan && TIER_INFO[selectedPlan].displayName} plan.
+              {canResubscribe && selectedPlan === currentTier
+                ? `You are about to reactivate your subscription to the ${selectedPlan && TIER_INFO[selectedPlan].displayName} plan.`
+                : `You are about to upgrade your subscription to the ${selectedPlan && TIER_INFO[selectedPlan].displayName} plan.`}
+            </Typography>
             </Typography>
             {selectedPlan && selectedPlan !== UserTier.FREE && (
               <Box sx={{ mt: 3 }}>
@@ -555,7 +608,9 @@ export default function SubscriptionPage() {
               onClick={confirmUpgrade}
               disabled={upgradePlan.isPending}
             >
-              {upgradePlan.isPending ? 'Processing...' : 'Request Upgrade'}
+              {upgradePlan.isPending 
+                ? 'Processing...' 
+                : (canResubscribe && selectedPlan === currentTier ? 'Resubscribe' : 'Request Upgrade')}
             </Button>
           </DialogActions>
         </Dialog>
