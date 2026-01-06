@@ -92,7 +92,7 @@ const menuItems: MenuItem[] = [
     text: 'Settings', 
     icon: <SettingsIcon />, 
     path: '/admin/settings',
-    requiredPermissions: ['read:profile'],
+    requiredPermissions: ['read:usersettings'],
   },
   { 
     text: 'Subscription', 
