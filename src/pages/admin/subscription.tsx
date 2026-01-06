@@ -38,6 +38,7 @@ import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
 import { UserTier, TIER_CONFIG, TIER_INFO } from '@/types/tiers';
 import TierBadge from '@/components/TierBadge';
+import { useAuthContext } from '@/providers/AuthProvider';
 
 interface SubscriptionInfo {
   currentTier: UserTier;
@@ -63,36 +64,43 @@ export default function SubscriptionPage() {
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const { refreshAuth } = useAuthContext();
 
-  const { data: subscription, isLoading, error: fetchError, refetch } = useApiGet<SubscriptionInfo>({
+  const { data: subscription, isLoading, error: fetchError } = useApiGet<SubscriptionInfo>({
     url: 'admin/GetSubscription',
     queryKey: 'user-subscription',
   });
 
   const upgradePlan = useApiPost({
-    onSuccess: (data) => {
+    relatedQueryKeys: ['user-subscription'],
+    onSuccess: async (data: any) => {
       // The API returns a note about payment processing not being implemented
-      setSuccess(data?.message || 'Subscription upgrade requested. Payment processing is not yet implemented. Please contact support.');
+      const msg = typeof data === 'string' ? data : data?.message || 'Subscription upgrade requested. Payment processing is not yet implemented. Please contact support.';
+      setSuccess(msg);
       setUpgradeDialogOpen(false);
-      refetch();
+      await refreshAuth();
       setTimeout(() => setSuccess(''), 5000);
     },
-    onError: (err) => {
-      setError(err.message || 'Failed to upgrade subscription');
+    onError: (err: any) => {
+      const msg = typeof err === 'string' ? err : err?.message || 'Failed to upgrade subscription';
+      setError(msg);
       setTimeout(() => setError(''), 5000);
     },
   });
 
   const cancelSubscription = useApiPost({
-    onSuccess: (data) => {
+    relatedQueryKeys: ['user-subscription'],
+    onSuccess: async (data: any) => {
       // The API returns a note about payment processing not being implemented
-      setSuccess(data?.message || 'Subscription cancellation requested. Payment processing is not yet implemented. Please contact support.');
+      const msg = typeof data === 'string' ? data : data?.message || 'Subscription cancellation requested. Payment processing is not yet implemented. Please contact support.';
+      setSuccess(msg);
       setCancelDialogOpen(false);
-      refetch();
+      await refreshAuth();
       setTimeout(() => setSuccess(''), 5000);
     },
-    onError: (err) => {
-      setError(err.message || 'Failed to cancel subscription');
+    onError: (err: any) => {
+      const msg = typeof err === 'string' ? err : err?.message || 'Failed to cancel subscription';
+      setError(msg);
       setTimeout(() => setError(''), 5000);
     },
   });
@@ -264,7 +272,7 @@ export default function SubscriptionPage() {
                 Current Subscription
               </Typography>
               <Box display="flex" alignItems="center" gap={2} mb={3}>
-                <TierBadge tier={currentTier} size="large" />
+                <TierBadge tier={currentTier} size="medium" />
                 <Box>
                   <Typography variant="h5" fontWeight={600}>
                     {tierInfo.displayName} Plan
