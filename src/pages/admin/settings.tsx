@@ -85,7 +85,7 @@ export default function SettingsPage() {
   const phoneInitialized = useRef(false);
 
   // Get 2FA status from auth context
-  const { user } = useAuthContext();
+  const { user, refreshAuth } = useAuthContext();
 
   // Use the existing GetProfile endpoint
   const { data: profile, isLoading, refetch } = useApiGet<UserProfile>({
@@ -115,10 +115,11 @@ export default function SettingsPage() {
   });
 
   const updateEmail = useApiPut({
-    onSuccess: () => {
+    onSuccess: async () => {
       setSuccess('Email updated successfully');
       setEmailData({ newEmail: '', password: '' });
       setChangeEmailDialogOpen(false);
+      await refreshAuth();
       refetch();
       setTimeout(() => setSuccess(''), 5000);
     },
@@ -141,9 +142,10 @@ export default function SettingsPage() {
   });
 
   const reset2FA = useApiPost({
-    onSuccess: () => {
+    onSuccess: async () => {
       setSuccess('2FA has been reset successfully');
       setReset2FADialogOpen(false);
+      await refreshAuth();
       refetch();
       setTimeout(() => setSuccess(''), 3000);
     },
@@ -213,9 +215,10 @@ export default function SettingsPage() {
     });
   };
 
-  const handle2FASetupComplete = () => {
+  const handle2FASetupComplete = async () => {
     setSetup2FADialogOpen(false);
     setSuccess('2FA has been configured successfully');
+    await refreshAuth();
     refetch();
     setTimeout(() => setSuccess(''), 3000);
   };
