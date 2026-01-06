@@ -98,7 +98,7 @@ const menuItems: MenuItem[] = [
     text: 'Subscription', 
     icon: <SubscriptionIcon />, 
     path: '/admin/subscription',
-    requiredPermissions: ['read:profile'],
+    requiredPermissions: ['read:subscription'],
   },
   { 
     text: 'Users', 
@@ -117,7 +117,7 @@ const menuItems: MenuItem[] = [
 
   const { uiTheme, setUiTheme } = useContext(UiThemeContext);
   const router = useRouter();
-  const { user, logout, loading, managedUsers: allManagedUsers, refreshAuth } = useAuthContext();
+  const { user, logout, loading, managedUsers: allManagedUsers } = useAuthContext();
   const { selectedContext, setSelectedContext, contextRoles, contextPermissions } = useRbacContext();
   // managedUsers are already filtered for state === 'accepted' in AuthProvider
   const managedUsers = allManagedUsers || [];
