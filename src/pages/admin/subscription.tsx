@@ -471,7 +471,7 @@ export default function SubscriptionPage() {
                   • Monthly: ${TIER_INFO[selectedPlan].pricing.monthly.toFixed(2)}/month
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  • Annual: ${TIER_INFO[selectedPlan].pricing.annual.toFixed(2)}/year (17% savings)
+                  • Annual: ${TIER_INFO[selectedPlan].pricing.annual.toFixed(2)}/year
                 </Typography>
               </Box>
             )}
