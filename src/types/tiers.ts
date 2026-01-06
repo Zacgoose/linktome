@@ -193,8 +193,8 @@ export const TIER_INFO: Record<UserTier, TierInfo> = {
     icon: '⭐',
     description: 'Advanced features for professionals',
     pricing: {
-      monthly: 9.99,
-      annual: 99.99,
+      monthly: 1.99,
+      annual: 19.99,
     },
   },
   [UserTier.PREMIUM]: {
@@ -204,8 +204,8 @@ export const TIER_INFO: Record<UserTier, TierInfo> = {
     icon: '💎',
     description: 'Premium features for power users',
     pricing: {
-      monthly: 19.99,
-      annual: 199.99,
+      monthly: 3.99,
+      annual: 39.99,
     },
   },
   [UserTier.ENTERPRISE]: {
@@ -215,8 +215,8 @@ export const TIER_INFO: Record<UserTier, TierInfo> = {
     icon: '🏢',
     description: 'Enterprise-grade features and support',
     pricing: {
-      monthly: 49.99,
-      annual: 499.99,
+      monthly: 10.99,
+      annual: 109.99,
     },
   },
 };

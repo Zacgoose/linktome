@@ -43,9 +43,9 @@ This implementation adds comprehensive user settings and subscription management
 
 **Pricing Structure:**
 - Free: $0/month
-- Pro: $9.99/month or $99.99/year (17% savings)
-- Premium: $19.99/month or $199.99/year (17% savings)
-- Enterprise: $49.99/month or $499.99/year (17% savings)
+- Pro: $1.99/month or $19.99/year
+- Premium: $3.99/month or $39.99/year
+- Enterprise: $10.99/month or $109.99/year
 
 *Note: Pricing values are examples and should be confirmed with business requirements*
 
@@ -201,7 +201,7 @@ Please provide answers to the following before backend implementation:
 
 1. **Payment Provider:** Confirm Stripe or specify alternative?
 2. **Email Service:** Which service should we use?
-3. **Pricing Confirmation:** Are the example prices ($9.99, $19.99, $49.99) correct?
+3. **Pricing Confirmation:** Are the example prices ($1.99, $9.99, $10.99) correct?
 4. **Trial Periods:** Should new users get trial periods? How long?
 5. **Downgrade Policy:** What happens if user downgrades and exceeds new limits?
 6. **Cancellation Policy:** Immediate or end-of-period access?

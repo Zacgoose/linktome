@@ -104,9 +104,9 @@ Each plan card shows:
 
 #### Pricing Structure (Example)
 - **Free:** $0.00/month
-- **Pro:** $9.99/month or $99.99/year (17% savings)
-- **Premium:** $19.99/month or $199.99/year (17% savings)
-- **Enterprise:** $49.99/month or $499.99/year (17% savings)
+- **Pro:** $1.99/month or $19.99/year
+- **Premium:** $3.99/month or $39.99/year
+- **Enterprise:** $10.99/month or $109.99/year
 
 ### 3. Feature Comparison Section
 - **Card:** Simple card with button to "View Full Comparison"

@@ -220,7 +220,7 @@ This endpoint would be called when user clicks link in verification email to com
   "currentTier": "pro",
   "billingCycle": "monthly",
   "nextBillingDate": "2024-02-15T00:00:00Z",
-  "amount": 9.99,
+  "amount": 1.99,
   "currency": "USD",
   "status": "active",
   "trialEndsAt": null,
