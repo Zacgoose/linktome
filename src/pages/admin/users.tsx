@@ -23,8 +23,8 @@ import { useState as useReactState } from 'react';
 
 interface UserManagerRelationship {
   UserId: string;
-  DisplayName: string;
-  Email: string;
+  username: string;
+  email: string;
   role: string;
   state: string;
   created: string;
@@ -181,8 +181,8 @@ export default function UsersPage() {
                   )}
                   {managers.map((um) => (
                     <TableRow key={um.UserId}>
-                      <TableCell>{um.DisplayName || '-'}</TableCell>
-                      <TableCell>{um.Email || '-'}</TableCell>
+                      <TableCell>{um.username || '-'}</TableCell>
+                      <TableCell>{um.email || '-'}</TableCell>
                       <TableCell>{um.UserId}</TableCell>
                       <TableCell>{um.role}</TableCell>
                       <TableCell>{um.state}</TableCell>
@@ -217,8 +217,8 @@ export default function UsersPage() {
                   )}
                   {managees.map((um) => (
                     <TableRow key={um.UserId}>
-                      <TableCell>{um.DisplayName || '-'}</TableCell>
-                      <TableCell>{um.Email || '-'}</TableCell>
+                      <TableCell>{um.username || '-'}</TableCell>
+                      <TableCell>{um.email || '-'}</TableCell>
                       <TableCell>{um.UserId}</TableCell>
                       <TableCell>{um.role}</TableCell>
                       <TableCell>{um.state}</TableCell>
