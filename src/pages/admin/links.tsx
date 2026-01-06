@@ -90,6 +90,7 @@ import {
 import { UserProfile } from '@/types/api';
 import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { getTierLimits } from '@/utils/tierValidation';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
 
@@ -639,10 +640,11 @@ export default function LinksPage() {
   const handleAddCollection = () => {
     // Check if user has reached link groups limit
     const currentGroupsCount = groups.length;
-    const limit = maxLinkGroupsCheck.limit;
+    const tierLimits = getTierLimits(userTier);
+    const limit = tierLimits.maxLinkGroups;
     
     if (limit !== -1 && currentGroupsCount >= limit) {
-      openUpgradePrompt('Link Collections', maxLinkGroupsCheck.requiredTier);
+      openUpgradePrompt('Link Collections', maxLinkGroupsCheck.requiredTier || userTier);
       return;
     }
 
@@ -732,7 +734,7 @@ export default function LinksPage() {
     if (appearanceData) {
       updateAppearance.mutate({
         url: 'admin/UpdateAppearance',
-        data: { ...appearanceData, hideFooter: checked } as unknown as Record<string, unknown>,
+        data: { ...appearanceData, hideFooter: checked },
       });
     }
   };

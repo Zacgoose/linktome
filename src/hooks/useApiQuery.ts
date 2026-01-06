@@ -174,7 +174,7 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     onError,
   } = props;
 
-  const shouldEnable = enabled && authReady;
+  const shouldEnable = enabled && authReady && user !== null;
   const mergedParams = buildMergedParams(params, selectedContext, user);
 
   const callingUserId = getUserId(user);

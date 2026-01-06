@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { checkRouteAccess } from '@/config/routes';
 import { apiPost } from '@/utils/api';
 import type { UserAuth, UserManagement, LoginResponse } from '@/types/api';
+import type { QueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   user: UserAuth | null;
@@ -29,7 +30,7 @@ export type { UserAuth, UserManagement };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode; queryClient: QueryClient }> = ({ children, queryClient }) => {
   const [user, setUser] = useState<UserAuth | null>(null);
   // State to preserve last valid user during refresh (for display continuity)
   const [lastValidUser, setLastValidUser] = useState<UserAuth | null>(null);
@@ -113,6 +114,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [router.asPath, loading, refreshing]);
 
   const logout = async () => {
+    // Cancel all ongoing queries to prevent redundant API calls
+    queryClient.cancelQueries();
+    
+    // Clear the query cache to prevent any refetch attempts
+    queryClient.clear();
+    
     try {
       // Backend will clear the HTTP-only cookies
       await apiPost('public/Logout');
@@ -201,6 +208,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       canAccessRoute,
       setUser,
       refreshAuth,
+      twoFactorEmailEnabled: effectiveUser?.twoFactorEmailEnabled || false,
+      twoFactorTotpEnabled: effectiveUser?.twoFactorTotpEnabled || false,
+      twoFactorEnabled: effectiveUser?.twoFactorEnabled || false,
     }}>
       {children}
     </AuthContext.Provider>

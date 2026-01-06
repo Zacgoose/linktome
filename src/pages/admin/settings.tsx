@@ -109,7 +109,7 @@ export default function SettingsPage() {
       setTimeout(() => setSuccess(''), 3000);
     },
     onError: (err) => {
-      setError(err.message || 'Failed to update password');
+      setError(err || 'Failed to update password');
       setTimeout(() => setError(''), 5000);
     },
   });
@@ -124,7 +124,7 @@ export default function SettingsPage() {
       setTimeout(() => setSuccess(''), 5000);
     },
     onError: (err) => {
-      setError(err.message || 'Failed to update email');
+      setError(err || 'Failed to update email');
       setTimeout(() => setError(''), 5000);
     },
   });
@@ -136,7 +136,7 @@ export default function SettingsPage() {
       setTimeout(() => setSuccess(''), 3000);
     },
     onError: (err) => {
-      setError(err.message || 'Failed to update phone number');
+      setError(err || 'Failed to update phone number');
       setTimeout(() => setError(''), 5000);
     },
   });
@@ -150,7 +150,7 @@ export default function SettingsPage() {
       setTimeout(() => setSuccess(''), 3000);
     },
     onError: (err) => {
-      setError(err.message || 'Failed to reset 2FA');
+      setError(err || 'Failed to reset 2FA');
       setTimeout(() => setError(''), 5000);
     },
   });

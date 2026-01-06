@@ -43,6 +43,7 @@ import {
 import { useApiGet, useApiPost, useApiDelete, useApiPut } from '@/hooks/useApiQuery';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { getTierLimits } from '@/utils/tierValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { ApiKey, ApiKeysResponse, CreateKeyResponse } from '@/types/api';
 
@@ -126,10 +127,11 @@ export default function ApiKeysPage() {
   const handleCreateKey = () => {
     // Check if user has reached API keys limit
     const currentKeysCount = data?.keys?.length || 0;
-    const limit = apiKeysLimitCheck.limit;
+    const tierLimits = getTierLimits(userTier);
+    const limit = tierLimits.apiKeysLimit;
     
     if (limit !== -1 && currentKeysCount >= limit) {
-      openUpgradePrompt('API Keys', apiKeysLimitCheck.requiredTier);
+      openUpgradePrompt('API Keys', apiKeysLimitCheck.requiredTier || userTier);
       return;
     }
 
@@ -219,7 +221,7 @@ export default function ApiKeysPage() {
             onClick={() => {
               // Check API access first
               if (!apiAccessCheck.allowed) {
-                openUpgradePrompt('API Access', apiAccessCheck.requiredTier);
+                openUpgradePrompt('API Access', apiAccessCheck.requiredTier || userTier);
                 return;
               }
               setSelectedPermissions([]);
@@ -239,11 +241,15 @@ export default function ApiKeysPage() {
         )}
 
         {/* API Keys Limit Alert */}
-        {apiAccessCheck.allowed && !apiKeysLimitCheck.allowed && data?.keys && data.keys.length >= apiKeysLimitCheck.limit && (
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            You've reached your API key limit ({apiKeysLimitCheck.limit} keys). Upgrade to {apiKeysLimitCheck.requiredTier}+ to create more API keys.
-          </Alert>
-        )}
+        {apiAccessCheck.allowed && !apiKeysLimitCheck.allowed && data?.keys && (() => {
+          const tierLimits = getTierLimits(userTier);
+          const limit = tierLimits.apiKeysLimit;
+          return data.keys.length >= limit && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              You've reached your API key limit ({limit} keys). Upgrade to {apiKeysLimitCheck.requiredTier || userTier}+ to create more API keys.
+            </Alert>
+          );
+        })()}
 
         {/* Usage & Limits Card */}
         <Card sx={{ mb: 3 }}>
