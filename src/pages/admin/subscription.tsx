@@ -31,6 +31,8 @@ import {
   CardMembership as CardIcon,
   Cancel as CancelIcon,
   Upgrade as UpgradeIcon,
+  RadioButtonUnchecked as RadioUncheckedIcon,
+  RadioButtonChecked as RadioCheckedIcon,
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
@@ -58,6 +60,7 @@ export default function SubscriptionPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<UserTier | null>(null);
+  const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
@@ -96,6 +99,7 @@ export default function SubscriptionPage() {
 
   const handleUpgrade = (tier: UserTier) => {
     setSelectedPlan(tier);
+    setSelectedBillingCycle('monthly'); // Reset to monthly as default
     setUpgradeDialogOpen(true);
   };
 
@@ -106,6 +110,7 @@ export default function SubscriptionPage() {
       url: 'admin/UpgradeSubscription',
       data: {
         tier: selectedPlan,
+        billingCycle: selectedBillingCycle,
       },
     });
   };
@@ -462,17 +467,73 @@ export default function SubscriptionPage() {
               You are about to upgrade your subscription to the{' '}
               {selectedPlan && TIER_INFO[selectedPlan].displayName} plan.
             </Typography>
-            {selectedPlan && (
-              <Box sx={{ mt: 2 }}>
+            {selectedPlan && selectedPlan !== UserTier.FREE && (
+              <Box sx={{ mt: 3 }}>
                 <Typography variant="body2" fontWeight={600} gutterBottom>
-                  Billing Options:
+                  Select Billing Cycle:
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  • Monthly: ${TIER_INFO[selectedPlan].pricing.monthly.toFixed(2)}/month
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  • Annual: ${TIER_INFO[selectedPlan].pricing.annual.toFixed(2)}/year
-                </Typography>
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  <Card
+                    sx={{
+                      border: 2,
+                      borderColor: selectedBillingCycle === 'monthly' ? 'primary.main' : 'divider',
+                      cursor: 'pointer',
+                      '&:hover': { borderColor: 'primary.main' },
+                    }}
+                    onClick={() => setSelectedBillingCycle('monthly')}
+                  >
+                    <CardContent sx={{ py: 2 }}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        {selectedBillingCycle === 'monthly' ? (
+                          <RadioCheckedIcon color="primary" />
+                        ) : (
+                          <RadioUncheckedIcon />
+                        )}
+                        <Box flexGrow={1}>
+                          <Typography variant="body1" fontWeight={600}>
+                            Monthly
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Billed monthly
+                          </Typography>
+                        </Box>
+                        <Typography variant="h6" fontWeight={700}>
+                          ${TIER_INFO[selectedPlan].pricing.monthly.toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                  <Card
+                    sx={{
+                      border: 2,
+                      borderColor: selectedBillingCycle === 'annual' ? 'primary.main' : 'divider',
+                      cursor: 'pointer',
+                      '&:hover': { borderColor: 'primary.main' },
+                    }}
+                    onClick={() => setSelectedBillingCycle('annual')}
+                  >
+                    <CardContent sx={{ py: 2 }}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        {selectedBillingCycle === 'annual' ? (
+                          <RadioCheckedIcon color="primary" />
+                        ) : (
+                          <RadioUncheckedIcon />
+                        )}
+                        <Box flexGrow={1}>
+                          <Typography variant="body1" fontWeight={600}>
+                            Annual
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Billed yearly - Save 17%
+                          </Typography>
+                        </Box>
+                        <Typography variant="h6" fontWeight={700}>
+                          ${TIER_INFO[selectedPlan].pricing.annual.toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Stack>
               </Box>
             )}
             <Alert severity="warning" sx={{ mt: 2 }}>
