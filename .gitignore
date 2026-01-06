@@ -12,6 +12,7 @@
 
 # lock files
 package-lock.json
+yarn.lock
 
 # testing
 /coverage
