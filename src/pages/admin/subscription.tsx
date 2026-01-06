@@ -389,7 +389,7 @@ export default function SubscriptionPage() {
                         </Typography>
                         {tier !== UserTier.FREE && (
                           <Typography variant="caption" color="text.secondary">
-                            ${pricing.annual.toFixed(2)}/year (save 17%)
+                            ${pricing.annual.toFixed(2)}/year
                           </Typography>
                         )}
                       </Box>
