@@ -3,6 +3,7 @@
  * Shows upgrade messaging when users try to access premium features
  */
 
+import { useRouter } from 'next/router';
 import {
   Dialog,
   DialogTitle,
@@ -39,6 +40,7 @@ export default function UpgradePrompt({
   requiredTier,
   currentTier,
 }: UpgradePromptProps) {
+  const router = useRouter();
   const requiredInfo = TIER_INFO[requiredTier];
   const currentInfo = TIER_INFO[currentTier];
   const requiredLimits = getTierLimits(requiredTier);
@@ -107,8 +109,7 @@ export default function UpgradePrompt({
         <Button
           variant="contained"
           onClick={() => {
-            // In production, redirect to pricing/upgrade page
-            alert('Upgrade functionality would redirect to pricing page');
+            router.push('/admin/subscription');
             onClose();
           }}
           sx={{
