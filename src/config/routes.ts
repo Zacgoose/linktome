@@ -78,7 +78,7 @@ export const ROUTE_CONFIG: RoutePermission[] = [
   {
     path: '/admin/subscription',
     allowedFor: 'authenticated',
-    requiredPermissions: ['read:profile'],
+    requiredPermissions: ['read:subscription'],
   },
 
   // Admin-only routes
@@ -142,6 +142,10 @@ export const PERMISSIONS = {
   'create:apiauth': 'Create new API authentication keys',
   'update:apiauth': 'Update existing API authentication keys',
   'delete:apiauth': 'Delete API authentication keys',
+
+  // Subscription permissions
+  'read:subscription': 'View subscription details',
+  'write:subscription': 'Manage subscription settings',
 } as const;
 
 /**
@@ -170,7 +174,9 @@ export const ROLES = {
       'read:apiauth',
       'create:apiauth',
       'update:apiauth',
-      'delete:apiauth'
+      'delete:apiauth',
+      'read:subscription',
+      'write:subscription',
     ],
   },
   user_manager: {
