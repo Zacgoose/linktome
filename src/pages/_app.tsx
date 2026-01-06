@@ -24,7 +24,18 @@ export const UiThemeContext = createContext({
 });
 
 const clientSideEmotionCache = createEmotionCache();
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Disable automatic retries to avoid redundant API calls
+      retry: false,
+      // Disable automatic refetch on window focus to avoid redundant API calls
+      refetchOnWindowFocus: false,
+      // Disable automatic refetch on reconnect to avoid redundant API calls
+      refetchOnReconnect: false,
+    },
+  },
+});
 
 interface MyAppProps extends AppProps {
   emotionCache?: EmotionCache;
@@ -76,7 +87,7 @@ export default function App(props: MyAppProps) {
       <QueryClientProvider client={queryClient}>
         <ThemeWrapper>
           <ToastProvider>
-            <AuthProvider>
+            <AuthProvider queryClient={queryClient}>
               <RbacProvider>
                 <Component {...pageProps} />
               </RbacProvider>
