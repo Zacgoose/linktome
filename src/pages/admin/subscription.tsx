@@ -527,7 +527,6 @@ export default function SubscriptionPage() {
                 ? `You are about to reactivate your subscription to the ${selectedPlan && TIER_INFO[selectedPlan].displayName} plan.`
                 : `You are about to upgrade your subscription to the ${selectedPlan && TIER_INFO[selectedPlan].displayName} plan.`}
             </Typography>
-            </Typography>
             {selectedPlan && selectedPlan !== UserTier.FREE && (
               <Box sx={{ mt: 3 }}>
                 <Typography variant="body2" fontWeight={600} gutterBottom>
