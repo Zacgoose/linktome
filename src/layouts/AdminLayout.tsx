@@ -29,6 +29,8 @@ import {
   Palette as PaletteIcon,
   BarChart as AnalyticsIcon,
   People as PeopleIcon,
+  Settings as SettingsIcon,
+  CardMembership as SubscriptionIcon,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useAuthContext } from '@/providers/AuthProvider';
@@ -85,6 +87,18 @@ const menuItems: MenuItem[] = [
     icon: <AnalyticsIcon />, 
     path: '/admin/analytics',
     requiredPermissions: ['read:analytics'],
+  },
+  { 
+    text: 'Settings', 
+    icon: <SettingsIcon />, 
+    path: '/admin/settings',
+    requiredPermissions: ['read:profile'],
+  },
+  { 
+    text: 'Subscription', 
+    icon: <SubscriptionIcon />, 
+    path: '/admin/subscription',
+    requiredPermissions: ['read:profile'],
   },
   { 
     text: 'Users', 

@@ -19,6 +19,9 @@ interface AuthContextType {
   canAccessRoute: (path: string) => boolean;
   setUser: (user: UserAuth | null) => void;
   refreshAuth: () => Promise<boolean>;
+  twoFactorEmailEnabled: boolean;
+  twoFactorTotpEnabled: boolean;
+  twoFactorEnabled: boolean;
 }
 
 // Re-export types for backward compatibility
@@ -62,6 +65,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }))
         : [],
       tier: user.tier, // Include tier from backend
+      twoFactorEnabled: Boolean(user.twoFactorEnabled),
+      twoFactorEmailEnabled: Boolean(user.twoFactorEmailEnabled),
+      twoFactorTotpEnabled: Boolean(user.twoFactorTotpEnabled),
     };
   }
 

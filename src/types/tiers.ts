@@ -165,6 +165,10 @@ export interface TierInfo {
   color: string;
   icon: string;
   description: string;
+  pricing: {
+    monthly: number;
+    annual: number;
+  };
 }
 
 /**
@@ -177,6 +181,10 @@ export const TIER_INFO: Record<UserTier, TierInfo> = {
     color: '#9e9e9e',
     icon: '🆓',
     description: 'Basic features for getting started',
+    pricing: {
+      monthly: 0,
+      annual: 0,
+    },
   },
   [UserTier.PRO]: {
     tier: UserTier.PRO,
@@ -184,6 +192,10 @@ export const TIER_INFO: Record<UserTier, TierInfo> = {
     color: '#3f51b5',
     icon: '⭐',
     description: 'Advanced features for professionals',
+    pricing: {
+      monthly: 1.99,
+      annual: 19.99,
+    },
   },
   [UserTier.PREMIUM]: {
     tier: UserTier.PREMIUM,
@@ -191,6 +203,10 @@ export const TIER_INFO: Record<UserTier, TierInfo> = {
     color: '#9c27b0',
     icon: '💎',
     description: 'Premium features for power users',
+    pricing: {
+      monthly: 3.99,
+      annual: 39.99,
+    },
   },
   [UserTier.ENTERPRISE]: {
     tier: UserTier.ENTERPRISE,
@@ -198,5 +214,9 @@ export const TIER_INFO: Record<UserTier, TierInfo> = {
     color: '#f44336',
     icon: '🏢',
     description: 'Enterprise-grade features and support',
+    pricing: {
+      monthly: 10.99,
+      annual: 109.99,
+    },
   },
 };
