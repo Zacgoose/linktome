@@ -1077,12 +1077,21 @@ export default function LinksPage() {
           <Stack spacing={1} sx={{ mt: 1 }}>
             <Paper
               onClick={() => handleSelectCollection(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelectCollection(null);
+                }
+              }}
+              tabIndex={0}
+              role="button"
               sx={{
                 p: 2,
                 cursor: 'pointer',
                 border: 2,
                 borderColor: 'transparent',
                 '&:hover': { borderColor: 'primary.light' },
+                '&:focus': { borderColor: 'primary.main', outline: 'none' },
               }}
             >
               <Stack direction="row" alignItems="center" spacing={1}>
@@ -1094,12 +1103,21 @@ export default function LinksPage() {
               <Paper
                 key={group.id}
                 onClick={() => handleSelectCollection(group.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectCollection(group.id);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
                 sx={{
                   p: 2,
                   cursor: 'pointer',
                   border: 2,
                   borderColor: 'transparent',
                   '&:hover': { borderColor: 'primary.light' },
+                  '&:focus': { borderColor: 'primary.main', outline: 'none' },
                 }}
               >
                 <Stack direction="row" alignItems="center" spacing={1}>
