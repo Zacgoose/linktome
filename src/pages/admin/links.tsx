@@ -338,7 +338,6 @@ function SortableGroup({
           display: 'flex',
           alignItems: 'center',
           p: 2,
-          bgcolor: 'grey.50',
           borderBottom: isCollapsed ? 'none' : '1px solid',
           borderColor: 'divider',
         }}
@@ -366,7 +365,7 @@ function SortableGroup({
 
         <Stack direction="row" spacing={1} alignItems="center">
           <Tooltip title="Layout">
-            <IconButton size="small" sx={{ bgcolor: 'white' }}>
+            <IconButton size="small">
               <ViewModule fontSize="small" />
             </IconButton>
           </Tooltip>
