@@ -8,8 +8,6 @@ import {
   CircularProgress,
   Link as MuiLink,
   Stack,
-  Paper,
-  Collapse,
 } from '@mui/material';
 import { Email as EmailIcon, Security as SecurityIcon, VpnKey as KeyIcon } from '@mui/icons-material';
 
@@ -192,7 +190,7 @@ export default function TwoFactorAuth({
           {method === 'email' && onResendEmail && (
             <Box textAlign="center" sx={{ mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Didn't receive the code?{' '}
+                Didn&apos;t receive the code?{' '}
                 {resendCooldown > 0 ? (
                   <Typography component="span" variant="body2" color="text.disabled">
                     Resend in {resendCooldown}s
@@ -270,7 +268,7 @@ export default function TwoFactorAuth({
 
           <Alert severity="warning" sx={{ mb: 3 }}>
             <Typography variant="body2">
-              Each backup code can only be used once. After using a code, you'll have one less backup code available.
+              Each backup code can only be used once. After using a code, you&apos;ll have one less backup code available.
             </Typography>
           </Alert>
 

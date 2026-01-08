@@ -37,7 +37,7 @@ export default function PremiumFeatureWrapper({
       {showAlert && !access.allowed && (
         <Alert severity="info" icon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
           {featureName} {description ? `(${description}) ` : ''}is a premium feature. You can 
-          select it, but you'll need to upgrade to save.
+          select it, but you&apos;ll need to upgrade to save.
         </Alert>
       )}
       {children}

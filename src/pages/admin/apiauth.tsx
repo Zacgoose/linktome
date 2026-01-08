@@ -246,7 +246,7 @@ export default function ApiKeysPage() {
           const limit = tierLimits.apiKeysLimit;
           return data.keys.length >= limit && (
             <Alert severity="warning" sx={{ mb: 3 }}>
-              You've reached your API key limit ({limit} keys). Upgrade to {apiKeysLimitCheck.requiredTier || userTier}+ to create more API keys.
+              You&apos;ve reached your API key limit ({limit} keys). Upgrade to {apiKeysLimitCheck.requiredTier || userTier}+ to create more API keys.
             </Alert>
           );
         })()}

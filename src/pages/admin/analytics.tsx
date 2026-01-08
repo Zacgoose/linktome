@@ -22,16 +22,7 @@ import { useApiGet } from '@/hooks/useApiQuery';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { UserTier } from '@/types/tiers';
-import {
-  ClicksByDay,
-  ViewsByDay,
-  RecentPageView,
-  RecentLinkClick,
-  LinkClicksByLink,
-  AnalyticsSummary,
-  AnalyticsData,
-  AnalyticsResponse
-} from '@/types/api';
+import { AnalyticsResponse } from '@/types/api';
 
 export default function AnalyticsPage() {
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();

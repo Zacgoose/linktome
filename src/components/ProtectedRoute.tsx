@@ -35,7 +35,6 @@ export function ProtectedRoute({
 
   useEffect(() => {
     // Debug log for ProtectedRoute effect
-    // eslint-disable-next-line no-console
     console.debug('[ProtectedRoute] useEffect', { authReady, user, refreshing, asPath: router.asPath });
     // Wait for AuthProvider to finish before redirecting
     if (authReady && !refreshing && !user) {
@@ -48,7 +47,6 @@ export function ProtectedRoute({
 
   // Always wait for AuthProvider to finish before making any auth decisions
   // Debug log for every render
-  // eslint-disable-next-line no-console
   console.debug('[ProtectedRoute] render', { authReady, user, refreshing });
 
   if (!authReady || refreshing) {
