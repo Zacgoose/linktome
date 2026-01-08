@@ -20,7 +20,6 @@ import {
   ListItemIcon,
   ListItemText,
   Collapse,
-  Badge,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -33,18 +32,13 @@ import {
   Edit,
   Delete,
   Share,
-  Schedule,
   Lock,
-  Image,
-  BarChart,
   MoreHoriz,
   ContentCopy,
   Archive,
   Folder,
   FolderOpen,
   ViewModule,
-  TrendingUp,
-  TrendingDown,
   Link as LinkIcon,
   Instagram,
   YouTube,
@@ -52,8 +46,6 @@ import {
   Email,
   MusicNote,
   OpenInNew,
-  ShortcutOutlined,
-  Animation,
   PhoneIphone as PhoneIcon,
 } from '@mui/icons-material';
 import {
@@ -83,8 +75,6 @@ import {
   LinksResponse,
   AppearanceData,
   DEFAULT_APPEARANCE,
-  LinkOperation,
-  GroupOperation,
   UpdateLinksRequest,
 } from '@/types/links';
 import { UserProfile } from '@/types/api';
@@ -126,15 +116,6 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings, on
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
-
-  const getTrendIcon = () => {
-    if (link.clicksTrend === 'up') {
-      return <TrendingUp sx={{ fontSize: 14, color: 'success.main' }} />;
-    } else if (link.clicksTrend === 'down') {
-      return <TrendingDown sx={{ fontSize: 14, color: 'text.secondary' }} />;
-    }
-    return null;
   };
 
   return (
