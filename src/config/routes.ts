@@ -70,6 +70,16 @@ export const ROUTE_CONFIG: RoutePermission[] = [
     allowedFor: 'authenticated',
     requiredPermissions: ['read:apiauth'],
   },
+  {
+    path: '/admin/settings',
+    allowedFor: 'authenticated',
+    requiredPermissions: ['read:usersettings'],
+  },
+  {
+    path: '/admin/subscription',
+    allowedFor: 'authenticated',
+    requiredPermissions: ['read:subscription'],
+  },
 
   // Admin-only routes
   {
@@ -104,6 +114,13 @@ export const PERMISSIONS = {
   'read:profile': 'View own profile',
   'write:profile': 'Edit own profile',
 
+  // User settings permissions
+  'read:usersettings': 'View user settings',
+  'write:email': 'Change email address',
+  'write:password': 'Change password',
+  'write:phone': 'Change phone number',
+  'write:2fauth': 'Manage two-factor authentication',  
+
   // Links permissions
   'read:links': 'View own links',
   'write:links': 'Create, edit, and delete own links',
@@ -132,6 +149,10 @@ export const PERMISSIONS = {
   'create:apiauth': 'Create new API authentication keys',
   'update:apiauth': 'Update existing API authentication keys',
   'delete:apiauth': 'Delete API authentication keys',
+
+  // Subscription permissions
+  'read:subscription': 'View subscription details',
+  'write:subscription': 'Manage subscription settings',
 } as const;
 
 /**
@@ -160,7 +181,14 @@ export const ROLES = {
       'read:apiauth',
       'create:apiauth',
       'update:apiauth',
-      'delete:apiauth'
+      'delete:apiauth',
+      'read:subscription',
+      'write:subscription',
+      'read:usersettings',
+      'write:email',
+      'write:password',
+      'write:phone',
+      'write:2fauth'
     ],
   },
   user_manager: {

@@ -3,6 +3,8 @@
  * See: API_RESPONSE_FORMAT.md in linktome-api repository
  */
 
+import { UserTier } from './tiers';
+
 /**
  * Standard error response format
  * HTTP Status: 4xx or 5xx
@@ -22,6 +24,10 @@ export interface UserAuth {
   roles: string[];
   permissions: string[];
   userManagements: UserManagement[];
+  tier?: UserTier; // User's subscription tier
+  twoFactorEnabled?: boolean; // Whether user has 2FA enabled
+  twoFactorEmailEnabled?: boolean; // Whether email 2FA is enabled
+  twoFactorTotpEnabled?: boolean; // Whether TOTP 2FA is enabled
 }
 
 /**
@@ -35,6 +41,7 @@ export interface UserManagement {
   state: string;
   direction: 'manager' | 'managed';
   permissions: string[];
+  tier?: UserTier; // Managed user's subscription tier
   created?: string;
   updated?: string;
 }
@@ -44,7 +51,30 @@ export interface UserManagement {
  * HTTP Status: 200 (success) or 400/401 (error)
  */
 export interface LoginResponse {
-  user: UserAuth;
+  user?: UserAuth;
+  requires2FA?: boolean;
+  requiresTwoFactor?: boolean; // Backend uses this field name
+  twoFactorMethod?: 'email' | 'totp' | 'both';
+  availableMethods?: ('email' | 'totp')[]; // Array of available 2FA methods when user has multiple enabled
+  sessionId?: string;
+}
+
+/**
+ * 2FA verification request
+ */
+export interface TwoFactorVerifyRequest {
+  sessionId: string;
+  token: string; // 6-digit code (email/TOTP) or backup code
+  method: 'email' | 'totp' | 'backup'; // Type of verification
+}
+
+/**
+ * 2FA setup response for TOTP
+ */
+export interface TotpSetupResponse {
+  secret: string;
+  qrCode: string;
+  backupCodes?: string[];
 }
 
 /**
@@ -85,3 +115,102 @@ export interface ListResponse<T> {
   items?: T[];
   [key: string]: any;
 }
+
+/**
+ * API Key data
+ */
+export interface ApiKey {
+  keyId: string;
+  name: string;
+  permissions: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
+  lastUsedIP: string | null;
+}
+
+/**
+ * API Keys list response
+ */
+export interface ApiKeysResponse {
+  keys: ApiKey[];
+  availablePermissions: string[];
+  rateLimits: {
+    requestsPerMinute: number;
+    requestsPerDay: number;
+  };
+  usage: {
+    dailyUsed: number;
+    dailyRemaining: number;
+    perKey: Record<string, { minuteUsed: number; minuteRemaining: number }>;
+  };
+}
+
+/**
+ * Create API key response
+ */
+export interface CreateKeyResponse {
+  message: string;
+  key: {
+    keyId: string;
+    key: string;
+    name: string;
+    permissions: string[];
+  };
+}
+
+/**
+ * Analytics Types
+ */
+export interface ClicksByDay {
+  date: string;
+  count: number;
+}
+
+export interface ViewsByDay {
+  date: string;
+  count: number;
+}
+
+export interface RecentPageView {
+  ipAddress: string;
+  userAgent: string;
+  referrer: string;
+  timestamp: string;
+}
+
+export interface RecentLinkClick {
+  linkTitle: string;
+  userAgent: string;
+  timestamp: string;
+  linkUrl: string;
+  referrer: string;
+  ipAddress: string;
+  linkId: string;
+}
+
+export interface LinkClicksByLink {
+  linkId: string;
+  clickCount: number;
+  linkTitle: string;
+  linkUrl: string;
+}
+
+export interface AnalyticsSummary {
+  totalLinkClicks: number;
+  uniqueVisitors: number;
+  totalPageViews: number;
+}
+
+export interface AnalyticsData {
+  clicksByDay: ClicksByDay[];
+  recentPageViews: RecentPageView[];
+  linkClicksByLink: LinkClicksByLink[];
+  summary: AnalyticsSummary;
+  viewsByDay: ViewsByDay[];
+  recentLinkClicks: RecentLinkClick[];
+}
+
+/**
+ * Analytics API response
+ */
+export type AnalyticsResponse = AnalyticsData;

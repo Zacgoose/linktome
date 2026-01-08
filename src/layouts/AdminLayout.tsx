@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect, useContext } from 'react';
+import { useEffect, useContext, useState } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -29,7 +29,10 @@ import {
   Palette as PaletteIcon,
   BarChart as AnalyticsIcon,
   People as PeopleIcon,
+  Settings as SettingsIcon,
+  CardMembership as SubscriptionIcon,
 } from '@mui/icons-material';
+import MenuIcon from '@mui/icons-material/Menu';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useRbacContext } from '@/context/RbacContext';
 
@@ -37,7 +40,14 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const drawerWidth = 240;
+// Drawer widths (edit these to change sizes)
+const drawerWidth = 200; // Expanded width
+const collapsedDrawerWidth = 60; // Collapsed width
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  // Collapsible drawer state (must be inside the component)
+  const [drawerOpen, setDrawerOpen] = useState(true);
+  // Handler to toggle drawer
+  const handleDrawerToggle = () => setDrawerOpen((open) => !open);
 
 interface MenuItem {
   text: string;
@@ -79,6 +89,18 @@ const menuItems: MenuItem[] = [
     requiredPermissions: ['read:analytics'],
   },
   { 
+    text: 'Settings', 
+    icon: <SettingsIcon />, 
+    path: '/admin/settings',
+    requiredPermissions: ['read:usersettings'],
+  },
+  { 
+    text: 'Subscription', 
+    icon: <SubscriptionIcon />, 
+    path: '/admin/subscription',
+    requiredPermissions: ['read:subscription'],
+  },
+  { 
     text: 'Users', 
     icon: <PeopleIcon />, 
     path: '/admin/users',
@@ -93,10 +115,9 @@ const menuItems: MenuItem[] = [
 ];
 
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
   const { uiTheme, setUiTheme } = useContext(UiThemeContext);
   const router = useRouter();
-  const { user, logout, loading, managedUsers: allManagedUsers, refreshAuth } = useAuthContext();
+  const { user, logout, loading, managedUsers: allManagedUsers } = useAuthContext();
   const { selectedContext, setSelectedContext, contextRoles, contextPermissions } = useRbacContext();
   // managedUsers are already filtered for state === 'accepted' in AuthProvider
   const managedUsers = allManagedUsers || [];
@@ -173,7 +194,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         }}
       >
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, color: 'primary.main' }}>
+          {/* Drawer toggle button (always MenuIcon) */}
+          <IconButton
+            color="inherit"
+            aria-label={drawerOpen ? 'Collapse navigation' : 'Expand navigation'}
+            onClick={handleDrawerToggle}
+            edge="start"
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          {/* Keep LinkToMe always visible and stationary */}
+          <Typography
+            variant="h6"
+            sx={{
+              flexGrow: 1,
+              fontWeight: 700,
+              color: 'primary.main',
+              minWidth: 120,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              ml: 0,
+              transition: 'none',
+            }}
+          >
             LinkToMe
           </Typography>
           {/* UI Theme Switcher */}
@@ -213,14 +258,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Side Drawer Navigation */}
       <Drawer
         variant="permanent"
+        open={drawerOpen}
         sx={{
-          width: drawerWidth,
+          width: drawerOpen ? drawerWidth : collapsedDrawerWidth,
           flexShrink: 0,
+          whiteSpace: 'nowrap',
+          transition: (theme) => theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
           '& .MuiDrawer-paper': {
-            width: drawerWidth,
+            width: drawerOpen ? drawerWidth : collapsedDrawerWidth,
             boxSizing: 'border-box',
             borderRight: '1px solid',
             borderColor: 'divider',
+            overflowX: 'hidden',
+            transition: (theme) => theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
           },
         }}
       >
@@ -228,11 +284,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <Box sx={{ overflow: 'auto', mt: 2 }}>
           <List>
             {visibleMenuItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
+              <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
                 <ListItemButton
                   selected={router.pathname === item.path}
                   onClick={() => router.push(item.path)}
                   sx={theme => ({
+                    minHeight: 48,
+                    justifyContent: drawerOpen ? 'initial' : 'center',
+                    px: 2.5,
                     '&.Mui-selected': {
                       bgcolor: 'primary.light',
                       color: theme.palette.mode === 'dark' ? theme.palette.primary.contrastText : theme.palette.primary.contrastText,
@@ -245,10 +304,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     },
                   })}
                 >
-                  <ListItemIcon>
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: drawerOpen ? 2 : 'auto',
+                      justifyContent: 'center',
+                    }}
+                  >
                     {item.icon}
                   </ListItemIcon>
-                  <ListItemText primary={item.text} />
+                  {drawerOpen && <ListItemText primary={item.text} sx={{ opacity: drawerOpen ? 1 : 0 }} />}
                 </ListItemButton>
               </ListItem>
             ))}

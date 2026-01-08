@@ -23,6 +23,8 @@ import { useState as useReactState } from 'react';
 
 interface UserManagerRelationship {
   UserId: string;
+  username: string;
+  email: string;
   role: string;
   state: string;
   created: string;
@@ -59,6 +61,7 @@ export default function UsersPage() {
       else if (err instanceof Error) setError(err.message);
       else setError('Failed to send invite');
     },
+    relatedQueryKeys: ['admin-user-manager-list'],
   });
   const { refreshAuth } = useAuthContext();
 
@@ -108,6 +111,7 @@ export default function UsersPage() {
       data = { UserId };
     }
     userManagerAction.mutate({ url, data });
+    
   };
 
   return (
@@ -161,6 +165,8 @@ export default function UsersPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
+                    <TableCell>Username</TableCell>
+                    <TableCell>Email</TableCell>
                     <TableCell>User ID</TableCell>
                     <TableCell>Role</TableCell>
                     <TableCell>Status</TableCell>
@@ -170,11 +176,13 @@ export default function UsersPage() {
                 <TableBody>
                   {managers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} align="center">No managers</TableCell>
+                      <TableCell colSpan={6} align="center">No managers</TableCell>
                     </TableRow>
                   )}
                   {managers.map((um) => (
                     <TableRow key={um.UserId}>
+                      <TableCell>{um.username || '-'}</TableCell>
+                      <TableCell>{um.email || '-'}</TableCell>
                       <TableCell>{um.UserId}</TableCell>
                       <TableCell>{um.role}</TableCell>
                       <TableCell>{um.state}</TableCell>
@@ -193,6 +201,8 @@ export default function UsersPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
+                    <TableCell>Username</TableCell>
+                    <TableCell>Email</TableCell>
                     <TableCell>User ID</TableCell>
                     <TableCell>Role</TableCell>
                     <TableCell>Status</TableCell>
@@ -202,11 +212,13 @@ export default function UsersPage() {
                 <TableBody>
                   {managees.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} align="center">No users</TableCell>
+                      <TableCell colSpan={6} align="center">No users</TableCell>
                     </TableRow>
                   )}
                   {managees.map((um) => (
                     <TableRow key={um.UserId}>
+                      <TableCell>{um.username || '-'}</TableCell>
+                      <TableCell>{um.email || '-'}</TableCell>
                       <TableCell>{um.UserId}</TableCell>
                       <TableCell>{um.role}</TableCell>
                       <TableCell>{um.state}</TableCell>

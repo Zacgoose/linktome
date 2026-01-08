@@ -42,41 +42,10 @@ import {
 } from '@mui/icons-material';
 import { useApiGet, useApiPost, useApiDelete, useApiPut } from '@/hooks/useApiQuery';
 import AdminLayout from '@/layouts/AdminLayout';
-
-interface ApiKey {
-  keyId: string;
-  name: string;
-  permissions: string[];
-  createdAt: string;
-  lastUsedAt: string | null;
-  lastUsedIP: string | null;
-}
-
-interface ApiKeysResponse {
-  keys: ApiKey[];
-  availablePermissions: string[];
-  tier: string;
-  rateLimits: {
-    requestsPerMinute: number;
-    requestsPerDay: number;
-  };
-  usage: {
-    dailyUsed: number;
-    dailyRemaining: number;
-    perKey: Record<string, { minuteUsed: number; minuteRemaining: number }>;
-  };
-}
-
-interface CreateKeyResponse {
-  message: string;
-  key: {
-    keyId: string;
-    key: string;
-    name: string;
-    permissions: string[];
-    createdAt: string;
-  };
-}
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { getTierLimits } from '@/utils/tierValidation';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import { ApiKey, ApiKeysResponse, CreateKeyResponse } from '@/types/api';
 
 function UsageBar({ used, total, label }: { used: number; total: number; label: string }) {
   const percentage = total > 0 ? Math.min((used / total) * 100, 100) : 0;
@@ -104,6 +73,7 @@ function UsageBar({ used, total, label }: { used: number; total: number; label: 
 }
 
 export default function ApiKeysPage() {
+  const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -121,6 +91,10 @@ export default function ApiKeysPage() {
     queryKey: 'api-keys',
     staleTime: 30000,
   });
+
+  // Check API access
+  const apiAccessCheck = canAccess('apiAccess');
+  const apiKeysLimitCheck = canAccess('apiKeysLimit');
 
   const createMutation = useApiPost<CreateKeyResponse>({
     relatedQueryKeys: ['api-keys'],
@@ -151,6 +125,16 @@ export default function ApiKeysPage() {
   });
 
   const handleCreateKey = () => {
+    // Check if user has reached API keys limit
+    const currentKeysCount = data?.keys?.length || 0;
+    const tierLimits = getTierLimits(userTier);
+    const limit = tierLimits.apiKeysLimit;
+    
+    if (limit !== -1 && currentKeysCount >= limit) {
+      openUpgradePrompt('API Keys', apiKeysLimitCheck.requiredTier || userTier);
+      return;
+    }
+
     createMutation.mutate({
       url: 'admin/apikeyscreate',
       data: {
@@ -235,6 +219,11 @@ export default function ApiKeysPage() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => {
+              // Check API access first
+              if (!apiAccessCheck.allowed) {
+                openUpgradePrompt('API Access', apiAccessCheck.requiredTier || userTier);
+                return;
+              }
               setSelectedPermissions([]);
               setNewKeyName('');
               setCreateDialogOpen(true);
@@ -244,6 +233,24 @@ export default function ApiKeysPage() {
           </Button>
         </Box>
 
+        {/* API Access Alert */}
+        {!apiAccessCheck.allowed && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            API access is available for {apiAccessCheck.requiredTier}+ plans. Upgrade your plan to create API keys and access the LinkToMe API programmatically.
+          </Alert>
+        )}
+
+        {/* API Keys Limit Alert */}
+        {apiAccessCheck.allowed && !apiKeysLimitCheck.allowed && data?.keys && (() => {
+          const tierLimits = getTierLimits(userTier);
+          const limit = tierLimits.apiKeysLimit;
+          return data.keys.length >= limit && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              You've reached your API key limit ({limit} keys). Upgrade to {apiKeysLimitCheck.requiredTier || userTier}+ to create more API keys.
+            </Alert>
+          );
+        })()}
+
         {/* Usage & Limits Card */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -251,7 +258,7 @@ export default function ApiKeysPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Typography variant="h6">Usage & Limits</Typography>
                 <Chip
-                  label={data?.tier || 'free'}
+                  label={userTier}
                   color="primary"
                   size="small"
                   sx={{ textTransform: 'capitalize' }}
@@ -528,7 +535,7 @@ export default function ApiKeysPage() {
           </DialogTitle>
           <DialogContent>
             <Alert severity="warning" sx={{ mb: 3 }}>
-              <strong>Save this key now!</strong> You won't be able to see it again.
+              <strong>Save this key now!</strong> You won&apos;t be able to see it again.
             </Alert>
 
             <Paper
@@ -586,6 +593,17 @@ export default function ApiKeysPage() {
           message="Copied to clipboard"
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         />
+
+        {/* Upgrade Prompt */}
+        {showUpgrade && upgradeInfo && (
+          <UpgradePrompt
+            open={showUpgrade}
+            onClose={closeUpgradePrompt}
+            feature={upgradeInfo.feature}
+            requiredTier={upgradeInfo.requiredTier!}
+            currentTier={upgradeInfo.currentTier}
+          />
+        )}
       </Container>
     </AdminLayout>
   );

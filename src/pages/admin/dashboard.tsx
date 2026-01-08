@@ -20,6 +20,8 @@ import {
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import TierBadge from '@/components/TierBadge';
 
 interface UserProfile {
   username: string;
@@ -40,6 +42,7 @@ interface DashboardStatsResponse {
 
 export default function Dashboard() {
   const router = useRouter();
+  const { userTier } = useFeatureGate();
 
   const { data: profileData, isLoading: profileLoading } = useApiGet<UserProfile>({
     url: 'admin/GetProfile',
@@ -76,12 +79,17 @@ export default function Dashboard() {
       
       <AdminLayout>
         <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Typography variant="h4" gutterBottom fontWeight={700} color="text.primary">
-            Welcome back, {profile.displayName}!
-          </Typography>
-          <Typography variant="body1" color="text.secondary" gutterBottom>
-            Manage your LinkToMe profile and track your performance
-          </Typography>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Box>
+              <Typography variant="h4" gutterBottom fontWeight={700} color="text.primary">
+                Welcome back, {profile.displayName}!
+              </Typography>
+              <Typography variant="body1" color="text.secondary" gutterBottom>
+                Manage your LinkToMe profile and track your performance
+              </Typography>
+            </Box>
+            <TierBadge tier={userTier} size="medium" />
+          </Box>
           
           {/* Stats Overview */}
           <Grid container spacing={3} sx={{ mt: 1 }}>
