@@ -258,7 +258,9 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings, on
           </MenuItem>
         )}
         <MenuItem onClick={() => { onDelete(link.id); setEditAnchorEl(null); }}>
-          <ListItemIcon><Delete fontSize="small" color="error" /></ListItemIcon>
+          <ListItemIcon>
+            <Delete fontSize="small" sx={{ color: 'error.main' }} />
+          </ListItemIcon>
           <ListItemText>Delete</ListItemText>
         </MenuItem>
       </Menu>
@@ -1066,7 +1068,11 @@ export default function LinksPage() {
 
       {/* Collection Selector Dialog */}
       <Dialog open={collectionSelectorOpen} onClose={() => setCollectionSelectorOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Move Link to Collection</DialogTitle>
+        <DialogTitle>
+          {linkToMove && links.find(l => l.id === linkToMove)?.groupId 
+            ? 'Move Link to Collection' 
+            : 'Add Link to Collection'}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={1} sx={{ mt: 1 }}>
             <Paper
