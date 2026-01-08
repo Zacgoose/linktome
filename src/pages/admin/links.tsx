@@ -20,7 +20,6 @@ import {
   ListItemIcon,
   ListItemText,
   Collapse,
-  Badge,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -33,18 +32,13 @@ import {
   Edit,
   Delete,
   Share,
-  Schedule,
   Lock,
-  Image,
-  BarChart,
   MoreHoriz,
   ContentCopy,
   Archive,
   Folder,
   FolderOpen,
   ViewModule,
-  TrendingUp,
-  TrendingDown,
   Link as LinkIcon,
   Instagram,
   YouTube,
@@ -52,8 +46,6 @@ import {
   Email,
   MusicNote,
   OpenInNew,
-  ShortcutOutlined,
-  Animation,
   PhoneIphone as PhoneIcon,
 } from '@mui/icons-material';
 import {
@@ -83,8 +75,6 @@ import {
   LinksResponse,
   AppearanceData,
   DEFAULT_APPEARANCE,
-  LinkOperation,
-  GroupOperation,
   UpdateLinksRequest,
 } from '@/types/links';
 import { UserProfile } from '@/types/api';
@@ -101,9 +91,11 @@ interface SortableLinkCardProps {
   onDelete: (id: string) => void;
   onToggle: (id: string, active: boolean) => void;
   onOpenSettings: (link: Link, setting: string) => void;
+  onMoveToCollection: (linkId: string) => void;
+  onRemoveFromCollection: (linkId: string) => void;
 }
 
-function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: SortableLinkCardProps) {
+function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings, onMoveToCollection, onRemoveFromCollection }: SortableLinkCardProps) {
   const {
     attributes,
     listeners,
@@ -113,7 +105,8 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
     isDragging,
   } = useSortable({ id: link.id });
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [shareAnchorEl, setShareAnchorEl] = useState<null | HTMLElement>(null);
+  const [editAnchorEl, setEditAnchorEl] = useState<null | HTMLElement>(null);
 
   // Remove user theme for editable section
   const accentText = 'text.primary';
@@ -123,15 +116,6 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
-
-  const getTrendIcon = () => {
-    if (link.clicksTrend === 'up') {
-      return <TrendingUp sx={{ fontSize: 14, color: 'success.main' }} />;
-    } else if (link.clicksTrend === 'down') {
-      return <TrendingDown sx={{ fontSize: 14, color: 'text.secondary' }} />;
-    }
-    return null;
   };
 
   return (
@@ -203,10 +187,17 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
             <Stack direction="row" spacing={0.5} sx={{ ml: 2 }}>
               <IconButton
                 size="small"
-                onClick={(e) => setAnchorEl(e.currentTarget)}
+                onClick={(e) => setShareAnchorEl(e.currentTarget)}
                 sx={{}}
               >
                 <Share fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={(e) => setEditAnchorEl(e.currentTarget)}
+                sx={{}}
+              >
+                <Edit fontSize="small" />
               </IconButton>
               <Switch
                 size="small"
@@ -216,103 +207,42 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings }: 
               />
             </Stack>
           </Box>
-
-          {/* Quick Actions Row */}
-          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-            <Tooltip title="Layout">
-              <IconButton
-                size="small"
-                onClick={() => onOpenSettings(link, 'layout')}
-              >
-                <ViewModule fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Redirect">
-              <IconButton
-                size="small"
-                onClick={() => onOpenSettings(link, 'redirect')}
-              >
-                <ShortcutOutlined fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Thumbnail">
-              <IconButton
-                size="small"
-                onClick={() => onOpenSettings(link, 'thumbnail')}
-              >
-                <Image fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Animation">
-              <IconButton
-                size="small"
-                onClick={() => onOpenSettings(link, 'animation')}
-              >
-                <Animation fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Schedule">
-              <IconButton
-                size="small"
-                onClick={() => onOpenSettings(link, 'schedule')}
-              >
-                <Schedule fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Lock">
-              <IconButton
-                size="small"
-                onClick={() => onOpenSettings(link, 'lock')}
-              >
-                <Lock fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Analytics">
-              <Badge
-                badgeContent={
-                  link.clicks !== undefined ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                      {link.clicks}
-                      {getTrendIcon()}
-                    </Box>
-                  ) : null
-                }
-                color="default"
-              >
-                <IconButton
-                  size="small"
-                  onClick={() => onOpenSettings(link, 'analytics')}
-                >
-                  <BarChart fontSize="small" />
-                </IconButton>
-              </Badge>
-            </Tooltip>
-
-            <IconButton
-              size="small"
-              onClick={() => onDelete(link.id)}
-            >
-              <Delete fontSize="small" />
-            </IconButton>
-          </Stack>
         </Box>
       </Box>
 
       {/* Share Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem onClick={() => { navigator.clipboard.writeText(link.url); setAnchorEl(null); }}>
+      <Menu anchorEl={shareAnchorEl} open={Boolean(shareAnchorEl)} onClose={() => setShareAnchorEl(null)}>
+        <MenuItem onClick={() => { navigator.clipboard.writeText(link.url); setShareAnchorEl(null); }}>
           <ListItemIcon><ContentCopy fontSize="small" /></ListItemIcon>
           <ListItemText>Copy link</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => { window.open(link.url, '_blank'); setAnchorEl(null); }}>
+        <MenuItem onClick={() => { window.open(link.url, '_blank'); setShareAnchorEl(null); }}>
           <ListItemIcon><OpenInNew fontSize="small" /></ListItemIcon>
           <ListItemText>Open in new tab</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Edit Menu */}
+      <Menu anchorEl={editAnchorEl} open={Boolean(editAnchorEl)} onClose={() => setEditAnchorEl(null)}>
+        <MenuItem onClick={() => { onEdit(link); setEditAnchorEl(null); }}>
+          <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
+          <ListItemText>Edit Link</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { onMoveToCollection(link.id); setEditAnchorEl(null); }}>
+          <ListItemIcon><Folder fontSize="small" /></ListItemIcon>
+          <ListItemText>{link.groupId ? 'Move to Another Collection' : 'Add to Collection'}</ListItemText>
+        </MenuItem>
+        {link.groupId && (
+          <MenuItem onClick={() => { onRemoveFromCollection(link.id); setEditAnchorEl(null); }}>
+            <ListItemIcon><FolderOpen fontSize="small" /></ListItemIcon>
+            <ListItemText>Remove from Collection</ListItemText>
+          </MenuItem>
+        )}
+        <MenuItem onClick={() => { onDelete(link.id); setEditAnchorEl(null); }}>
+          <ListItemIcon>
+            <Delete fontSize="small" sx={{ color: 'error.main' }} />
+          </ListItemIcon>
+          <ListItemText>Delete</ListItemText>
         </MenuItem>
       </Menu>
     </Paper>
@@ -332,6 +262,8 @@ interface SortableGroupProps {
   onDeleteLink: (id: string) => void;
   onToggleLink: (id: string, active: boolean) => void;
   onOpenSettings: (link: Link, setting: string) => void;
+  onMoveToCollection: (linkId: string) => void;
+  onRemoveFromCollection: (linkId: string) => void;
 }
 
 function SortableGroup({
@@ -346,6 +278,8 @@ function SortableGroup({
   onDeleteLink,
   onToggleLink,
   onOpenSettings,
+  onMoveToCollection,
+  onRemoveFromCollection,
 }: SortableGroupProps) {
   const [isCollapsed, setIsCollapsed] = useState(group.collapsed || false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -385,7 +319,6 @@ function SortableGroup({
           display: 'flex',
           alignItems: 'center',
           p: 2,
-          bgcolor: 'grey.50',
           borderBottom: isCollapsed ? 'none' : '1px solid',
           borderColor: 'divider',
         }}
@@ -413,7 +346,7 @@ function SortableGroup({
 
         <Stack direction="row" spacing={1} alignItems="center">
           <Tooltip title="Layout">
-            <IconButton size="small" sx={{ bgcolor: 'white' }}>
+            <IconButton size="small">
               <ViewModule fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -457,6 +390,8 @@ function SortableGroup({
                   onDelete={onDeleteLink}
                   onToggle={onToggleLink}
                   onOpenSettings={onOpenSettings}
+                  onMoveToCollection={onMoveToCollection}
+                  onRemoveFromCollection={onRemoveFromCollection}
                 />
               ))}
             </Stack>
@@ -485,6 +420,8 @@ export default function LinksPage() {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<LinkGroup | null>(null);
   const [newGroupTitle, setNewGroupTitle] = useState('');
+  const [collectionSelectorOpen, setCollectionSelectorOpen] = useState(false);
+  const [linkToMove, setLinkToMove] = useState<string | null>(null);
 
   const maxLinkGroupsCheck = canAccess('maxLinkGroups');
 
@@ -745,6 +682,41 @@ export default function LinksPage() {
     setFormOpen(true);
   };
 
+  const handleMoveToCollection = (linkId: string) => {
+    setLinkToMove(linkId);
+    setCollectionSelectorOpen(true);
+  };
+
+  const handleRemoveFromCollection = (linkId: string) => {
+    updateLinks.mutate({
+      url: 'admin/UpdateLinks',
+      data: {
+        links: [{
+          operation: 'update',
+          id: linkId,
+          groupId: null,
+        }],
+      },
+    });
+  };
+
+  const handleSelectCollection = (groupId: string | null) => {
+    if (linkToMove) {
+      updateLinks.mutate({
+        url: 'admin/UpdateLinks',
+        data: {
+          links: [{
+            operation: 'update',
+            id: linkToMove,
+            groupId: groupId,
+          }],
+        },
+      });
+    }
+    setCollectionSelectorOpen(false);
+    setLinkToMove(null);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -915,6 +887,8 @@ export default function LinksPage() {
                       onDelete={handleDeleteLink}
                       onToggle={handleToggleLink}
                       onOpenSettings={handleOpenSettings}
+                      onMoveToCollection={handleMoveToCollection}
+                      onRemoveFromCollection={handleRemoveFromCollection}
                     />
                   ))}
 
@@ -933,6 +907,8 @@ export default function LinksPage() {
                       onDeleteLink={handleDeleteLink}
                       onToggleLink={handleToggleLink}
                       onOpenSettings={handleOpenSettings}
+                      onMoveToCollection={handleMoveToCollection}
+                      onRemoveFromCollection={handleRemoveFromCollection}
                     />
                   ))}
                 </Stack>
@@ -1067,6 +1043,73 @@ export default function LinksPage() {
           <Button onClick={handleSaveGroup} variant="contained" disabled={!newGroupTitle.trim()}>
             Save
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Collection Selector Dialog */}
+      <Dialog open={collectionSelectorOpen} onClose={() => setCollectionSelectorOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>
+          {linkToMove && links.find(l => l.id === linkToMove)?.groupId 
+            ? 'Move Link to Collection' 
+            : 'Add Link to Collection'}
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            <Paper
+              onClick={() => handleSelectCollection(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelectCollection(null);
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              sx={{
+                p: 2,
+                cursor: 'pointer',
+                border: 2,
+                borderColor: 'transparent',
+                '&:hover': { borderColor: 'primary.light' },
+                '&:focus': { borderColor: 'primary.main', outline: 'none' },
+              }}
+            >
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <FolderOpen />
+                <Typography variant="body2">No Collection (Root Level)</Typography>
+              </Stack>
+            </Paper>
+            {sortedGroups.map((group) => (
+              <Paper
+                key={group.id}
+                onClick={() => handleSelectCollection(group.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectCollection(group.id);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                sx={{
+                  p: 2,
+                  cursor: 'pointer',
+                  border: 2,
+                  borderColor: 'transparent',
+                  '&:hover': { borderColor: 'primary.light' },
+                  '&:focus': { borderColor: 'primary.main', outline: 'none' },
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Folder />
+                  <Typography variant="body2">{group.title}</Typography>
+                </Stack>
+              </Paper>
+            ))}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCollectionSelectorOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
 

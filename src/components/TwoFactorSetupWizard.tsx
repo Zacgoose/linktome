@@ -69,8 +69,6 @@ export default function TwoFactorSetupWizard({
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [copiedCodes, setCopiedCodes] = useState(false);
 
-  const steps = ['Choose Method', 'Setup', 'Verify', 'Backup Codes'];
-
   // Setup mutation
   const setupMutation = useApiPost<TwoFactorSetupResponse>({
     onSuccess: (data) => {
@@ -299,7 +297,7 @@ export default function TwoFactorSetupWizard({
                 size="large"
                 onClick={() => setActiveStep(2)}
               >
-                I've Scanned the Code
+                I&apos;ve Scanned the Code
               </Button>
             </Stack>
           );
@@ -311,7 +309,7 @@ export default function TwoFactorSetupWizard({
         return (
           <Stack spacing={3}>
             <Alert severity="info">
-              Enter the 6-digit code from your authenticator app to verify it's working correctly.
+              Enter the 6-digit code from your authenticator app to verify it&apos;s working correctly.
             </Alert>
 
             <TextField
