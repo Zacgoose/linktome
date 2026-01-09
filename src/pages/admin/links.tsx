@@ -83,6 +83,7 @@ import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { getTierLimits } from '@/utils/tierValidation';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import { usePageContext } from '@/context/PageContext';
 
 interface SortableLinkCardProps {
   link: Link;
@@ -414,6 +415,7 @@ export default function LinksPage() {
   const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
+  const { currentPage } = usePageContext();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -425,16 +427,20 @@ export default function LinksPage() {
 
   const maxLinkGroupsCheck = canAccess('maxLinkGroups');
 
-  // Fetch links and groups
+  // Fetch links and groups for current page
   const { data: linksData, isLoading, refetch } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
-    queryKey: 'admin-links',
+    queryKey: ['admin-links', currentPage?.id],
+    params: currentPage?.id ? { pageId: currentPage.id } : undefined,
+    enabled: !!currentPage,
   });
 
   // Fetch appearance for preview
   const { data: appearanceData, refetch: refetchAppearance } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
-    queryKey: 'admin-appearance',
+    queryKey: ['admin-appearance', currentPage?.id],
+    params: currentPage?.id ? { pageId: currentPage.id } : undefined,
+    enabled: !!currentPage,
   });
   
   // Appearance update mutation for footer toggle
@@ -477,7 +483,7 @@ export default function LinksPage() {
 
   // Bulk update mutation for links and groups
   const updateLinks = useApiPut<any, UpdateLinksRequest>({
-    relatedQueryKeys: ['admin-links'],
+    relatedQueryKeys: [['admin-links', currentPage?.id]],
     onSuccess: () => {
       showToast('Changes saved', 'success');
       refetch();
@@ -504,10 +510,12 @@ export default function LinksPage() {
   };
 
   const handleSaveLink = (linkData: Partial<Link>) => {
+    if (!currentPage?.id) return;
+    
     if (selectedLink) {
       // Update existing link
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: [{
             operation: 'update',
@@ -521,7 +529,7 @@ export default function LinksPage() {
       // Add new link
       const maxOrder = links.length > 0 ? Math.max(...links.map(l => l.order)) : -1;
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: [{
             operation: 'add',
@@ -529,6 +537,7 @@ export default function LinksPage() {
             order: maxOrder + 1,
             groupId: selectedGroupId,
             active: true,
+            pageId: currentPage.id,
           }],
         },
       });
@@ -546,9 +555,9 @@ export default function LinksPage() {
   };
 
   const handleConfirmDeleteLink = () => {
-    if (pendingDeleteId) {
+    if (pendingDeleteId && currentPage?.id) {
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: [{ operation: 'remove', id: pendingDeleteId }],
         },
@@ -564,8 +573,10 @@ export default function LinksPage() {
   };
 
   const handleToggleLink = (id: string, active: boolean) => {
+    if (!currentPage?.id) return;
+    
     updateLinks.mutate({
-      url: 'admin/UpdateLinks',
+      url: `admin/UpdateLinks?pageId=${currentPage.id}`,
       data: {
         links: [{ operation: 'update', id, active }],
       },
@@ -597,12 +608,12 @@ export default function LinksPage() {
   };
 
   const handleSaveGroup = () => {
-    if (!newGroupTitle.trim()) return;
+    if (!newGroupTitle.trim() || !currentPage?.id) return;
 
     if (selectedGroup) {
       // Update existing group
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           groups: [{
             operation: 'update',
@@ -615,13 +626,14 @@ export default function LinksPage() {
       // Add new group
       const maxOrder = groups.length > 0 ? Math.max(...groups.map(g => g.order)) : -1;
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           groups: [{
             operation: 'add',
             title: newGroupTitle,
             order: maxOrder + 1,
             active: true,
+            pageId: currentPage.id,
           }],
         },
       });
@@ -630,9 +642,11 @@ export default function LinksPage() {
   };
 
   const handleDeleteGroup = (id: string) => {
+    if (!currentPage?.id) return;
+    
     if (confirm('Are you sure you want to delete this collection? Links inside will be moved out.')) {
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           groups: [{ operation: 'remove', id }],
         },
@@ -641,8 +655,10 @@ export default function LinksPage() {
   };
 
   const handleToggleGroup = (id: string, active: boolean) => {
+    if (!currentPage?.id) return;
+    
     updateLinks.mutate({
-      url: 'admin/UpdateLinks',
+      url: `admin/UpdateLinks?pageId=${currentPage.id}`,
       data: {
         groups: [{ operation: 'update', id, active }],
       },
@@ -688,8 +704,10 @@ export default function LinksPage() {
   };
 
   const handleRemoveFromCollection = (linkId: string) => {
+    if (!currentPage?.id) return;
+    
     updateLinks.mutate({
-      url: 'admin/UpdateLinks',
+      url: `admin/UpdateLinks?pageId=${currentPage.id}`,
       data: {
         links: [{
           operation: 'update',
@@ -701,9 +719,9 @@ export default function LinksPage() {
   };
 
   const handleSelectCollection = (groupId: string | null) => {
-    if (linkToMove) {
+    if (linkToMove && currentPage?.id) {
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: [{
             operation: 'update',
@@ -719,7 +737,7 @@ export default function LinksPage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id || !currentPage?.id) return;
 
     const oldIndex = links.findIndex(l => l.id === active.id);
     const newIndex = links.findIndex(l => l.id === over.id);
@@ -733,7 +751,7 @@ export default function LinksPage() {
 
       // Save new order via bulk update
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: newLinks.map(l => ({
             operation: 'update' as const,
