@@ -56,9 +56,17 @@ interface PageCardProps {
 function PageCard({ page, onEdit, onDelete, onSetDefault, onCopyUrl, username }: PageCardProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  // Build URL - use relative path for SSR compatibility
   const pageUrl = page.isDefault 
-    ? `${window.location.origin}/public/${username}`
-    : `${window.location.origin}/public/${username}/${page.slug}`;
+    ? `/public/${username}`
+    : `/public/${username}/${page.slug}`;
+  
+  const handleViewPage = () => {
+    // Use window.location.origin only on client side
+    if (typeof window !== 'undefined') {
+      window.open(window.location.origin + pageUrl, '_blank');
+    }
+  };
 
   return (
     <Paper elevation={1} sx={{ borderRadius: 3, overflow: 'hidden' }}>
@@ -86,7 +94,7 @@ function PageCard({ page, onEdit, onDelete, onSetDefault, onCopyUrl, username }:
               <Button
                 size="small"
                 startIcon={<Launch />}
-                onClick={() => window.open(pageUrl, '_blank')}
+                onClick={handleViewPage}
                 sx={{ textTransform: 'none' }}
               >
                 View Page
@@ -244,12 +252,15 @@ export default function PagesPage() {
   };
 
   const handleCopyUrl = (page: Page) => {
-    const pageUrl = page.isDefault 
-      ? `${window.location.origin}/public/${profileData?.username}`
-      : `${window.location.origin}/public/${profileData?.username}/${page.slug}`;
-    
-    navigator.clipboard.writeText(pageUrl);
-    showToast('Page URL copied to clipboard', 'success');
+    // Build full URL only on client side
+    if (typeof window !== 'undefined') {
+      const pageUrl = page.isDefault 
+        ? `${window.location.origin}/public/${profileData?.username}`
+        : `${window.location.origin}/public/${profileData?.username}/${page.slug}`;
+      
+      navigator.clipboard.writeText(pageUrl);
+      showToast('Page URL copied to clipboard', 'success');
+    }
   };
 
   const handleNameChange = (name: string) => {

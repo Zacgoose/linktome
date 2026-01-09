@@ -99,11 +99,19 @@ export function validatePageSlug(slug: string): PageSlugValidation {
  * Generate a URL-friendly slug from a name
  */
 export function generateSlug(name: string): string {
-  return name
+  let slug = name
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9\s-]/g, '') // Remove invalid chars
     .replace(/\s+/g, '-') // Replace spaces with hyphens
     .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
     .substring(0, 30); // Limit length
+  
+  // Ensure minimum length
+  if (slug.length < 3) {
+    slug = slug + '-page'; // Append to meet minimum length
+  }
+  
+  return slug;
 }

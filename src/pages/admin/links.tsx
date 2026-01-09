@@ -430,7 +430,7 @@ export default function LinksPage() {
   // Fetch links and groups for current page
   const { data: linksData, isLoading, refetch } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
-    queryKey: ['admin-links', currentPage?.id],
+    queryKey: ['admin-links', currentPage?.id || 'none'],
     params: currentPage?.id ? { pageId: currentPage.id } : undefined,
     enabled: !!currentPage,
   });
@@ -438,7 +438,7 @@ export default function LinksPage() {
   // Fetch appearance for preview
   const { data: appearanceData, refetch: refetchAppearance } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
-    queryKey: ['admin-appearance', currentPage?.id],
+    queryKey: ['admin-appearance', currentPage?.id || 'none'],
     params: currentPage?.id ? { pageId: currentPage.id } : undefined,
     enabled: !!currentPage,
   });

@@ -43,7 +43,11 @@ export function PageProvider({ children }: PageProviderProps) {
         // Current page was deleted, switch to default
         const defaultPage = pages.find(p => p.isDefault) || pages[0];
         setCurrentPage(defaultPage);
-      } else if (JSON.stringify(updatedPage) !== JSON.stringify(currentPage)) {
+      } else if (
+        updatedPage.name !== currentPage.name ||
+        updatedPage.slug !== currentPage.slug ||
+        updatedPage.isDefault !== currentPage.isDefault
+      ) {
         // Page was updated, refresh it
         setCurrentPage(updatedPage);
       }
