@@ -204,7 +204,10 @@ const LinkButton: React.FC<LinkButtonProps> = ({ link, buttons, bodyFontFamily, 
 
 export default function PublicProfile() {
   const router = useRouter();
-  const { username } = router.query;
+  const { username, slug } = router.query;
+  
+  // Extract slug string from array if present
+  const pageSlug = Array.isArray(slug) && slug.length > 0 ? slug[0] : undefined;
   
   const [lockDialog, setLockDialog] = useState<{ open: boolean; link: Link | null; code: string }>({
     open: false,
@@ -218,8 +221,11 @@ export default function PublicProfile() {
 
   const { data: profile, isLoading } = useApiGet<PublicProfile>({
     url: 'public/GetUserProfile',
-    queryKey: `public-profile-${username}`,
-    params: { username: username as string },
+    queryKey: `public-profile-${username}-${pageSlug || 'default'}`,
+    params: { 
+      username: username as string,
+      ...(pageSlug && { slug: pageSlug })
+    },
     enabled: !!username,
   });
 
