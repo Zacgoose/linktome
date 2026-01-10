@@ -21,6 +21,7 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { usePageContext } from '@/context/PageContext';
 import TierBadge from '@/components/TierBadge';
 
 interface UserProfile {
@@ -43,12 +44,14 @@ interface DashboardStatsResponse {
 export default function Dashboard() {
   const router = useRouter();
   const { userTier } = useFeatureGate();
+  const { pages } = usePageContext();
 
   const { data: profileData, isLoading: profileLoading } = useApiGet<UserProfile>({
     url: 'admin/GetProfile',
     queryKey: 'admin-profile',
   });
 
+  // Dashboard stats show aggregated data across all pages
   const { data: statsData } = useApiGet<DashboardStatsResponse>({
     url: 'admin/GetDashboardStats',
     queryKey: 'admin-dashboard-stats',
@@ -85,7 +88,10 @@ export default function Dashboard() {
                 Welcome back, {profile.displayName}!
               </Typography>
               <Typography variant="body1" color="text.secondary" gutterBottom>
-                Manage your LinkToMe profile and track your performance
+                {pages && pages.length > 1 
+                  ? `Manage your ${pages.length} link pages and track your performance`
+                  : 'Manage your LinkToMe profile and track your performance'
+                }
               </Typography>
             </Box>
             <TierBadge tier={userTier} size="medium" />

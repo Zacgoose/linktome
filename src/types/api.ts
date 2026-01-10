@@ -176,6 +176,7 @@ export interface RecentPageView {
   userAgent: string;
   referrer: string;
   timestamp: string;
+  pageId?: string; // Page association for multi-page tracking
 }
 
 export interface RecentLinkClick {
@@ -186,6 +187,7 @@ export interface RecentLinkClick {
   referrer: string;
   ipAddress: string;
   linkId: string;
+  pageId?: string; // Page association for multi-page tracking
 }
 
 export interface LinkClicksByLink {
@@ -193,12 +195,24 @@ export interface LinkClicksByLink {
   clickCount: number;
   linkTitle: string;
   linkUrl: string;
+  pageId?: string; // Page association for multi-page tracking
 }
 
 export interface AnalyticsSummary {
   totalLinkClicks: number;
   uniqueVisitors: number;
   totalPageViews: number;
+}
+
+/**
+ * Per-page analytics summary for multi-page breakdown
+ */
+export interface PageAnalyticsSummary {
+  pageId: string;
+  pageName: string;
+  pageSlug: string;
+  totalPageViews: number;
+  totalLinkClicks: number;
 }
 
 export interface AnalyticsData {
@@ -208,6 +222,7 @@ export interface AnalyticsData {
   summary: AnalyticsSummary;
   viewsByDay: ViewsByDay[];
   recentLinkClicks: RecentLinkClick[];
+  pageBreakdown?: PageAnalyticsSummary[]; // Per-page statistics for multi-page users
 }
 
 /**

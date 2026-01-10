@@ -23,7 +23,7 @@ import {
   ExpandLess,
   Warning,
 } from '@mui/icons-material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
 import {
   getFontFamily,
@@ -112,6 +112,9 @@ interface PublicProfile {
   socialIcons: SocialIcon[];
   links: Link[];
   groups: LinkGroup[];
+  pageId?: string; // Current page ID for tracking
+  pageName?: string; // Current page name
+  pageSlug?: string; // Current page slug
 }
 
 // Link Button Component
@@ -234,10 +237,29 @@ export default function PublicProfile() {
     onError: (error) => console.error('Failed to track link click:', error),
   });
 
+  // Mutation for tracking page views
+  const trackPageView = useApiPost({
+    onError: (error) => console.error('Failed to track page view:', error),
+  });
+
   // Mutation for verifying link codes
   const verifyCode = useApiPost<{ success: boolean }>({
     onError: (error) => console.error('Invalid code:', error),
   });
+
+  // Track page view when profile loads
+  useEffect(() => {
+    if (profile && username) {
+      trackPageView.mutate({
+        url: 'public/TrackPageView',
+        data: {
+          username: username as string,
+          pageId: profile.pageId,
+          slug: pageSlug,
+        },
+      });
+    }
+  }, [profile?.pageId, username, pageSlug]); // Only track when these change
 
   const handleLinkClick = async (link: Link, e: React.MouseEvent) => {
     e.preventDefault();
@@ -272,6 +294,8 @@ export default function PublicProfile() {
       data: {
         linkId: link.id,
         username: username as string,
+        pageId: profile?.pageId,
+        slug: pageSlug,
       },
     });
     
@@ -316,6 +340,8 @@ export default function PublicProfile() {
                 data: {
                   linkId: link.id,
                   username: username as string,
+                  pageId: profile?.pageId,
+                  slug: pageSlug,
                 },
               });
             }

@@ -10,6 +10,10 @@ import {
   Grid,
   Stack,
   Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Visibility as ViewsIcon,
@@ -17,19 +21,24 @@ import {
   TrendingUp as TrendingIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
+import { useState } from 'react';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { usePageContext } from '@/context/PageContext';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { UserTier } from '@/types/tiers';
 import { AnalyticsResponse } from '@/types/api';
 
 export default function AnalyticsPage() {
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
+  const { pages } = usePageContext();
+  const [selectedPageFilter, setSelectedPageFilter] = useState<string>('all');
 
   const { data: analytics, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
-    queryKey: 'admin-analytics',
+    queryKey: ['admin-analytics', selectedPageFilter],
+    params: selectedPageFilter !== 'all' ? { pageId: selectedPageFilter } : undefined,
   });
 
   const analyticsExportCheck = canAccess('analyticsExport');
@@ -114,14 +123,33 @@ export default function AnalyticsPage() {
                 Track your profile performance and link engagement
               </Typography>
             </Box>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={handleExportAnalytics}
-              disabled={!analytics || isLoading}
-            >
-              Export Data
-            </Button>
+            <Stack direction="row" spacing={2}>
+              {pages && pages.length > 1 && (
+                <FormControl sx={{ minWidth: 200 }} size="small">
+                  <InputLabel>Filter by Page</InputLabel>
+                  <Select
+                    value={selectedPageFilter}
+                    onChange={(e) => setSelectedPageFilter(e.target.value)}
+                    label="Filter by Page"
+                  >
+                    <MenuItem value="all">All Pages</MenuItem>
+                    {pages.map(page => (
+                      <MenuItem key={page.id} value={page.id}>
+                        {page.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                onClick={handleExportAnalytics}
+                disabled={!analytics || isLoading}
+              >
+                Export Data
+              </Button>
+            </Stack>
           </Box>
 
 
@@ -355,6 +383,78 @@ export default function AnalyticsPage() {
                     </CardContent>
                   </Card>
                 </Grid>
+
+                {/* Page Performance Breakdown - NEW */}
+                {analytics?.pageBreakdown && analytics.pageBreakdown.length > 1 && selectedPageFilter === 'all' && (
+                  <Grid item xs={12}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" fontWeight={600} gutterBottom>
+                          Performance by Page
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          Compare analytics across your different pages
+                        </Typography>
+                        <Stack spacing={2} mt={2}>
+                          {analytics.pageBreakdown.map((page) => {
+                            const ctr = page.totalPageViews > 0 
+                              ? ((page.totalLinkClicks / page.totalPageViews) * 100).toFixed(1)
+                              : '0.0';
+                            return (
+                              <Box
+                                key={page.pageId}
+                                p={2}
+                                sx={{ 
+                                  bgcolor: 'background.default', 
+                                  borderRadius: 2,
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                }}
+                              >
+                                <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                                  <Box>
+                                    <Typography fontWeight={600} variant="subtitle1">
+                                      {page.pageName}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      /{page.pageSlug}
+                                    </Typography>
+                                  </Box>
+                                  <Stack direction="row" spacing={4}>
+                                    <Box textAlign="center">
+                                      <Typography variant="caption" color="text.secondary">
+                                        Views
+                                      </Typography>
+                                      <Typography variant="h6" fontWeight={600}>
+                                        {page.totalPageViews}
+                                      </Typography>
+                                    </Box>
+                                    <Box textAlign="center">
+                                      <Typography variant="caption" color="text.secondary">
+                                        Clicks
+                                      </Typography>
+                                      <Typography variant="h6" fontWeight={600}>
+                                        {page.totalLinkClicks}
+                                      </Typography>
+                                    </Box>
+                                    <Box textAlign="center">
+                                      <Typography variant="caption" color="text.secondary">
+                                        CTR
+                                      </Typography>
+                                      <Typography variant="h6" fontWeight={600}>
+                                        {ctr}%
+                                      </Typography>
+                                    </Box>
+                                  </Stack>
+                                </Box>
+                              </Box>
+                            );
+                          })}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
               </>
             ) : (
               // Free tier - Show upgrade prompt for advanced analytics

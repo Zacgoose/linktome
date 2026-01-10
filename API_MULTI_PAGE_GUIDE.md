@@ -547,3 +547,201 @@ Common HTTP status codes:
 - `403` Forbidden: Tier restriction
 - `404` Not Found: Page, user, or resource not found
 - `500` Internal Server Error: Server-side error
+
+---
+
+## Analytics & Tracking Updates
+
+### Page View Tracking
+
+**Endpoint**: `POST /public/TrackPageView`  
+**Authentication**: Not required (public endpoint)
+
+**Request Body**:
+```json
+{
+  "username": "johndoe",
+  "pageId": "page-guid",
+  "slug": "music"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "message": "Page view tracked successfully"
+}
+```
+
+**PowerShell Implementation Notes**:
+```powershell
+# Extract data from request
+$username = $Request.Body.username
+$pageId = $Request.Body.pageId
+$slug = $Request.Body.slug
+
+# Get user info
+$user = Get-AzTableRow -Table $usersTable -Filter "Username eq '$username'"
+if (!$user) {
+    return [HttpResponseContext]@{
+        StatusCode = 404
+        Body = @{ error = "User not found" } | ConvertTo-Json
+    }
+}
+
+# Record page view
+$pageView = @{
+    PartitionKey = $user.UserId
+    RowKey = [guid]::NewGuid().ToString()
+    PageId = $pageId
+    Slug = $slug
+    Timestamp = (Get-Date).ToUniversalTime()
+    IpAddress = $Request.Headers.'X-Forwarded-For' ?? $Request.Headers.'REMOTE_ADDR'
+    UserAgent = $Request.Headers.'User-Agent'
+    Referrer = $Request.Headers.'Referer'
+}
+
+Add-AzTableRow -Table $pageViewsTable -Entity $pageView
+```
+
+---
+
+### Link Click Tracking (Updated)
+
+**Endpoint**: `POST /public/TrackLinkClick`  
+**Authentication**: Not required (public endpoint)
+
+**Request Body** (UPDATED):
+```json
+{
+  "linkId": "link-guid",
+  "username": "johndoe",
+  "pageId": "page-guid",
+  "slug": "music"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "message": "Link click tracked successfully"
+}
+```
+
+**PowerShell Implementation Notes**:
+```powershell
+# Extract data from request
+$linkId = $Request.Body.linkId
+$username = $Request.Body.username
+$pageId = $Request.Body.pageId  # NEW
+$slug = $Request.Body.slug      # NEW
+
+# Record link click with pageId
+$linkClick = @{
+    PartitionKey = $user.UserId
+    RowKey = [guid]::NewGuid().ToString()
+    LinkId = $linkId
+    PageId = $pageId  # NEW: Track which page the link was clicked from
+    Slug = $slug      # NEW: Track the slug for reference
+    Timestamp = (Get-Date).ToUniversalTime()
+    IpAddress = $Request.Headers.'X-Forwarded-For' ?? $Request.Headers.'REMOTE_ADDR'
+    UserAgent = $Request.Headers.'User-Agent'
+    Referrer = $Request.Headers.'Referer'
+}
+
+Add-AzTableRow -Table $linkClicksTable -Entity $linkClick
+```
+
+---
+
+### Analytics Endpoint (Updated)
+
+**Endpoint**: `GET /admin/GetAnalytics`  
+**Authentication**: Required (user token)
+
+**Query Parameters** (NEW):
+- `pageId` (optional): Filter analytics by specific page
+- If not provided: Return aggregated data across all pages + per-page breakdown
+
+**Response** includes new `pageBreakdown` field:
+```json
+{
+  "summary": {
+    "totalPageViews": 500,
+    "totalLinkClicks": 150,
+    "uniqueVisitors": 300
+  },
+  "pageBreakdown": [
+    {
+      "pageId": "guid-1",
+      "pageName": "Main Links",
+      "pageSlug": "main",
+      "totalPageViews": 300,
+      "totalLinkClicks": 90
+    }
+  ],
+  "linkClicksByLink": [
+    {
+      "linkId": "link-guid",
+      "pageId": "page-guid",
+      "clickCount": 45
+    }
+  ],
+  "recentLinkClicks": [
+    {
+      "linkId": "link-guid",
+      "pageId": "page-guid",
+      "timestamp": "2024-01-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+**PowerShell Implementation Notes**:
+```powershell
+$userId = Get-UserIdFromToken($Request.Headers.Authorization)
+$pageIdFilter = $Request.Query.pageId
+
+if ($pageIdFilter) {
+    # Filter analytics for specific page
+    $pageViews = Get-AzTableRow -Table $pageViewsTable `
+        -Filter "PartitionKey eq '$userId' and PageId eq '$pageIdFilter'"
+    $linkClicks = Get-AzTableRow -Table $linkClicksTable `
+        -Filter "PartitionKey eq '$userId' and PageId eq '$pageIdFilter'"
+} else {
+    # Get all analytics and calculate per-page breakdown
+    $pageViews = Get-AzTableRow -Table $pageViewsTable -PartitionKey $userId
+    $linkClicks = Get-AzTableRow -Table $linkClicksTable -PartitionKey $userId
+    
+    # Calculate per-page breakdown
+    $pages = Get-AzTableRow -Table $pagesTable -PartitionKey $userId
+    $pageBreakdown = @()
+    
+    foreach ($page in $pages) {
+        $pageViewCount = ($pageViews | Where-Object { $_.PageId -eq $page.RowKey }).Count
+        $linkClickCount = ($linkClicks | Where-Object { $_.PageId -eq $page.RowKey }).Count
+        
+        $pageBreakdown += @{
+            pageId = $page.RowKey
+            pageName = $page.Name
+            pageSlug = $page.Slug
+            totalPageViews = $pageViewCount
+            totalLinkClicks = $linkClickCount
+        }
+    }
+}
+```
+
+---
+
+### Dashboard Stats (Updated)
+
+**Endpoint**: `GET /admin/GetDashboardStats`  
+**Authentication**: Required (user token)
+
+**Query Parameters** (NEW):
+- `pageId` (optional): Filter stats by specific page
+- If not provided: Return aggregated stats across all pages
+
+**Response**: Same structure as before, but filtered if pageId provided
+
