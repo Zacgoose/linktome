@@ -11,12 +11,17 @@ import {
   CircularProgress,
   Grid,
   Stack,
+  Paper,
+  Chip,
 } from '@mui/material';
 import {
   Link as LinkIcon,
   Palette as PaletteIcon,
   BarChart as AnalyticsIcon,
   Visibility as ViewIcon,
+  Pages as PagesIcon,
+  TrendingUp as TrendingUpIcon,
+  ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
@@ -33,8 +38,6 @@ interface UserProfile {
 
 interface DashboardStats {
   totalLinks: number;
-  totalPageViews: number;
-  totalLinkClicks: number;
 }
 
 interface DashboardStatsResponse {
@@ -59,9 +62,12 @@ export default function Dashboard() {
 
   const profile = profileData;
   const dashboardStats = statsData?.stats || { 
-    totalLinks: 0, 
-    totalPageViews: 0, 
-    totalLinkClicks: 0 
+    totalLinks: 0,
+  };
+
+  const copyProfileUrl = () => {
+    const url = `${window.location.origin}/public/${profile?.username}`;
+    navigator.clipboard.writeText(url);
   };
 
   if (profileLoading || !profile) {
@@ -82,159 +88,241 @@ export default function Dashboard() {
       
       <AdminLayout>
         <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Box>
-              <Typography variant="h4" gutterBottom fontWeight={700} color="text.primary">
-                Welcome back, {profile.displayName}!
-              </Typography>
-              <Typography variant="body1" color="text.secondary" gutterBottom>
-                {pages && pages.length > 1 
-                  ? `Manage your ${pages.length} link pages and track your performance`
-                  : 'Manage your LinkToMe profile and track your performance'
-                }
-              </Typography>
-            </Box>
-            <TierBadge tier={userTier} size="medium" />
-          </Box>
-          
-          {/* Stats Overview */}
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={4}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <LinkIcon sx={{ color: 'primary.main' }} />
-                    <Box>
-                      <Typography variant="h4" fontWeight={700}>
-                        {dashboardStats.totalLinks}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Total Links
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            <Grid item xs={12} sm={4}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <ViewIcon sx={{ color: 'secondary.main' }} />
-                    <Box>
-                      <Typography variant="h4" fontWeight={700}>
-                        {dashboardStats.totalPageViews}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Profile Views
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            <Grid item xs={12} sm={4}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <AnalyticsIcon sx={{ color: 'success.main' }} />
-                    <Box>
-                      <Typography variant="h4" fontWeight={700}>
-                        {dashboardStats.totalLinkClicks}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Link Clicks
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-          
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            {/* Profile Overview */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom fontWeight={600}>
-                    Your Profile
-                  </Typography>
-                  <Box display="flex" alignItems="center" gap={3} mt={2}>
-                    <Avatar
-                      src={profile.avatar}
-                      alt={profile.displayName}
-                      sx={{ width: 80, height: 80 }}
-                    />
-                    <Box>
-                      <Typography variant="h6" fontWeight={600}>
-                        {profile.displayName}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        @{profile.username}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  {profile.bio && (
-                    <Typography variant="body2" color="text.secondary" mt={2}>
-                      {profile.bio}
+          {/* Hero Section */}
+          <Paper 
+            elevation={0}
+            sx={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: 3,
+              p: 4,
+              mb: 4,
+              color: 'white'
+            }}
+          >
+            <Grid container spacing={3} alignItems="center">
+              <Grid item xs={12} md={8}>
+                <Box display="flex" alignItems="center" gap={2} mb={2}>
+                  <Avatar
+                    src={profile.avatar}
+                    alt={profile.displayName}
+                    sx={{ width: 80, height: 80, border: '4px solid rgba(255,255,255,0.3)' }}
+                  />
+                  <Box>
+                    <Typography variant="h4" fontWeight={700} gutterBottom>
+                      Welcome back, {profile.displayName}!
                     </Typography>
+                    <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                      @{profile.username}
+                    </Typography>
+                  </Box>
+                </Box>
+                {profile.bio && (
+                  <Typography variant="body1" sx={{ opacity: 0.9, mt: 2 }}>
+                    {profile.bio}
+                  </Typography>
+                )}
+                <Box display="flex" gap={2} mt={3} flexWrap="wrap">
+                  <Button
+                    variant="contained"
+                    sx={{ 
+                      bgcolor: 'white', 
+                      color: 'primary.main',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                    }}
+                    startIcon={<ViewIcon />}
+                    onClick={() => window.open(`/public/${profile.username}`, '_blank', 'noopener,noreferrer')}
+                  >
+                    View Public Profile
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    sx={{ 
+                      borderColor: 'white', 
+                      color: 'white',
+                      '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' }
+                    }}
+                    startIcon={<ContentCopyIcon />}
+                    onClick={copyProfileUrl}
+                  >
+                    Copy Profile URL
+                  </Button>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box display="flex" flexDirection="column" alignItems="flex-end" gap={2}>
+                  <TierBadge tier={userTier} size="large" />
+                  {pages && pages.length > 0 && (
+                    <Chip 
+                      icon={<PagesIcon />}
+                      label={`${pages.length} ${pages.length === 1 ? 'Page' : 'Pages'}`}
+                      sx={{ 
+                        bgcolor: 'rgba(255,255,255,0.2)', 
+                        color: 'white',
+                        fontWeight: 600
+                      }}
+                    />
                   )}
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          <Grid container spacing={3}>
+            {/* Stats Card */}
+            <Grid item xs={12} md={4}>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white'
+                }}
+              >
+                <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                  <LinkIcon sx={{ fontSize: 48, mb: 2, opacity: 0.9 }} />
+                  <Typography variant="h2" fontWeight={700} gutterBottom>
+                    {dashboardStats.totalLinks}
+                  </Typography>
+                  <Typography variant="h6" sx={{ opacity: 0.9 }}>
+                    Active Links
+                  </Typography>
                   <Button
                     variant="outlined"
                     fullWidth
-                    sx={{ mt: 2 }}
-                    onClick={() => router.push('/admin/profile')}
+                    sx={{ 
+                      mt: 3,
+                      borderColor: 'white', 
+                      color: 'white',
+                      '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' }
+                    }}
+                    startIcon={<LinkIcon />}
+                    onClick={() => router.push('/admin/links')}
                   >
-                    Edit Profile
+                    Manage Links
                   </Button>
                 </CardContent>
               </Card>
             </Grid>
-            
+
             {/* Quick Actions */}
-            <Grid item xs={12} md={6}>
-              <Card>
+            <Grid item xs={12} md={8}>
+              <Card sx={{ height: '100%' }}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom fontWeight={600}>
+                  <Typography variant="h6" gutterBottom fontWeight={600} sx={{ mb: 3 }}>
                     Quick Actions
                   </Typography>
-                  <Stack spacing={2} mt={2}>
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      startIcon={<ViewIcon />}
-                      onClick={() => window.open(`/public/${profile.username}`, '_blank', 'noopener,noreferrer')}
-                    >
-                      View Public Profile
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<LinkIcon />}
-                      onClick={() => router.push('/admin/links')}
-                    >
-                      Manage Links
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<PaletteIcon />}
-                      onClick={() => router.push('/admin/appearance')}
-                    >
-                      Customize Appearance
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<AnalyticsIcon />}
-                      onClick={() => router.push('/admin/analytics')}
-                    >
-                      View Analytics
-                    </Button>
-                  </Stack>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Paper
+                        elevation={0}
+                        sx={{ 
+                          p: 3,
+                          border: '2px solid',
+                          borderColor: 'divider',
+                          borderRadius: 2,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            borderColor: 'primary.main',
+                            transform: 'translateY(-4px)',
+                            boxShadow: 3
+                          }
+                        }}
+                        onClick={() => router.push('/admin/pages')}
+                      >
+                        <PagesIcon sx={{ fontSize: 36, color: 'primary.main', mb: 1 }} />
+                        <Typography variant="h6" fontWeight={600} gutterBottom>
+                          Manage Pages
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Create and customize multiple link pages
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Paper
+                        elevation={0}
+                        sx={{ 
+                          p: 3,
+                          border: '2px solid',
+                          borderColor: 'divider',
+                          borderRadius: 2,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            borderColor: 'secondary.main',
+                            transform: 'translateY(-4px)',
+                            boxShadow: 3
+                          }
+                        }}
+                        onClick={() => router.push('/admin/appearance')}
+                      >
+                        <PaletteIcon sx={{ fontSize: 36, color: 'secondary.main', mb: 1 }} />
+                        <Typography variant="h6" fontWeight={600} gutterBottom>
+                          Appearance
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Customize themes, colors, and styling
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Paper
+                        elevation={0}
+                        sx={{ 
+                          p: 3,
+                          border: '2px solid',
+                          borderColor: 'divider',
+                          borderRadius: 2,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            borderColor: 'success.main',
+                            transform: 'translateY(-4px)',
+                            boxShadow: 3
+                          }
+                        }}
+                        onClick={() => router.push('/admin/analytics')}
+                      >
+                        <TrendingUpIcon sx={{ fontSize: 36, color: 'success.main', mb: 1 }} />
+                        <Typography variant="h6" fontWeight={600} gutterBottom>
+                          Analytics
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Track views, clicks, and performance
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Paper
+                        elevation={0}
+                        sx={{ 
+                          p: 3,
+                          border: '2px solid',
+                          borderColor: 'divider',
+                          borderRadius: 2,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            borderColor: 'info.main',
+                            transform: 'translateY(-4px)',
+                            boxShadow: 3
+                          }
+                        }}
+                        onClick={() => router.push('/admin/profile')}
+                      >
+                        <Avatar
+                          src={profile.avatar}
+                          sx={{ width: 36, height: 36, mb: 1 }}
+                        />
+                        <Typography variant="h6" fontWeight={600} gutterBottom>
+                          Edit Profile
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Update bio, avatar, and settings
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  </Grid>
                 </CardContent>
               </Card>
             </Grid>
