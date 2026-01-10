@@ -11,12 +11,11 @@ import {
   Typography,
   Alert,
   Link as MuiLink,
-  CircularProgress
 } from '@mui/material';
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { useApiPost } from '@/hooks/useApiQuery';
 import { useAuthContext } from '@/providers/AuthProvider';
-import type { LoginResponse, TwoFactorVerifyRequest } from '@/types/api';
+import type { LoginResponse } from '@/types/api';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
 import TwoFactorSetupPrompt from '@/components/TwoFactorSetupPrompt';
 import TwoFactorSetupWizard from '@/components/TwoFactorSetupWizard';
