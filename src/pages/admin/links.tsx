@@ -11,7 +11,6 @@ import {
   Button,
   IconButton,
   Paper,
-  Avatar,
   Switch,
   Tooltip,
   Chip,
@@ -781,6 +780,12 @@ export default function LinksPage() {
 
       <AdminLayout>
         <Container maxWidth="xl" sx={{ py: 4 }}>
+          <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
+            Links
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Manage the links your visitors will see
+          </Typography>
           {/* Mobile Preview - Show at top on small screens */}
           <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
