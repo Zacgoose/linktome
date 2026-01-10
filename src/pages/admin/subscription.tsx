@@ -148,6 +148,11 @@ export default function SubscriptionPage() {
         limit: limits.maxLinkGroups === -1 ? 'Unlimited' : `Up to ${limits.maxLinkGroups}`,
       },
       {
+        name: 'Pages',
+        included: true,
+        limit: limits.maxPages === -1 ? 'Unlimited' : `Up to ${limits.maxPages}`,
+      },
+      {
         name: 'Custom Themes',
         included: limits.customThemes,
       },
