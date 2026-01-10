@@ -96,7 +96,7 @@ interface SortableLinkCardProps {
   onRemoveFromCollection: (linkId: string) => void;
 }
 
-function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings, onMoveToCollection, onRemoveFromCollection }: SortableLinkCardProps) {
+function SortableLinkCard({ link, onEdit, onDelete, onToggle, onMoveToCollection, onRemoveFromCollection }: SortableLinkCardProps) {
   const {
     attributes,
     listeners,
@@ -430,7 +430,7 @@ export default function LinksPage() {
   // Fetch links and groups for current page
   const { data: linksData, isLoading, refetch } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
-    queryKey: ['admin-links', currentPage?.id || 'none'],
+    queryKey: `'admin-links'-${currentPage?.id || 'none'}`,
     params: currentPage?.id ? { pageId: currentPage.id } : undefined,
     enabled: !!currentPage,
   });
@@ -438,7 +438,7 @@ export default function LinksPage() {
   // Fetch appearance for preview
   const { data: appearanceData, refetch: refetchAppearance } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
-    queryKey: ['admin-appearance', currentPage?.id || 'none'],
+    queryKey: `admin-appearance-${currentPage?.id || 'none'}`,
     params: currentPage?.id ? { pageId: currentPage.id } : undefined,
     enabled: !!currentPage,
   });
@@ -483,7 +483,7 @@ export default function LinksPage() {
 
   // Bulk update mutation for links and groups
   const updateLinks = useApiPut<any, UpdateLinksRequest>({
-    relatedQueryKeys: [['admin-links', currentPage?.id]],
+    relatedQueryKeys: [`admin-links-${currentPage?.id ?? 'none'}`],
     onSuccess: () => {
       showToast('Changes saved', 'success');
       refetch();
@@ -692,7 +692,7 @@ export default function LinksPage() {
     }
   };
 
-  const handleOpenSettings = (link: Link, setting: string) => {
+  const handleOpenSettings = (link: Link) => {
     setSelectedLink(link);
     setSelectedGroupId(link.groupId || null);
     setFormOpen(true);

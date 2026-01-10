@@ -571,7 +571,6 @@ const ProfileContent: React.FC<ProfileContentProps> = ({
   bodyFontFamily,
   usernameOpacity,
   bioOpacity,
-  footerOpacity,
   socialIcons,
   ungroupedLinks,
   sortedGroups,
