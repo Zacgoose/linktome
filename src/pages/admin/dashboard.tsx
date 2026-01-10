@@ -92,7 +92,7 @@ export default function Dashboard() {
           <Paper 
             elevation={0}
             sx={{ 
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
               borderRadius: 3,
               p: 4,
               mb: 4,
@@ -173,7 +173,7 @@ export default function Dashboard() {
               <Card 
                 sx={{ 
                   height: '100%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
                   color: 'white'
                 }}
               >
