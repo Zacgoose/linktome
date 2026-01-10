@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Box,
   FormControl,
@@ -7,7 +6,6 @@ import {
   MenuItem as MuiMenuItem,
   Typography,
   Chip,
-  ListSubheader,
   CircularProgress,
   Divider,
 } from '@mui/material';
@@ -64,9 +62,6 @@ export default function PageSelector({ compact = false }: PageSelectorProps) {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="body2">{page.name}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  /{page.slug}
-                </Typography>
               </Box>
               {page.isDefault && (
                 <Chip
