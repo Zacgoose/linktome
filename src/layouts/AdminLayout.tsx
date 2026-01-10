@@ -25,7 +25,6 @@ import { UiThemeContext } from '@/pages/_app';
 import {
   Dashboard as DashboardIcon,
   Link as LinkIcon,
-  Person as PersonIcon,
   Palette as PaletteIcon,
   BarChart as AnalyticsIcon,
   People as PeopleIcon,
@@ -36,7 +35,6 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useRbacContext } from '@/context/RbacContext';
-import { PageProvider } from '@/context/PageContext';
 import PageSelector from '@/components/PageSelector';
 
 interface AdminLayoutProps {
@@ -71,19 +69,13 @@ const menuItems: MenuItem[] = [
     text: 'Pages', 
     icon: <PagesIcon />, 
     path: '/admin/pages',
-    requiredPermissions: ['read:links'], // Using read:links for now
+    requiredPermissions: ['read:pages'],
   },
   { 
     text: 'Links', 
     icon: <LinkIcon />, 
     path: '/admin/links',
     requiredPermissions: ['read:links'],
-  },
-  { 
-    text: 'Profile', 
-    icon: <PersonIcon />, 
-    path: '/admin/profile',
-    requiredPermissions: ['read:profile'],
   },
   { 
     text: 'Appearance', 
