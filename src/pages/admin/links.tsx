@@ -808,40 +808,64 @@ export default function LinksPage() {
 
           {/* Main Content */}
           <Box sx={{ flex: 1, minWidth: 0, maxWidth: 640, mx: { xs: 'auto', md: 0 }, mr: { xs: 0, md: '360px' } }}>
-            {/* Profile Header */}
+            {/* Profile Header - Editable */}
             <Card sx={{ mb: 3, borderRadius: 3 }}>
               <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mb: 2 }}>
+                  Profile Information
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                   <Avatar
                     src={appearance.profileImageUrl}
-                    sx={{ width: 64, height: 64 }}
+                    sx={{ width: 64, height: 64, mt: 1 }}
                   >
                     {appearance.header?.displayName?.charAt(0) || 'U'}
                   </Avatar>
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600}>
-                      {appearance.header?.displayName || 'username'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {appearance.header?.bio || 'Your bio goes here'}
-                    </Typography>
-                    <Stack direction="row" spacing={1}>
-                      {[Instagram, YouTube, Twitter, Email, MusicNote].slice(0, 4).map((Icon, idx) => (
-                        <IconButton
-                          key={idx}
-                          size="small"
-                          sx={{color: 'text.secondary'}}
-                        >
-                          <Icon fontSize="small" />
-                        </IconButton>
-                      ))}
-                      <IconButton
-                        size="small"
-                        sx={{color: 'text.secondary'}}
-                      >
-                        <Add fontSize="small" />
-                      </IconButton>
-                    </Stack>
+                    <TextField
+                      label="Display Name"
+                      fullWidth
+                      value={appearance.header?.displayName || ''}
+                      onChange={(e) => {
+                        if (appearanceData && currentPage?.id) {
+                          updateAppearance.mutate({
+                            url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
+                            data: {
+                              ...appearanceData,
+                              header: {
+                                ...appearanceData.header,
+                                displayName: e.target.value,
+                              },
+                            },
+                          });
+                        }
+                      }}
+                      sx={{ mb: 2 }}
+                      size="small"
+                    />
+                    <TextField
+                      label="Bio"
+                      fullWidth
+                      multiline
+                      rows={2}
+                      value={appearance.header?.bio || ''}
+                      onChange={(e) => {
+                        if (appearanceData && currentPage?.id) {
+                          updateAppearance.mutate({
+                            url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
+                            data: {
+                              ...appearanceData,
+                              header: {
+                                ...appearanceData.header,
+                                bio: e.target.value,
+                              },
+                            },
+                          });
+                        }
+                      }}
+                      placeholder="Tell people about yourself..."
+                      size="small"
+                    />
                   </Box>
                 </Box>
               </CardContent>
