@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -61,7 +60,7 @@ export default function TwoFactorSetupPrompt({
               Why enable 2FA?
             </Typography>
             <Typography variant="body2" sx={{ mt: 0.5 }}>
-              Even if someone gets your password, they won't be able to access your account without your second factor.
+              Even if someone gets your password, they won&apos;t be able to access your account without your second factor.
             </Typography>
           </Alert>
 
