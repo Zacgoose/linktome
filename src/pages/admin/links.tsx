@@ -430,7 +430,7 @@ export default function LinksPage() {
   // Fetch links and groups for current page
   const { data: linksData, isLoading, refetch } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
-    queryKey: `'admin-links'-${currentPage?.id || 'none'}`,
+    queryKey: `admin-links-${currentPage?.id || 'none'}`,
     params: currentPage?.id ? { pageId: currentPage.id } : undefined,
     enabled: !!currentPage,
   });
