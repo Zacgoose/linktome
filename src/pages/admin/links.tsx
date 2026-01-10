@@ -40,11 +40,6 @@ import {
   FolderOpen,
   ViewModule,
   Link as LinkIcon,
-  Instagram,
-  YouTube,
-  Twitter,
-  Email,
-  MusicNote,
   OpenInNew,
   PhoneIphone as PhoneIcon,
 } from '@mui/icons-material';
