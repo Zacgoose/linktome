@@ -3,8 +3,6 @@ import Head from 'next/head';
 import {
   Container,
   Typography,
-  Card,
-  CardContent,
   Box,
   CircularProgress,
   Stack,
@@ -32,7 +30,6 @@ import {
   MoreVert,
   Link as LinkIcon,
   Star,
-  StarBorder,
   ContentCopy,
   Launch,
 } from '@mui/icons-material';
@@ -153,7 +150,7 @@ export default function PagesPage() {
   // Fetch pages
   const { data: pagesData, isLoading, refetch } = useApiGet<PagesResponse>({
     url: 'admin/GetPages',
-    queryKey: 'admin-pages',
+    queryKey: 'admin-pages-context',
   });
 
   // Fetch user profile for username
@@ -168,7 +165,6 @@ export default function PagesPage() {
 
   // Create page mutation
   const createPage = useApiPost<any, CreatePageRequest>({
-    relatedQueryKeys: ['admin-pages', 'admin-pages-context'],
     onSuccess: () => {
       showToast('Page created successfully', 'success');
       refetch();
@@ -176,13 +172,12 @@ export default function PagesPage() {
       resetForm();
     },
     onError: (error) => {
-      showToast(`Failed to create page: ${error.message}`, 'error');
+      showToast(`Failed to create page: ${error}`, 'error');
     },
   });
 
   // Update page mutation
   const updatePage = useApiPut<any, UpdatePageRequest>({
-    relatedQueryKeys: ['admin-pages', 'admin-pages-context'],
     onSuccess: () => {
       showToast('Page updated successfully', 'success');
       refetch();
@@ -190,19 +185,18 @@ export default function PagesPage() {
       resetForm();
     },
     onError: (error) => {
-      showToast(`Failed to update page: ${error.message}`, 'error');
+      showToast(`Failed to update page: ${error}`, 'error');
     },
   });
 
   // Delete page mutation
   const deletePage = useApiDelete({
-    relatedQueryKeys: ['admin-pages', 'admin-pages-context'],
     onSuccess: () => {
       showToast('Page deleted successfully', 'success');
       refetch();
     },
     onError: (error) => {
-      showToast(`Failed to delete page: ${error.message}`, 'error');
+      showToast(`Failed to delete page: ${error}`, 'error');
     },
   });
 
