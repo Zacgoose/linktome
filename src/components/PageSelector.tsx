@@ -61,14 +61,13 @@ export default function PageSelector({ compact = false }: PageSelectorProps) {
           <MuiMenuItem key={page.id} value={page.id}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
               <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body2">{page.name}</Typography>
+                <Typography>{page.name}</Typography>
               </Box>
               {page.isDefault && (
                 <Chip
-                  icon={<Star sx={{ fontSize: 14 }} />}
+                  icon={<Star/>}
                   label="Default"
-                  size="small"
-                  sx={{ height: 20, fontSize: 10 }}
+                  sx={{ height: 20 }}
                 />
               )}
             </Box>
@@ -77,7 +76,7 @@ export default function PageSelector({ compact = false }: PageSelectorProps) {
         <Divider sx={{ my: 0.5 }} />
         <MuiMenuItem value="__manage__">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Add fontSize="small" />
+            <Add/>
             <Typography variant="body2">Manage Pages</Typography>
           </Box>
         </MuiMenuItem>
