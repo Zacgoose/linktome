@@ -426,6 +426,11 @@ export default function LinksPage() {
   const [linkToMove, setLinkToMove] = useState<string | null>(null);
   const [editingAvatar, setEditingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
+  
+  // Track pending changes for display name and bio
+  const [pendingDisplayName, setPendingDisplayName] = useState<string>('');
+  const [pendingBio, setPendingBio] = useState<string>('');
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
   const maxLinkGroupsCheck = canAccess('maxLinkGroups');
 
@@ -475,6 +480,15 @@ export default function LinksPage() {
       setAvatarUrl(appearanceData.profileImageUrl);
     }
   }, [appearanceData?.profileImageUrl]);
+  
+  // Initialize pending values when appearance data loads
+  useEffect(() => {
+    if (appearanceData) {
+      setPendingDisplayName(appearanceData.header?.displayName || '');
+      setPendingBio(appearanceData.header?.bio || '');
+      setHasPendingChanges(false);
+    }
+  }, [appearanceData]);
 
   const appearance = useMemo(() => {
     const source = appearanceData || DEFAULT_APPEARANCE;
@@ -715,6 +729,41 @@ export default function LinksPage() {
     setEditingAvatar(false);
     showToast('Avatar updated successfully', 'success');
   };
+  
+  const handleSaveProfileChanges = () => {
+    if (!appearanceData || !currentPage?.id) return;
+
+    updateAppearance.mutate({
+      url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
+      data: {
+        ...appearanceData,
+        header: {
+          ...appearanceData.header,
+          displayName: pendingDisplayName,
+          bio: pendingBio,
+        },
+      },
+    });
+    
+    setHasPendingChanges(false);
+    showToast('Profile updated successfully', 'success');
+  };
+  
+  const handleDisplayNameChange = (value: string) => {
+    setPendingDisplayName(value);
+    setHasPendingChanges(
+      value !== (appearanceData?.header?.displayName || '') ||
+      pendingBio !== (appearanceData?.header?.bio || '')
+    );
+  };
+  
+  const handleBioChange = (value: string) => {
+    setPendingBio(value);
+    setHasPendingChanges(
+      pendingDisplayName !== (appearanceData?.header?.displayName || '') ||
+      value !== (appearanceData?.header?.bio || '')
+    );
+  };
 
   const handleOpenSettings = (link: Link) => {
     setSelectedLink(link);
@@ -835,9 +884,22 @@ export default function LinksPage() {
             {/* Profile Header - Editable */}
             <Card sx={{ mb: 3, borderRadius: 3 }}>
               <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mb: 2 }}>
-                  Profile Information
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="h6" fontWeight={600}>
+                    Profile Information
+                  </Typography>
+                  {hasPendingChanges && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleSaveProfileChanges}
+                      disabled={updateAppearance.isPending}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      Save Changes
+                    </Button>
+                  )}
+                </Box>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                   {/* Avatar with edit button */}
                   <Box
@@ -880,21 +942,8 @@ export default function LinksPage() {
                     <TextField
                       label="Display Name"
                       fullWidth
-                      value={appearance.header?.displayName || ''}
-                      onChange={(e) => {
-                        if (appearanceData && currentPage?.id) {
-                          updateAppearance.mutate({
-                            url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
-                            data: {
-                              ...appearanceData,
-                              header: {
-                                ...appearanceData.header,
-                                displayName: e.target.value,
-                              },
-                            },
-                          });
-                        }
-                      }}
+                      value={pendingDisplayName}
+                      onChange={(e) => handleDisplayNameChange(e.target.value)}
                       sx={{ mb: 2 }}
                       size="small"
                     />
@@ -903,21 +952,8 @@ export default function LinksPage() {
                       fullWidth
                       multiline
                       rows={2}
-                      value={appearance.header?.bio || ''}
-                      onChange={(e) => {
-                        if (appearanceData && currentPage?.id) {
-                          updateAppearance.mutate({
-                            url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
-                            data: {
-                              ...appearanceData,
-                              header: {
-                                ...appearanceData.header,
-                                bio: e.target.value,
-                              },
-                            },
-                          });
-                        }
-                      }}
+                      value={pendingBio}
+                      onChange={(e) => handleBioChange(e.target.value)}
                       placeholder="Tell people about yourself..."
                       size="small"
                     />
