@@ -409,11 +409,31 @@ if ($slug) {
 
 $pageId = $page.RowKey
 
+# Track page view (analytics tracking happens here automatically)
+Write-AnalyticsEvent -EventType "PageView" -UserId $user.UserId -PageId $pageId -Metadata @{
+    Slug = $page.Slug
+    IpAddress = $Request.Headers.'X-Forwarded-For' ?? $Request.Headers.'REMOTE_ADDR'
+    UserAgent = $Request.Headers.'User-Agent'
+    Referrer = $Request.Headers.'Referer'
+}
+
 # Get links for this page
 $links = Get-AzTableRow -Table $linksTable -Filter "PartitionKey eq '$($user.UserId)' and (PageId eq '$pageId' or PageId eq null)"
 
 # Get appearance for this page
 $appearance = Get-AzTableRow -Table $appearanceTable -Filter "PartitionKey eq '$($user.UserId)' and (PageId eq '$pageId' or PageId eq null)"
+
+# Return profile with page information
+return @{
+    username = $user.Username
+    displayName = $user.DisplayName
+    pageId = $pageId
+    pageName = $page.Name
+    pageSlug = $page.Slug
+    links = $links
+    appearance = $appearance
+    # ... other fields
+}
 ```
 
 ---
@@ -550,58 +570,26 @@ Common HTTP status codes:
 
 ---
 
+
+---
+
 ## Analytics & Tracking Updates
 
 ### Page View Tracking
 
-**Endpoint**: `POST /public/TrackPageView`  
-**Authentication**: Not required (public endpoint)
+Page views are **automatically tracked** within the `GET /public/GetUserProfile` endpoint. When a user loads a public profile, the backend uses `Write-AnalyticsEvent` to record the page view with the associated `PageId`.
 
-**Request Body**:
-```json
-{
-  "username": "johndoe",
-  "pageId": "page-guid",
-  "slug": "music"
-}
-```
+**No separate frontend call is needed** - tracking happens server-side when the profile is fetched.
 
-**Response** (200 OK):
-```json
-{
-  "message": "Page view tracked successfully"
-}
-```
-
-**PowerShell Implementation Notes**:
+**Backend Implementation** (inside GetUserProfile):
 ```powershell
-# Extract data from request
-$username = $Request.Body.username
-$pageId = $Request.Body.pageId
-$slug = $Request.Body.slug
-
-# Get user info
-$user = Get-AzTableRow -Table $usersTable -Filter "Username eq '$username'"
-if (!$user) {
-    return [HttpResponseContext]@{
-        StatusCode = 404
-        Body = @{ error = "User not found" } | ConvertTo-Json
-    }
-}
-
-# Record page view
-$pageView = @{
-    PartitionKey = $user.UserId
-    RowKey = [guid]::NewGuid().ToString()
-    PageId = $pageId
-    Slug = $slug
-    Timestamp = (Get-Date).ToUniversalTime()
+# After determining which page to show, track the page view
+Write-AnalyticsEvent -EventType "PageView" -UserId $user.UserId -PageId $pageId -Metadata @{
+    Slug = $page.Slug
     IpAddress = $Request.Headers.'X-Forwarded-For' ?? $Request.Headers.'REMOTE_ADDR'
     UserAgent = $Request.Headers.'User-Agent'
     Referrer = $Request.Headers.'Referer'
 }
-
-Add-AzTableRow -Table $pageViewsTable -Entity $pageView
 ```
 
 ---
@@ -611,7 +599,7 @@ Add-AzTableRow -Table $pageViewsTable -Entity $pageView
 **Endpoint**: `POST /public/TrackLinkClick`  
 **Authentication**: Not required (public endpoint)
 
-**Request Body** (UPDATED):
+**Request Body** (UPDATED - includes pageId and slug):
 ```json
 {
   "linkId": "link-guid",
@@ -636,20 +624,20 @@ $username = $Request.Body.username
 $pageId = $Request.Body.pageId  # NEW
 $slug = $Request.Body.slug      # NEW
 
-# Record link click with pageId
-$linkClick = @{
-    PartitionKey = $user.UserId
-    RowKey = [guid]::NewGuid().ToString()
+# Get user and link info
+$user = Get-AzTableRow -Table $usersTable -Filter "Username eq '$username'"
+$link = Get-AzTableRow -Table $linksTable -PartitionKey $user.UserId -RowKey $linkId
+
+# Track link click with Write-AnalyticsEvent
+Write-AnalyticsEvent -EventType "LinkClick" -UserId $user.UserId -PageId $pageId -Metadata @{
     LinkId = $linkId
-    PageId = $pageId  # NEW: Track which page the link was clicked from
-    Slug = $slug      # NEW: Track the slug for reference
-    Timestamp = (Get-Date).ToUniversalTime()
+    LinkTitle = $link.Title
+    LinkUrl = $link.Url
+    Slug = $slug
     IpAddress = $Request.Headers.'X-Forwarded-For' ?? $Request.Headers.'REMOTE_ADDR'
     UserAgent = $Request.Headers.'User-Agent'
     Referrer = $Request.Headers.'Referer'
 }
-
-Add-AzTableRow -Table $linkClicksTable -Entity $linkClick
 ```
 
 ---
@@ -659,7 +647,7 @@ Add-AzTableRow -Table $linkClicksTable -Entity $linkClick
 **Endpoint**: `GET /admin/GetAnalytics`  
 **Authentication**: Required (user token)
 
-**Query Parameters** (NEW):
+**Query Parameters**:
 - `pageId` (optional): Filter analytics by specific page
 - If not provided: Return aggregated data across all pages + per-page breakdown
 
@@ -680,9 +668,13 @@ Add-AzTableRow -Table $linkClicksTable -Entity $linkClick
       "totalLinkClicks": 90
     }
   ],
+  "viewsByDay": [{"date": "2024-01-01", "count": 50}],
+  "clicksByDay": [{"date": "2024-01-01", "count": 15}],
   "linkClicksByLink": [
     {
       "linkId": "link-guid",
+      "linkTitle": "My Website",
+      "linkUrl": "https://example.com",
       "pageId": "page-guid",
       "clickCount": 45
     }
@@ -690,6 +682,7 @@ Add-AzTableRow -Table $linkClicksTable -Entity $linkClick
   "recentLinkClicks": [
     {
       "linkId": "link-guid",
+      "linkTitle": "My Website",
       "pageId": "page-guid",
       "timestamp": "2024-01-01T12:00:00Z"
     }
@@ -697,36 +690,34 @@ Add-AzTableRow -Table $linkClicksTable -Entity $linkClick
 }
 ```
 
-**PowerShell Implementation Notes**:
+**PowerShell Implementation**:
 ```powershell
 $userId = Get-UserIdFromToken($Request.Headers.Authorization)
 $pageIdFilter = $Request.Query.pageId
 
+# Get analytics events (using Write-AnalyticsEvent storage)
+$analyticsEvents = Get-AnalyticsEvents -UserId $userId
+
 if ($pageIdFilter) {
-    # Filter analytics for specific page
-    $pageViews = Get-AzTableRow -Table $pageViewsTable `
-        -Filter "PartitionKey eq '$userId' and PageId eq '$pageIdFilter'"
-    $linkClicks = Get-AzTableRow -Table $linkClicksTable `
-        -Filter "PartitionKey eq '$userId' and PageId eq '$pageIdFilter'"
+    # Filter for specific page
+    $pageViews = $analyticsEvents | Where-Object { $_.EventType -eq "PageView" -and $_.PageId -eq $pageIdFilter }
+    $linkClicks = $analyticsEvents | Where-Object { $_.EventType -eq "LinkClick" -and $_.PageId -eq $pageIdFilter }
 } else {
-    # Get all analytics and calculate per-page breakdown
-    $pageViews = Get-AzTableRow -Table $pageViewsTable -PartitionKey $userId
-    $linkClicks = Get-AzTableRow -Table $linkClicksTable -PartitionKey $userId
+    # All pages - include breakdown
+    $pageViews = $analyticsEvents | Where-Object { $_.EventType -eq "PageView" }
+    $linkClicks = $analyticsEvents | Where-Object { $_.EventType -eq "LinkClick" }
     
     # Calculate per-page breakdown
     $pages = Get-AzTableRow -Table $pagesTable -PartitionKey $userId
     $pageBreakdown = @()
     
     foreach ($page in $pages) {
-        $pageViewCount = ($pageViews | Where-Object { $_.PageId -eq $page.RowKey }).Count
-        $linkClickCount = ($linkClicks | Where-Object { $_.PageId -eq $page.RowKey }).Count
-        
         $pageBreakdown += @{
             pageId = $page.RowKey
             pageName = $page.Name
             pageSlug = $page.Slug
-            totalPageViews = $pageViewCount
-            totalLinkClicks = $linkClickCount
+            totalPageViews = ($pageViews | Where-Object { $_.PageId -eq $page.RowKey }).Count
+            totalLinkClicks = ($linkClicks | Where-Object { $_.PageId -eq $page.RowKey }).Count
         }
     }
 }
@@ -739,9 +730,10 @@ if ($pageIdFilter) {
 **Endpoint**: `GET /admin/GetDashboardStats`  
 **Authentication**: Required (user token)
 
-**Query Parameters** (NEW):
+**Query Parameters**:
 - `pageId` (optional): Filter stats by specific page
 - If not provided: Return aggregated stats across all pages
 
-**Response**: Same structure as before, but filtered if pageId provided
+**Response**: Same structure, but filtered if pageId provided
 
+**Implementation**: Uses `Write-AnalyticsEvent` storage, filtered by pageId if provided. Also returns link counts for the selected page or all pages.

@@ -186,30 +186,23 @@ Show per-page statistics:
 
 ### 4. Public Page Tracking Updates
 
-#### Add Page Tracking on Load
+#### Page View Tracking
 
-Update `src/pages/public/[username]/[[...slug]].tsx`:
+**NOTE**: Page views are automatically tracked by the backend within the `GetUserProfile` endpoint. No separate frontend call is needed.
 
-```typescript
-// Add page view tracking
-const trackPageView = useApiPost({
-  onError: (error) => console.error('Failed to track page view:', error),
-});
+The backend uses `Write-AnalyticsEvent` to record page views when profiles are fetched:
 
-// Track page view when profile loads
-useEffect(() => {
-  if (profile && username) {
-    trackPageView.mutate({
-      url: 'public/TrackPageView',
-      data: {
-        username: username as string,
-        pageId: profile.pageId, // Assuming backend returns this
-        slug: pageSlug,
-      },
-    });
-  }
-}, [profile, username, pageSlug]);
+```powershell
+# Inside GetUserProfile endpoint
+Write-AnalyticsEvent -EventType "PageView" -UserId $user.UserId -PageId $pageId -Metadata @{
+    Slug = $page.Slug
+    IpAddress = $Request.Headers.'X-Forwarded-For' ?? $Request.Headers.'REMOTE_ADDR'
+    UserAgent = $Request.Headers.'User-Agent'
+    Referrer = $Request.Headers.'Referer'
+}
 ```
+
+**Frontend**: No changes needed - page views are tracked automatically when the profile data is fetched via `useApiGet`.
 
 #### Update Link Click Tracking
 
@@ -222,7 +215,7 @@ trackClick.mutate({
   data: {
     linkId: link.id,
     username: username as string,
-    pageId: profile.pageId, // NEW: Include page context
+    pageId: profile?.pageId, // NEW: Include page context
     slug: pageSlug, // NEW: Include slug for reference
   },
 });
@@ -230,20 +223,24 @@ trackClick.mutate({
 
 ### 5. Backend API Endpoints
 
-#### New/Updated Endpoints
+#### Page View Tracking
 
-**1. Track Page View** - `POST /public/TrackPageView`
+**Integrated into existing endpoint** - `GET /public/GetUserProfile`
 
-Request body:
-```json
-{
-  "username": "johndoe",
-  "pageId": "page-guid",
-  "slug": "music"
+Page views are now tracked automatically within this endpoint using `Write-AnalyticsEvent`:
+
+```powershell
+Write-AnalyticsEvent -EventType "PageView" -UserId $userId -PageId $pageId -Metadata @{
+    Slug = $slug
+    IpAddress = $Request.Headers.'X-Forwarded-For'
+    UserAgent = $Request.Headers.'User-Agent'
+    Referrer = $Request.Headers.'Referer'
 }
 ```
 
-**2. Track Link Click** - `POST /public/TrackLinkClick` (UPDATED)
+**No separate TrackPageView endpoint is needed.**
+
+#### Link Click Tracking - `POST /public/TrackLinkClick` (UPDATED)
 
 Request body:
 ```json
@@ -255,7 +252,17 @@ Request body:
 }
 ```
 
-**3. Get Analytics** - `GET /admin/GetAnalytics` (UPDATED)
+Backend tracks with `Write-AnalyticsEvent`:
+
+```powershell
+Write-AnalyticsEvent -EventType "LinkClick" -UserId $userId -PageId $pageId -Metadata @{
+    LinkId = $linkId
+    Slug = $slug
+    # ... other metadata
+}
+```
+
+#### Analytics Endpoint - `GET /admin/GetAnalytics` (UPDATED)
 
 Query parameters:
 - `pageId` (optional): Filter analytics by specific page
@@ -279,11 +286,15 @@ Response includes:
 }
 ```
 
-**4. Get Dashboard Stats** - `GET /admin/GetDashboardStats` (UPDATED)
+Backend uses `Write-AnalyticsEvent` storage, filtering by pageId if provided.
+
+#### Dashboard Stats - `GET /admin/GetDashboardStats` (UPDATED)
 
 Query parameters:
 - `pageId` (optional): Filter stats by specific page
 - If not provided: Return aggregated stats across all pages
+
+Backend uses `Write-AnalyticsEvent` storage for analytics data.
 
 ### 6. Database Schema Updates
 
