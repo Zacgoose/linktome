@@ -40,7 +40,7 @@ This document outlines the API changes required for the profile settings consoli
     "bio": "Software Developer | Tech Enthusiast",
     "logoUrl": null
   },
-  "profileImageUrl": "https://... or data:image/jpeg;base64,...",
+  "profileImageUrl": "https://example.com/avatar.jpg",
   "socialIcons": [],
   "wallpaper": { ... },
   "buttons": { ... },
@@ -52,14 +52,13 @@ This document outlines the API changes required for the profile settings consoli
 #### Frontend Changes Made
 
 **Links Page (`/admin/links`)**:
-- Added clickable avatar with upload overlay
+- Added clickable avatar with edit button overlay
 - Added editable TextField components for display name and bio
-- Avatar upload converts image to base64 or stores URL
+- Avatar URL input dialog for entering image URLs
 - Updates are made directly through `PUT /admin/UpdateAppearance?pageId={id}`
 - Changes are per-page (each page can have different display name/bio/avatar)
 - Auto-saves on change (no save button needed)
-- File size limit: 2MB
-- Supported formats: All image types (jpg, png, gif, webp, etc.)
+- URL-based avatar storage only (no file uploads)
 
 **Dashboard (`/admin/dashboard`)**:
 - Removed Active Links stat card
@@ -76,14 +75,15 @@ This document outlines the API changes required for the profile settings consoli
 
 **Avatar Storage**:
 - **Location**: `Appearance.profileImageUrl` (per-page)
-- **Format**: Base64 encoded data URL or external URL
-- **Example**: `"data:image/jpeg;base64,/9j/4AAQSkZJRg..."` or `"https://storage.example.com/avatar.jpg"`
+- **Format**: External URL only (no base64 or file uploads)
+- **Example**: `"https://storage.example.com/avatar.jpg"` or `"https://example.com/images/profile.png"`
 - **Per-page**: Each page can have its own unique avatar
 - **Use cases**: 
   - Professional headshot for business page
   - Casual photo for personal page
   - Band logo for music page
   - Product image for shop page
+- **Important**: The current storage system only handles URLs, not image uploads or base64 data
 
 ### Migration Strategy
 
