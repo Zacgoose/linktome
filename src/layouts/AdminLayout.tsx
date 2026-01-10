@@ -191,13 +191,12 @@ const menuItems: MenuItem[] = [
 
   // Navigation bar and context switcher
   return (
-    <PageProvider>
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        {/* Navigation Bar */}
-        <AppBar 
-          position="fixed" 
-          elevation={1} 
-          sx={{ 
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Navigation Bar */}
+      <AppBar 
+        position="fixed" 
+        elevation={1} 
+        sx={{ 
             bgcolor: (theme) => theme.palette.background.paper,
             color: (theme) => theme.palette.text.primary,
             zIndex: (theme) => theme.zIndex.drawer + 1,
@@ -339,6 +338,5 @@ const menuItems: MenuItem[] = [
           {children}
         </Box>
       </Box>
-    </PageProvider>
   );
 }

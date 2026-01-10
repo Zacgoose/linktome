@@ -168,6 +168,7 @@ export default function PagesPage() {
 
   // Create page mutation
   const createPage = useApiPost<any, CreatePageRequest>({
+    relatedQueryKeys: ['admin-pages', 'admin-pages-context'],
     onSuccess: () => {
       showToast('Page created successfully', 'success');
       refetch();
@@ -181,6 +182,7 @@ export default function PagesPage() {
 
   // Update page mutation
   const updatePage = useApiPut<any, UpdatePageRequest>({
+    relatedQueryKeys: ['admin-pages', 'admin-pages-context'],
     onSuccess: () => {
       showToast('Page updated successfully', 'success');
       refetch();
@@ -194,6 +196,7 @@ export default function PagesPage() {
 
   // Delete page mutation
   const deletePage = useApiDelete({
+    relatedQueryKeys: ['admin-pages', 'admin-pages-context'],
     onSuccess: () => {
       showToast('Page deleted successfully', 'success');
       refetch();
@@ -337,7 +340,7 @@ export default function PagesPage() {
         <Container maxWidth="lg" sx={{ py: 4 }}>
           {/* Header */}
           <Box sx={{ mb: 4 }}>
-            <Typography variant="h4" fontWeight={700} gutterBottom>
+            <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
               Pages
             </Typography>
             <Typography variant="body1" color="text.secondary" gutterBottom>
