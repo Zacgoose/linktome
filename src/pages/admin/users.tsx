@@ -15,7 +15,12 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  TextField,
+  InputAdornment,
+  TableContainer,
+  Paper,
 } from '@mui/material';
+import { Search } from '@mui/icons-material';
 import AdminLayout from '../../layouts/AdminLayout';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useState as useReactState } from 'react';
@@ -49,6 +54,8 @@ export default function UsersPage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [inviteEmail, setInviteEmail] = useReactState('');
+  const [managerSearchTerm, setManagerSearchTerm] = useState('');
+  const [manageeSearchTerm, setManageeSearchTerm] = useState('');
   const inviteRole = 'user_manager';
   const inviteUserManager = useApiPost({
     onSuccess: () => {
@@ -162,80 +169,138 @@ export default function UsersPage() {
               <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary" sx={{ mt: 2 }}>
                 Your Managers
               </Typography>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Username</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>User ID</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {managers.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} align="center">No managers</TableCell>
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  size="small"
+                  placeholder="Search managers..."
+                  value={managerSearchTerm}
+                  onChange={(e) => setManagerSearchTerm(e.target.value)}
+                  fullWidth
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+              <TableContainer component={Paper} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'action.hover' }}>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Username</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Email</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>User ID</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Role</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Actions</TableCell>
                     </TableRow>
-                  )}
-                  {managers.map((um) => (
-                    <TableRow key={um.UserId}>
-                      <TableCell>{um.username || '-'}</TableCell>
-                      <TableCell>{um.email || '-'}</TableCell>
-                      <TableCell>{um.UserId}</TableCell>
-                      <TableCell>{um.role}</TableCell>
-                      <TableCell>{um.state}</TableCell>
-                      <TableCell>
-                        <Button size="small" color="error" onClick={() => handleUserAction(um.UserId, 'remove')} disabled={userManagerAction.isPending}>Remove</Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {(() => {
+                      const filteredManagers = managers.filter(um =>
+                        um.username?.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
+                        um.email?.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
+                        um.UserId.toLowerCase().includes(managerSearchTerm.toLowerCase())
+                      );
+                      if (filteredManagers.length === 0) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                              {managerSearchTerm ? 'No managers found' : 'No managers'}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+                      return filteredManagers.map((um) => (
+                        <TableRow key={um.UserId} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                          <TableCell sx={{ py: 2 }}>{um.username || '-'}</TableCell>
+                          <TableCell sx={{ py: 2 }}>{um.email || '-'}</TableCell>
+                          <TableCell sx={{ py: 2 }}>{um.UserId}</TableCell>
+                          <TableCell sx={{ py: 2 }}>{um.role}</TableCell>
+                          <TableCell sx={{ py: 2 }}>{um.state}</TableCell>
+                          <TableCell sx={{ py: 2 }}>
+                            <Button size="small" color="error" onClick={() => handleUserAction(um.UserId, 'remove')} disabled={userManagerAction.isPending}>Remove</Button>
+                          </TableCell>
+                        </TableRow>
+                      ));
+                    })()}
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
               {/* Managees Table */}
               <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary" sx={{ mt: 4 }}>
                 Users You Manage
               </Typography>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Username</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>User ID</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {managees.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} align="center">No users</TableCell>
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  size="small"
+                  placeholder="Search users..."
+                  value={manageeSearchTerm}
+                  onChange={(e) => setManageeSearchTerm(e.target.value)}
+                  fullWidth
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+              <TableContainer component={Paper} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'action.hover' }}>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Username</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Email</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>User ID</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Role</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Actions</TableCell>
                     </TableRow>
-                  )}
-                  {managees.map((um) => (
-                    <TableRow key={um.UserId}>
-                      <TableCell>{um.username || '-'}</TableCell>
-                      <TableCell>{um.email || '-'}</TableCell>
-                      <TableCell>{um.UserId}</TableCell>
-                      <TableCell>{um.role}</TableCell>
-                      <TableCell>{um.state}</TableCell>
-                      <TableCell>
-                        {um.state === 'pending' ? (
-                          <>
-                            <Button size="small" color="success" onClick={() => handleUserAction(um.UserId, 'accept')} disabled={userManagerAction.isPending}>Accept</Button>
-                            <Button size="small" color="error" onClick={() => handleUserAction(um.UserId, 'reject')} disabled={userManagerAction.isPending}>Reject</Button>
-                          </>
-                        ) : (
-                          <Button size="small" color="error" onClick={() => handleUserAction(um.UserId, 'remove')} disabled={userManagerAction.isPending}>Remove</Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {(() => {
+                      const filteredManagees = managees.filter(um =>
+                        um.username?.toLowerCase().includes(manageeSearchTerm.toLowerCase()) ||
+                        um.email?.toLowerCase().includes(manageeSearchTerm.toLowerCase()) ||
+                        um.UserId.toLowerCase().includes(manageeSearchTerm.toLowerCase())
+                      );
+                      if (filteredManagees.length === 0) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                              {manageeSearchTerm ? 'No users found' : 'No users'}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+                      return filteredManagees.map((um) => (
+                        <TableRow key={um.UserId} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                          <TableCell sx={{ py: 2 }}>{um.username || '-'}</TableCell>
+                          <TableCell sx={{ py: 2 }}>{um.email || '-'}</TableCell>
+                          <TableCell sx={{ py: 2 }}>{um.UserId}</TableCell>
+                          <TableCell sx={{ py: 2 }}>{um.role}</TableCell>
+                          <TableCell sx={{ py: 2 }}>{um.state}</TableCell>
+                          <TableCell sx={{ py: 2 }}>
+                            {um.state === 'pending' ? (
+                              <>
+                                <Button size="small" color="success" onClick={() => handleUserAction(um.UserId, 'accept')} disabled={userManagerAction.isPending}>Accept</Button>
+                                <Button size="small" color="error" onClick={() => handleUserAction(um.UserId, 'reject')} disabled={userManagerAction.isPending}>Reject</Button>
+                              </>
+                            ) : (
+                              <Button size="small" color="error" onClick={() => handleUserAction(um.UserId, 'remove')} disabled={userManagerAction.isPending}>Remove</Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ));
+                    })()}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </CardContent>
           </Card>
         </Container>

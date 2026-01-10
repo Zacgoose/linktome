@@ -1,21 +1,17 @@
-import { useState } from 'react';
 import {
   Box,
-  Button,
-  Menu,
-  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem as MuiMenuItem,
   Typography,
   Chip,
-  ListItemIcon,
-  ListItemText,
-  Divider,
   CircularProgress,
+  Divider,
 } from '@mui/material';
 import {
-  KeyboardArrowDown,
-  Add,
   Star,
-  Check,
+  Add,
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import { usePageContext } from '@/context/PageContext';
@@ -27,28 +23,16 @@ interface PageSelectorProps {
 export default function PageSelector({ compact = false }: PageSelectorProps) {
   const router = useRouter();
   const { currentPage, pages, isLoading, setCurrentPage } = usePageContext();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleSelectPage = (pageId: string) => {
+    if (pageId === '__manage__') {
+      router.push('/admin/pages');
+      return;
+    }
     const page = pages.find(p => p.id === pageId);
     if (page) {
       setCurrentPage(page);
     }
-    handleClose();
-  };
-
-  const handleManagePages = () => {
-    router.push('/admin/pages');
-    handleClose();
   };
 
   if (isLoading) {
@@ -64,93 +48,40 @@ export default function PageSelector({ compact = false }: PageSelectorProps) {
   }
 
   return (
-    <>
-      <Button
-        onClick={handleClick}
-        endIcon={<KeyboardArrowDown />}
-        sx={{
-          color: 'text.primary',
-          textTransform: 'none',
-          px: 2,
-          py: 1,
-          borderRadius: 2,
-          '&:hover': {
-            bgcolor: 'action.hover',
-          },
-        }}
+    <FormControl size="small" sx={{ minWidth: 220, mr: 2 }}>
+      <InputLabel id="page-selector-label">Pages</InputLabel>
+      <Select
+        labelId="page-selector-label"
+        value={currentPage?.id || ''}
+        label="Pages"
+        onChange={(e) => handleSelectPage(e.target.value)}
+        MenuProps={{ PaperProps: { style: { maxHeight: 350 } } }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {!compact && (
-            <Typography variant="body2" color="text.secondary">
-              Page:
-            </Typography>
-          )}
-          <Typography variant="body2" fontWeight={600}>
-            {currentPage.name}
-          </Typography>
-          {currentPage.isDefault && !compact && (
-            <Star sx={{ fontSize: 16, color: 'primary.main' }} />
-          )}
-        </Box>
-      </Button>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        PaperProps={{
-          sx: {
-            minWidth: 240,
-            mt: 1,
-          },
-        }}
-      >
-        <Box sx={{ px: 2, py: 1 }}>
-          <Typography variant="caption" color="text.secondary" fontWeight={600}>
-            SELECT PAGE
-          </Typography>
-        </Box>
-
         {pages.map((page) => (
-          <MenuItem
-            key={page.id}
-            onClick={() => handleSelectPage(page.id)}
-            selected={page.id === currentPage?.id}
-          >
-            <ListItemText>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MuiMenuItem key={page.id} value={page.id}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+              <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="body2">{page.name}</Typography>
-                {page.isDefault && (
-                  <Chip
-                    label="Default"
-                    size="small"
-                    sx={{ height: 20, fontSize: 10 }}
-                  />
-                )}
               </Box>
-              <Typography variant="caption" color="text.secondary">
-                /{page.slug}
-              </Typography>
-            </ListItemText>
-            {page.id === currentPage?.id && (
-              <ListItemIcon sx={{ minWidth: 'auto', ml: 1 }}>
-                <Check fontSize="small" color="primary" />
-              </ListItemIcon>
-            )}
-          </MenuItem>
+              {page.isDefault && (
+                <Chip
+                  icon={<Star sx={{ fontSize: 14 }} />}
+                  label="Default"
+                  size="small"
+                  sx={{ height: 20, fontSize: 10 }}
+                />
+              )}
+            </Box>
+          </MuiMenuItem>
         ))}
-
-        <Divider sx={{ my: 1 }} />
-
-        <MenuItem onClick={handleManagePages}>
-          <ListItemIcon>
+        <Divider sx={{ my: 0.5 }} />
+        <MuiMenuItem value="__manage__">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Add fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>
             <Typography variant="body2">Manage Pages</Typography>
-          </ListItemText>
-        </MenuItem>
-      </Menu>
-    </>
+          </Box>
+        </MuiMenuItem>
+      </Select>
+    </FormControl>
   );
 }

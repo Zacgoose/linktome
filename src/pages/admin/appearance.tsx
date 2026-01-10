@@ -23,6 +23,11 @@ import {
   Chip,
   Collapse,
   Switch,
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -42,6 +47,7 @@ import {
   Person as PersonIcon,
   AspectRatio as LayoutIcon,
   LockOutlined as LockOutlinedIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import Autocomplete from '@mui/material/Autocomplete';
 import AdminLayout from '@/layouts/AdminLayout';
@@ -393,6 +399,10 @@ export default function AppearancePage() {
 
   const [formData, setFormData] = useState<AppearanceData>(DEFAULT_APPEARANCE);
 
+  // Profile Information states
+  const [editingAvatar, setEditingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
+
   const dataLoadedRef = useRef(false);
   const lastPageIdRef = useRef<string | undefined>(undefined);
 
@@ -487,9 +497,15 @@ export default function AppearancePage() {
       return;
     }
     
+    // Include profile image URL in the data to save
+    const dataToSave = {
+      ...formData,
+      profileImageUrl: data?.profileImageUrl, // Preserve the current profile image
+    };
+    
     updateAppearance.mutate({
       url: currentPage?.id ? `admin/UpdateAppearance?pageId=${currentPage.id}` : 'admin/UpdateAppearance',
-      data: formData as unknown as Record<string, unknown>,
+      data: dataToSave as unknown as Record<string, unknown>,
     });
   };
 
@@ -519,6 +535,21 @@ export default function AppearancePage() {
       ...prev,
       header: { ...prev.header, ...updates },
     }));
+  };
+
+  const handleAvatarUrlSave = () => {
+    if (!data || !currentPage?.id) return;
+
+    updateAppearance.mutate({
+      url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
+      data: {
+        ...data,
+        profileImageUrl: avatarUrl,
+      },
+    });
+    
+    setEditingAvatar(false);
+    showToast('Avatar updated successfully', 'success');
   };
 
   const handleThemeSelect = (theme: AppearanceTheme) => {
@@ -599,6 +630,74 @@ export default function AppearancePage() {
               <Card>
                 <CardContent sx={{ p: 4 }}>
                   <Box component="form" onSubmit={handleSubmit}>
+                    {/* Profile Information Section */}
+                    <CollapsibleSection title="Profile Information" id="profile-info">
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Update your display name, bio, and profile image
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                        {/* Avatar with edit button */}
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            width: 64,
+                            height: 64,
+                            mt: 1,
+                          }}
+                        >
+                          <Avatar
+                            src={data?.profileImageUrl}
+                            sx={{ width: 64, height: 64 }}
+                          >
+                            {formData.header?.displayName?.charAt(0) || 'U'}
+                          </Avatar>
+                          <IconButton
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              bottom: -4,
+                              right: -4,
+                              bgcolor: 'primary.main',
+                              color: 'white',
+                              '&:hover': {
+                                bgcolor: 'primary.dark',
+                              },
+                              width: 28,
+                              height: 28,
+                            }}
+                            onClick={() => {
+                              setEditingAvatar(true);
+                              setAvatarUrl(data?.profileImageUrl || '');
+                            }}
+                          >
+                            <EditIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <TextField
+                            label="Display Name"
+                            fullWidth
+                            value={formData.header.displayName}
+                            onChange={(e) => updateHeader({ displayName: e.target.value })}
+                            sx={{ mb: 2 }}
+                            size="small"
+                            inputProps={{ maxLength: 30 }}
+                            helperText={`${formData.header.displayName.length}/30 characters`}
+                          />
+                          <TextField
+                            label="Bio"
+                            fullWidth
+                            multiline
+                            rows={2}
+                            value={formData.header.bio || ''}
+                            onChange={(e) => updateHeader({ bio: e.target.value })}
+                            placeholder="Tell people about yourself..."
+                            size="small"
+                          />
+                        </Box>
+                      </Box>
+                    </CollapsibleSection>
+
                     {/* Header Section */}
                     <CollapsibleSection title="Header" id="header">
                       <Stack spacing={3}>
@@ -717,15 +816,6 @@ export default function AppearancePage() {
                             ))}
                           </Grid>
                         </Box>
-
-                        <TextField
-                          fullWidth
-                          label="Display Name"
-                          value={formData.header.displayName}
-                          onChange={(e) => updateHeader({ displayName: e.target.value })}
-                          inputProps={{ maxLength: 30 }}
-                          helperText={`${formData.header.displayName.length}/30 characters`}
-                        />
                       </Stack>
                     </CollapsibleSection>
 
@@ -1435,6 +1525,41 @@ export default function AppearancePage() {
           </Box>
         </Container>
       </AdminLayout>
+      
+      {/* Avatar Edit Dialog */}
+      <Dialog open={editingAvatar} onClose={() => setEditingAvatar(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Update Avatar URL</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Avatar Image URL"
+            fullWidth
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+            placeholder="https://example.com/avatar.jpg"
+            helperText="Enter the URL of your avatar image"
+            sx={{ mt: 2 }}
+          />
+          {avatarUrl && (
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" gutterBottom>
+                Preview:
+              </Typography>
+              <Avatar
+                src={avatarUrl}
+                sx={{ width: 80, height: 80, mx: 'auto', mt: 1 }}
+              >
+                {formData.header?.displayName?.charAt(0) || 'U'}
+              </Avatar>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditingAvatar(false)}>Cancel</Button>
+          <Button onClick={handleAvatarUrlSave} variant="contained">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
       
       {/* Upgrade Prompt Dialog */}
       {showUpgrade && upgradeInfo && (

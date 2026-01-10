@@ -37,7 +37,7 @@ export default function AnalyticsPage() {
 
   const { data: analytics, isLoading } = useApiGet<AnalyticsResponse>({
     url: 'admin/GetAnalytics',
-    queryKey: ['admin-analytics', selectedPageFilter],
+    queryKey: `admin-analytics-${selectedPageFilter}`,
     params: selectedPageFilter !== 'all' ? { pageId: selectedPageFilter } : undefined,
   });
 

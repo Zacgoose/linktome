@@ -11,7 +11,6 @@ import {
   Button,
   IconButton,
   Paper,
-  Avatar,
   Switch,
   Tooltip,
   Chip,
@@ -40,11 +39,6 @@ import {
   FolderOpen,
   ViewModule,
   Link as LinkIcon,
-  Instagram,
-  YouTube,
-  Twitter,
-  Email,
-  MusicNote,
   OpenInNew,
   PhoneIphone as PhoneIcon,
 } from '@mui/icons-material';
@@ -424,13 +418,6 @@ export default function LinksPage() {
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [collectionSelectorOpen, setCollectionSelectorOpen] = useState(false);
   const [linkToMove, setLinkToMove] = useState<string | null>(null);
-  const [editingAvatar, setEditingAvatar] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState('');
-  
-  // Track pending changes for display name and bio
-  const [pendingDisplayName, setPendingDisplayName] = useState<string>('');
-  const [pendingBio, setPendingBio] = useState<string>('');
-  const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
   const maxLinkGroupsCheck = canAccess('maxLinkGroups');
 
@@ -473,22 +460,6 @@ export default function LinksPage() {
       setGroups(linksData.groups || []);
     }
   }, [linksData]);
-  
-  // Sync avatar URL with appearance data
-  useEffect(() => {
-    if (appearanceData?.profileImageUrl) {
-      setAvatarUrl(appearanceData.profileImageUrl);
-    }
-  }, [appearanceData?.profileImageUrl]);
-  
-  // Initialize pending values when appearance data loads
-  useEffect(() => {
-    if (appearanceData) {
-      setPendingDisplayName(appearanceData.header?.displayName || '');
-      setPendingBio(appearanceData.header?.bio || '');
-      setHasPendingChanges(false);
-    }
-  }, [appearanceData]);
 
   const appearance = useMemo(() => {
     const source = appearanceData || DEFAULT_APPEARANCE;
@@ -715,56 +686,6 @@ export default function LinksPage() {
     }
   };
 
-  const handleAvatarUrlSave = () => {
-    if (!appearanceData || !currentPage?.id) return;
-
-    updateAppearance.mutate({
-      url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
-      data: {
-        ...appearanceData,
-        profileImageUrl: avatarUrl,
-      },
-    });
-    
-    setEditingAvatar(false);
-    showToast('Avatar updated successfully', 'success');
-  };
-  
-  const handleSaveProfileChanges = () => {
-    if (!appearanceData || !currentPage?.id) return;
-
-    updateAppearance.mutate({
-      url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
-      data: {
-        ...appearanceData,
-        header: {
-          ...appearanceData.header,
-          displayName: pendingDisplayName,
-          bio: pendingBio,
-        },
-      },
-    });
-    
-    setHasPendingChanges(false);
-    showToast('Profile updated successfully', 'success');
-  };
-  
-  const handleDisplayNameChange = (value: string) => {
-    setPendingDisplayName(value);
-    setHasPendingChanges(
-      value !== (appearanceData?.header?.displayName || '') ||
-      pendingBio !== (appearanceData?.header?.bio || '')
-    );
-  };
-  
-  const handleBioChange = (value: string) => {
-    setPendingBio(value);
-    setHasPendingChanges(
-      pendingDisplayName !== (appearanceData?.header?.displayName || '') ||
-      value !== (appearanceData?.header?.bio || '')
-    );
-  };
-
   const handleOpenSettings = (link: Link) => {
     setSelectedLink(link);
     setSelectedGroupId(link.groupId || null);
@@ -859,6 +780,12 @@ export default function LinksPage() {
 
       <AdminLayout>
         <Container maxWidth="xl" sx={{ py: 4 }}>
+          <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
+            Links
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Manage the links your visitors will see
+          </Typography>
           {/* Mobile Preview - Show at top on small screens */}
           <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
@@ -881,87 +808,6 @@ export default function LinksPage() {
 
           {/* Main Content */}
           <Box sx={{ flex: 1, minWidth: 0, maxWidth: 640, mx: { xs: 'auto', md: 0 }, mr: { xs: 0, md: '360px' } }}>
-            {/* Profile Header - Editable */}
-            <Card sx={{ mb: 3, borderRadius: 3 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="h6" fontWeight={600}>
-                    Profile Information
-                  </Typography>
-                  {hasPendingChanges && (
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={handleSaveProfileChanges}
-                      disabled={updateAppearance.isPending}
-                      sx={{ borderRadius: 2 }}
-                    >
-                      Save Changes
-                    </Button>
-                  )}
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                  {/* Avatar with edit button */}
-                  <Box
-                    sx={{
-                      position: 'relative',
-                      width: 64,
-                      height: 64,
-                      mt: 1,
-                    }}
-                  >
-                    <Avatar
-                      src={appearance.profileImageUrl}
-                      sx={{ width: 64, height: 64 }}
-                    >
-                      {appearance.header?.displayName?.charAt(0) || 'U'}
-                    </Avatar>
-                    <IconButton
-                      size="small"
-                      sx={{
-                        position: 'absolute',
-                        bottom: -4,
-                        right: -4,
-                        bgcolor: 'primary.main',
-                        color: 'white',
-                        '&:hover': {
-                          bgcolor: 'primary.dark',
-                        },
-                        width: 28,
-                        height: 28,
-                      }}
-                      onClick={() => {
-                        setEditingAvatar(true);
-                        setAvatarUrl(appearance.profileImageUrl || '');
-                      }}
-                    >
-                      <Edit sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <TextField
-                      label="Display Name"
-                      fullWidth
-                      value={pendingDisplayName}
-                      onChange={(e) => handleDisplayNameChange(e.target.value)}
-                      sx={{ mb: 2 }}
-                      size="small"
-                    />
-                    <TextField
-                      label="Bio"
-                      fullWidth
-                      multiline
-                      rows={2}
-                      value={pendingBio}
-                      onChange={(e) => handleBioChange(e.target.value)}
-                      placeholder="Tell people about yourself..."
-                      size="small"
-                    />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-
             {/* Add Link Button */}
             <Button
               variant="contained"
@@ -1243,41 +1089,6 @@ export default function LinksPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCollectionSelectorOpen(false)}>Cancel</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Avatar URL Dialog */}
-      <Dialog open={editingAvatar} onClose={() => setEditingAvatar(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Update Avatar URL</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Avatar Image URL"
-            fullWidth
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            placeholder="https://example.com/avatar.jpg"
-            helperText="Enter the URL of your avatar image"
-            sx={{ mt: 2 }}
-          />
-          {avatarUrl && (
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary" gutterBottom>
-                Preview:
-              </Typography>
-              <Avatar
-                src={avatarUrl}
-                sx={{ width: 80, height: 80, mx: 'auto', mt: 1 }}
-              >
-                {appearance.header?.displayName?.charAt(0) || 'U'}
-              </Avatar>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditingAvatar(false)}>Cancel</Button>
-          <Button onClick={handleAvatarUrlSave} variant="contained">
-            Save
-          </Button>
         </DialogActions>
       </Dialog>
 

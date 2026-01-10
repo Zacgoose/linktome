@@ -128,7 +128,7 @@ export default function Dashboard() {
               </Grid>
               <Grid item xs={12} md={4}>
                 <Box display="flex" flexDirection="column" alignItems="flex-end" gap={2}>
-                  <TierBadge tier={userTier} size="large" />
+                  <TierBadge tier={userTier} size="medium" />
                 </Box>
               </Grid>
             </Grid>
