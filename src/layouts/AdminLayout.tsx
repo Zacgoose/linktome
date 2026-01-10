@@ -226,7 +226,7 @@ const menuItems: MenuItem[] = [
               LinkToMe
             </Typography>
             {/* Page Selector - Show on relevant pages */}
-            {['/admin/links', '/admin/appearance', '/admin/analytics'].includes(router.pathname) && (
+            {['/admin/links', '/admin/appearance'].includes(router.pathname) && (
               <PageSelector />
             )}
             {/* UI Theme Switcher */}
