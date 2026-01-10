@@ -230,6 +230,7 @@ export default function PublicProfile() {
       ...(pageSlug && { slug: pageSlug })
     },
     enabled: router.isReady && !!username,
+    publicEndpoint: true, // This is a public endpoint that doesn't require authentication
   });
 
   // Mutation for tracking link clicks

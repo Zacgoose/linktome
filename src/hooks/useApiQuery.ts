@@ -156,6 +156,7 @@ interface ApiGetCallProps {
   refetchOnMount?: boolean;
   onSuccess?: (data: unknown) => void;
   onError?: (error: string) => void;
+  publicEndpoint?: boolean; // Flag to indicate this is a public endpoint that doesn't require auth
 }
 
 export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
@@ -172,9 +173,14 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
     refetchOnMount = true,
     onSuccess,
     onError,
+    publicEndpoint = false,
   } = props;
 
-  const shouldEnable = enabled && authReady && user !== null;
+  // For public endpoints, only check authReady and enabled
+  // For authenticated endpoints, also check user !== null
+  const shouldEnable = publicEndpoint 
+    ? enabled && authReady 
+    : enabled && authReady && user !== null;
   const mergedParams = buildMergedParams(params, selectedContext, user);
 
   const callingUserId = getUserId(user);
