@@ -1,7 +1,7 @@
 # Profile Settings API Changes
 
 ## Overview
-This document outlines the API changes required for the profile settings consolidation. The Profile Settings page has been deprecated, and display name and bio management have been moved to the Links page where they can be edited inline.
+This document outlines the API changes required for the profile settings consolidation. The Profile Settings page has been deprecated, and display name, bio, and avatar management have been moved to the Links page where they can be edited inline.
 
 ## Changes Summary
 
@@ -11,18 +11,19 @@ This document outlines the API changes required for the profile settings consoli
    - This endpoint was used by the Profile Settings page
    - Still used by Dashboard for displaying user information
    - **Action**: Mark as deprecated but keep functional
-   - **Replacement**: Display name and bio are now managed through Appearance API
+   - **Replacement**: Display name, bio, and avatar are now managed through Appearance API
 
 2. **PUT /admin/UpdateProfile** - DEPRECATED
-   - This endpoint was used to update display name and bio separately
+   - This endpoint was used to update display name, bio, and avatar separately
    - **Action**: Remove or mark as deprecated
-   - **Replacement**: Use `PUT /admin/UpdateAppearance` with header data
+   - **Replacement**: Use `PUT /admin/UpdateAppearance` with header data and profileImageUrl
 
 ### Updated Endpoints
 
 1. **PUT /admin/UpdateAppearance** - ENHANCED
-   - Now the primary endpoint for managing display name and bio
-   - These are stored in `appearance.header.displayName` and `appearance.header.bio`
+   - Now the primary endpoint for managing display name, bio, and avatar
+   - Display name and bio are stored in `appearance.header.displayName` and `appearance.header.bio`
+   - Avatar is stored in `appearance.profileImageUrl`
    - **No schema changes required** - already supports this structure
 
 ### Implementation Details
@@ -39,7 +40,7 @@ This document outlines the API changes required for the profile settings consoli
     "bio": "Software Developer | Tech Enthusiast",
     "logoUrl": null
   },
-  "profileImageUrl": "https://...",
+  "profileImageUrl": "https://... or data:image/jpeg;base64,...",
   "socialIcons": [],
   "wallpaper": { ... },
   "buttons": { ... },
@@ -51,10 +52,14 @@ This document outlines the API changes required for the profile settings consoli
 #### Frontend Changes Made
 
 **Links Page (`/admin/links`)**:
+- Added clickable avatar with upload overlay
 - Added editable TextField components for display name and bio
+- Avatar upload converts image to base64 or stores URL
 - Updates are made directly through `PUT /admin/UpdateAppearance?pageId={id}`
-- Changes are per-page (each page can have different display name/bio)
+- Changes are per-page (each page can have different display name/bio/avatar)
 - Auto-saves on change (no save button needed)
+- File size limit: 2MB
+- Supported formats: All image types (jpg, png, gif, webp, etc.)
 
 **Dashboard (`/admin/dashboard`)**:
 - Removed Active Links stat card
@@ -64,19 +69,32 @@ This document outlines the API changes required for the profile settings consoli
 
 **Profile Settings Page (`/admin/profile`)**:
 - Page is deprecated and should be removed or hidden from navigation
-- Users should update display name/bio from Links page
-- Avatar management can be moved to Appearance page or Account Settings
+- Users now update display name/bio/avatar from Links page
+- All profile customization is per-page
+
+### Storage Changes
+
+**Avatar Storage**:
+- **Location**: `Appearance.profileImageUrl` (per-page)
+- **Format**: Base64 encoded data URL or external URL
+- **Example**: `"data:image/jpeg;base64,/9j/4AAQSkZJRg..."` or `"https://storage.example.com/avatar.jpg"`
+- **Per-page**: Each page can have its own unique avatar
+- **Use cases**: 
+  - Professional headshot for business page
+  - Casual photo for personal page
+  - Band logo for music page
+  - Product image for shop page
 
 ### Migration Strategy
 
 #### Phase 1: Backend Compatibility (Immediate)
-1. Ensure `PUT /admin/UpdateAppearance` accepts and saves `header.displayName` and `header.bio`
+1. Ensure `PUT /admin/UpdateAppearance` accepts and saves `header.displayName`, `header.bio`, and `profileImageUrl`
 2. Mark `PUT /admin/UpdateProfile` as deprecated (but keep working for backward compatibility)
 3. Keep `GET /admin/GetProfile` working for Dashboard
 
 #### Phase 2: Data Migration (if needed)
-If users have display name/bio in a separate Profile table:
-1. Copy existing profile data to appearance.header for each user's pages
+If users have display name/bio/avatar in a separate Profile table:
+1. Copy existing profile data to appearance.header and appearance.profileImageUrl for each user's pages
 2. Default page gets the user's main profile data
 3. Additional pages start with the same data (user can customize per page)
 

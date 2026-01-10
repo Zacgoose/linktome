@@ -47,6 +47,7 @@ import {
   MusicNote,
   OpenInNew,
   PhoneIphone as PhoneIcon,
+  CameraAlt,
 } from '@mui/icons-material';
 import {
   DndContext,
@@ -424,6 +425,7 @@ export default function LinksPage() {
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [collectionSelectorOpen, setCollectionSelectorOpen] = useState(false);
   const [linkToMove, setLinkToMove] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const maxLinkGroupsCheck = canAccess('maxLinkGroups');
 
@@ -692,6 +694,58 @@ export default function LinksPage() {
     }
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !appearanceData || !currentPage?.id) return;
+
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Image size must be less than 2MB', 'error');
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload an image file', 'error');
+      return;
+    }
+
+    setAvatarUploading(true);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        
+        // Update appearance with new avatar
+        updateAppearance.mutate({
+          url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
+          data: {
+            ...appearanceData,
+            profileImageUrl: base64String,
+          },
+        });
+        
+        setAvatarUploading(false);
+        showToast('Avatar updated successfully', 'success');
+      };
+      
+      reader.onerror = () => {
+        setAvatarUploading(false);
+        showToast('Failed to upload avatar', 'error');
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setAvatarUploading(false);
+      showToast('Failed to upload avatar', 'error');
+    }
+    
+    // Reset input
+    event.target.value = '';
+  };
+
   const handleOpenSettings = (link: Link) => {
     setSelectedLink(link);
     setSelectedGroupId(link.groupId || null);
@@ -815,12 +869,58 @@ export default function LinksPage() {
                   Profile Information
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                  <Avatar
-                    src={appearance.profileImageUrl}
-                    sx={{ width: 64, height: 64, mt: 1 }}
+                  {/* Avatar with upload */}
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      width: 64,
+                      height: 64,
+                      mt: 1,
+                      cursor: 'pointer',
+                      '&:hover .avatar-overlay': {
+                        opacity: 1,
+                      },
+                    }}
+                    onClick={() => document.getElementById('avatar-upload-input')?.click()}
                   >
-                    {appearance.header?.displayName?.charAt(0) || 'U'}
-                  </Avatar>
+                    <Avatar
+                      src={appearance.profileImageUrl}
+                      sx={{ width: 64, height: 64 }}
+                    >
+                      {appearance.header?.displayName?.charAt(0) || 'U'}
+                    </Avatar>
+                    <Box
+                      className="avatar-overlay"
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        borderRadius: '50%',
+                        bgcolor: 'rgba(0, 0, 0, 0.6)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0,
+                        transition: 'opacity 0.2s',
+                      }}
+                    >
+                      {avatarUploading ? (
+                        <CircularProgress size={24} sx={{ color: 'white' }} />
+                      ) : (
+                        <CameraAlt sx={{ color: 'white', fontSize: 24 }} />
+                      )}
+                    </Box>
+                    <input
+                      id="avatar-upload-input"
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={handleAvatarUpload}
+                      disabled={avatarUploading}
+                    />
+                  </Box>
                   <Box sx={{ flex: 1 }}>
                     <TextField
                       label="Display Name"
