@@ -1,6 +1,7 @@
 // Link Types
 export interface Link {
   id: string;
+  pageId?: string; // ID of the page this link belongs to (optional for backward compatibility)
   title: string;
   url: string;
   order: number;
@@ -29,6 +30,7 @@ export interface Link {
 
 export interface LinkGroup {
   id: string;
+  pageId?: string; // ID of the page this group belongs to (optional for backward compatibility)
   title: string;
   order: number;
   active: boolean;
@@ -102,6 +104,9 @@ export interface SocialIcon {
 }
 
 export interface AppearanceData {
+  // Page association
+  pageId?: string; // ID of the page this appearance belongs to (optional for backward compatibility)
+  
   // Theme
   theme: string;
   customTheme?: boolean;

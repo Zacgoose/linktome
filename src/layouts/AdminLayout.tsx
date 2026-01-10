@@ -25,16 +25,17 @@ import { UiThemeContext } from '@/pages/_app';
 import {
   Dashboard as DashboardIcon,
   Link as LinkIcon,
-  Person as PersonIcon,
   Palette as PaletteIcon,
   BarChart as AnalyticsIcon,
   People as PeopleIcon,
   Settings as SettingsIcon,
   CardMembership as SubscriptionIcon,
+  Pages as PagesIcon,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useRbacContext } from '@/context/RbacContext';
+import PageSelector from '@/components/PageSelector';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -65,16 +66,16 @@ const menuItems: MenuItem[] = [
     requiredPermissions: ['read:dashboard'],
   },
   { 
+    text: 'Pages', 
+    icon: <PagesIcon />, 
+    path: '/admin/pages',
+    requiredPermissions: ['read:pages'],
+  },
+  { 
     text: 'Links', 
     icon: <LinkIcon />, 
     path: '/admin/links',
     requiredPermissions: ['read:links'],
-  },
-  { 
-    text: 'Profile', 
-    icon: <PersonIcon />, 
-    path: '/admin/profile',
-    requiredPermissions: ['read:profile'],
   },
   { 
     text: 'Appearance', 
@@ -188,142 +189,146 @@ const menuItems: MenuItem[] = [
         position="fixed" 
         elevation={1} 
         sx={{ 
-          bgcolor: (theme) => theme.palette.background.paper,
-          color: (theme) => theme.palette.text.primary,
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-        }}
-      >
-        <Toolbar>
-          {/* Drawer toggle button (always MenuIcon) */}
-          <IconButton
-            color="inherit"
-            aria-label={drawerOpen ? 'Collapse navigation' : 'Expand navigation'}
-            onClick={handleDrawerToggle}
-            edge="start"
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          {/* Keep LinkToMe always visible and stationary */}
-          <Typography
-            variant="h6"
-            sx={{
-              flexGrow: 1,
-              fontWeight: 700,
-              color: 'primary.main',
-              minWidth: 120,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              ml: 0,
-              transition: 'none',
-            }}
-          >
-            LinkToMe
-          </Typography>
-          {/* UI Theme Switcher */}
-          <IconButton sx={{ mr: 1 }} onClick={() => setUiTheme(uiTheme === 'light' ? 'dark' : 'light')} color="inherit" aria-label="Toggle UI theme">
-            {uiTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
-          </IconButton>
-          {/* Context Switcher: Show if user has managed users */}
-          {user && (managedUsers && managedUsers.length > 0) && (
-            <FormControl size="small" sx={{ minWidth: 220, mr: 2 }}>
-              <InputLabel id="context-switch-label">Accounts</InputLabel>
-              <Select
-                labelId="context-switch-label"
-                value={selectedContext}
-                label="Context"
-                onChange={(e) => {
-                  setSelectedContext(e.target.value);
-                }}
-                MenuProps={{ PaperProps: { style: { maxHeight: 350 } } }}
-              >
-                <MuiMenuItem value="user">My Account</MuiMenuItem>
-                {managedUsers && managedUsers.length > 0 && [
-                  <ListSubheader key="managed-header">Accounts I Manage</ListSubheader>,
-                  ...managedUsers.map((um) => (
-                    <MuiMenuItem key={um.UserId} value={um.UserId}>
-                      Managed User: {um.DisplayName}
-                    </MuiMenuItem>
-                  )),
-                ]}
-              </Select>
-            </FormControl>
-          )}
-          <Button variant="outlined" onClick={handleLogout}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
-      {/* Side Drawer Navigation */}
-      <Drawer
-        variant="permanent"
-        open={drawerOpen}
-        sx={{
-          width: drawerOpen ? drawerWidth : collapsedDrawerWidth,
-          flexShrink: 0,
-          whiteSpace: 'nowrap',
-          transition: (theme) => theme.transitions.create('width', {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
-          '& .MuiDrawer-paper': {
+            bgcolor: (theme) => theme.palette.background.paper,
+            color: (theme) => theme.palette.text.primary,
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+          }}
+        >
+          <Toolbar>
+            {/* Drawer toggle button (always MenuIcon) */}
+            <IconButton
+              color="inherit"
+              aria-label={drawerOpen ? 'Collapse navigation' : 'Expand navigation'}
+              onClick={handleDrawerToggle}
+              edge="start"
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+            {/* Keep LinkToMe always visible and stationary */}
+            <Typography
+              variant="h6"
+              sx={{
+                flexGrow: 1,
+                fontWeight: 700,
+                color: 'primary.main',
+                minWidth: 120,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                ml: 0,
+                transition: 'none',
+              }}
+            >
+              LinkToMe
+            </Typography>
+            {/* Page Selector - Show on relevant pages */}
+            {['/admin/links', '/admin/appearance', '/admin/analytics'].includes(router.pathname) && (
+              <PageSelector />
+            )}
+            {/* UI Theme Switcher */}
+            <IconButton sx={{ mr: 1 }} onClick={() => setUiTheme(uiTheme === 'light' ? 'dark' : 'light')} color="inherit" aria-label="Toggle UI theme">
+              {uiTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
+            </IconButton>
+            {/* Context Switcher: Show if user has managed users */}
+            {user && (managedUsers && managedUsers.length > 0) && (
+              <FormControl size="small" sx={{ minWidth: 220, mr: 2 }}>
+                <InputLabel id="context-switch-label">Accounts</InputLabel>
+                <Select
+                  labelId="context-switch-label"
+                  value={selectedContext}
+                  label="Context"
+                  onChange={(e) => {
+                    setSelectedContext(e.target.value);
+                  }}
+                  MenuProps={{ PaperProps: { style: { maxHeight: 350 } } }}
+                >
+                  <MuiMenuItem value="user">My Account</MuiMenuItem>
+                  {managedUsers && managedUsers.length > 0 && [
+                    <ListSubheader key="managed-header">Accounts I Manage</ListSubheader>,
+                    ...managedUsers.map((um) => (
+                      <MuiMenuItem key={um.UserId} value={um.UserId}>
+                        Managed User: {um.DisplayName}
+                      </MuiMenuItem>
+                    )),
+                  ]}
+                </Select>
+              </FormControl>
+            )}
+            <Button variant="outlined" onClick={handleLogout}>
+              Logout
+            </Button>
+          </Toolbar>
+        </AppBar>
+        {/* Side Drawer Navigation */}
+        <Drawer
+          variant="permanent"
+          open={drawerOpen}
+          sx={{
             width: drawerOpen ? drawerWidth : collapsedDrawerWidth,
-            boxSizing: 'border-box',
-            borderRight: '1px solid',
-            borderColor: 'divider',
-            overflowX: 'hidden',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
             transition: (theme) => theme.transitions.create('width', {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,
             }),
-          },
-        }}
-      >
-        <Toolbar />
-        <Box sx={{ overflow: 'auto', mt: 2 }}>
-          <List>
-            {visibleMenuItems.map((item) => (
-              <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
-                <ListItemButton
-                  selected={router.pathname === item.path}
-                  onClick={() => router.push(item.path)}
-                  sx={theme => ({
-                    minHeight: 48,
-                    justifyContent: drawerOpen ? 'initial' : 'center',
-                    px: 2.5,
-                    '&.Mui-selected': {
-                      bgcolor: 'primary.light',
-                      color: theme.palette.mode === 'dark' ? theme.palette.primary.contrastText : theme.palette.primary.contrastText,
-                      '& .MuiListItemIcon-root': {
-                        color: theme.palette.mode === 'dark' ? theme.palette.primary.contrastText : theme.palette.primary.contrastText,
-                      },
-                      '&:hover': {
+            '& .MuiDrawer-paper': {
+              width: drawerOpen ? drawerWidth : collapsedDrawerWidth,
+              boxSizing: 'border-box',
+              borderRight: '1px solid',
+              borderColor: 'divider',
+              overflowX: 'hidden',
+              transition: (theme) => theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+            },
+          }}
+        >
+          <Toolbar />
+          <Box sx={{ overflow: 'auto', mt: 2 }}>
+            <List>
+              {visibleMenuItems.map((item) => (
+                <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
+                  <ListItemButton
+                    selected={router.pathname === item.path}
+                    onClick={() => router.push(item.path)}
+                    sx={theme => ({
+                      minHeight: 48,
+                      justifyContent: drawerOpen ? 'initial' : 'center',
+                      px: 2.5,
+                      '&.Mui-selected': {
                         bgcolor: 'primary.light',
+                        color: theme.palette.mode === 'dark' ? theme.palette.primary.contrastText : theme.palette.primary.contrastText,
+                        '& .MuiListItemIcon-root': {
+                          color: theme.palette.mode === 'dark' ? theme.palette.primary.contrastText : theme.palette.primary.contrastText,
+                        },
+                        '&:hover': {
+                          bgcolor: 'primary.light',
+                        },
                       },
-                    },
-                  })}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: drawerOpen ? 2 : 'auto',
-                      justifyContent: 'center',
-                    }}
+                    })}
                   >
-                    {item.icon}
-                  </ListItemIcon>
-                  {drawerOpen && <ListItemText primary={item.text} sx={{ opacity: drawerOpen ? 1 : 0 }} />}
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: drawerOpen ? 2 : 'auto',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    {drawerOpen && <ListItemText primary={item.text} sx={{ opacity: drawerOpen ? 1 : 0 }} />}
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        </Drawer>
+        <Box component="main" sx={{ flexGrow: 1, bgcolor: (theme) => theme.palette.background.default, }}>
+          <Toolbar />
+          {children}
         </Box>
-      </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: (theme) => theme.palette.background.default, }}>
-        <Toolbar />
-        {children}
       </Box>
-    </Box>
   );
 }

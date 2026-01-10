@@ -76,7 +76,7 @@ export function findMinimumTierForFeature(feature: keyof TierLimits): UserTier {
  */
 export function hasReachedLimit(
   userTier: UserTier | string | undefined,
-  limitType: 'maxLinks' | 'maxLinkGroups' | 'apiKeysLimit',
+  limitType: 'maxLinks' | 'maxLinkGroups' | 'apiKeysLimit' | 'maxPages',
   currentCount: number
 ): FeatureAccessResult {
   const tier = typeof userTier === 'string' ? parseTier(userTier) : (userTier || UserTier.FREE);

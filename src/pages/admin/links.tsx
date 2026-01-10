@@ -83,6 +83,7 @@ import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { getTierLimits } from '@/utils/tierValidation';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import { usePageContext } from '@/context/PageContext';
 
 interface SortableLinkCardProps {
   link: Link;
@@ -95,7 +96,7 @@ interface SortableLinkCardProps {
   onRemoveFromCollection: (linkId: string) => void;
 }
 
-function SortableLinkCard({ link, onEdit, onDelete, onToggle, onOpenSettings, onMoveToCollection, onRemoveFromCollection }: SortableLinkCardProps) {
+function SortableLinkCard({ link, onEdit, onDelete, onToggle, onMoveToCollection, onRemoveFromCollection }: SortableLinkCardProps) {
   const {
     attributes,
     listeners,
@@ -414,6 +415,7 @@ export default function LinksPage() {
   const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
+  const { currentPage } = usePageContext();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -422,19 +424,30 @@ export default function LinksPage() {
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [collectionSelectorOpen, setCollectionSelectorOpen] = useState(false);
   const [linkToMove, setLinkToMove] = useState<string | null>(null);
+  const [editingAvatar, setEditingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  
+  // Track pending changes for display name and bio
+  const [pendingDisplayName, setPendingDisplayName] = useState<string>('');
+  const [pendingBio, setPendingBio] = useState<string>('');
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
   const maxLinkGroupsCheck = canAccess('maxLinkGroups');
 
-  // Fetch links and groups
+  // Fetch links and groups for current page
   const { data: linksData, isLoading, refetch } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
-    queryKey: 'admin-links',
+    queryKey: `admin-links-${currentPage?.id || 'none'}`,
+    params: currentPage?.id ? { pageId: currentPage.id } : undefined,
+    enabled: !!currentPage,
   });
 
   // Fetch appearance for preview
   const { data: appearanceData, refetch: refetchAppearance } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
-    queryKey: 'admin-appearance',
+    queryKey: `admin-appearance-${currentPage?.id || 'none'}`,
+    params: currentPage?.id ? { pageId: currentPage.id } : undefined,
+    enabled: !!currentPage,
   });
   
   // Appearance update mutation for footer toggle
@@ -460,6 +473,22 @@ export default function LinksPage() {
       setGroups(linksData.groups || []);
     }
   }, [linksData]);
+  
+  // Sync avatar URL with appearance data
+  useEffect(() => {
+    if (appearanceData?.profileImageUrl) {
+      setAvatarUrl(appearanceData.profileImageUrl);
+    }
+  }, [appearanceData?.profileImageUrl]);
+  
+  // Initialize pending values when appearance data loads
+  useEffect(() => {
+    if (appearanceData) {
+      setPendingDisplayName(appearanceData.header?.displayName || '');
+      setPendingBio(appearanceData.header?.bio || '');
+      setHasPendingChanges(false);
+    }
+  }, [appearanceData]);
 
   const appearance = useMemo(() => {
     const source = appearanceData || DEFAULT_APPEARANCE;
@@ -477,7 +506,7 @@ export default function LinksPage() {
 
   // Bulk update mutation for links and groups
   const updateLinks = useApiPut<any, UpdateLinksRequest>({
-    relatedQueryKeys: ['admin-links'],
+    relatedQueryKeys: [`admin-links-${currentPage?.id ?? 'none'}`],
     onSuccess: () => {
       showToast('Changes saved', 'success');
       refetch();
@@ -504,10 +533,12 @@ export default function LinksPage() {
   };
 
   const handleSaveLink = (linkData: Partial<Link>) => {
+    if (!currentPage?.id) return;
+    
     if (selectedLink) {
       // Update existing link
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: [{
             operation: 'update',
@@ -521,7 +552,7 @@ export default function LinksPage() {
       // Add new link
       const maxOrder = links.length > 0 ? Math.max(...links.map(l => l.order)) : -1;
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: [{
             operation: 'add',
@@ -529,6 +560,7 @@ export default function LinksPage() {
             order: maxOrder + 1,
             groupId: selectedGroupId,
             active: true,
+            pageId: currentPage.id,
           }],
         },
       });
@@ -546,9 +578,9 @@ export default function LinksPage() {
   };
 
   const handleConfirmDeleteLink = () => {
-    if (pendingDeleteId) {
+    if (pendingDeleteId && currentPage?.id) {
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: [{ operation: 'remove', id: pendingDeleteId }],
         },
@@ -564,8 +596,10 @@ export default function LinksPage() {
   };
 
   const handleToggleLink = (id: string, active: boolean) => {
+    if (!currentPage?.id) return;
+    
     updateLinks.mutate({
-      url: 'admin/UpdateLinks',
+      url: `admin/UpdateLinks?pageId=${currentPage.id}`,
       data: {
         links: [{ operation: 'update', id, active }],
       },
@@ -597,12 +631,12 @@ export default function LinksPage() {
   };
 
   const handleSaveGroup = () => {
-    if (!newGroupTitle.trim()) return;
+    if (!newGroupTitle.trim() || !currentPage?.id) return;
 
     if (selectedGroup) {
       // Update existing group
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           groups: [{
             operation: 'update',
@@ -615,13 +649,14 @@ export default function LinksPage() {
       // Add new group
       const maxOrder = groups.length > 0 ? Math.max(...groups.map(g => g.order)) : -1;
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           groups: [{
             operation: 'add',
             title: newGroupTitle,
             order: maxOrder + 1,
             active: true,
+            pageId: currentPage.id,
           }],
         },
       });
@@ -630,9 +665,11 @@ export default function LinksPage() {
   };
 
   const handleDeleteGroup = (id: string) => {
+    if (!currentPage?.id) return;
+    
     if (confirm('Are you sure you want to delete this collection? Links inside will be moved out.')) {
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           groups: [{ operation: 'remove', id }],
         },
@@ -641,8 +678,10 @@ export default function LinksPage() {
   };
 
   const handleToggleGroup = (id: string, active: boolean) => {
+    if (!currentPage?.id) return;
+    
     updateLinks.mutate({
-      url: 'admin/UpdateLinks',
+      url: `admin/UpdateLinks?pageId=${currentPage.id}`,
       data: {
         groups: [{ operation: 'update', id, active }],
       },
@@ -676,7 +715,57 @@ export default function LinksPage() {
     }
   };
 
-  const handleOpenSettings = (link: Link, setting: string) => {
+  const handleAvatarUrlSave = () => {
+    if (!appearanceData || !currentPage?.id) return;
+
+    updateAppearance.mutate({
+      url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
+      data: {
+        ...appearanceData,
+        profileImageUrl: avatarUrl,
+      },
+    });
+    
+    setEditingAvatar(false);
+    showToast('Avatar updated successfully', 'success');
+  };
+  
+  const handleSaveProfileChanges = () => {
+    if (!appearanceData || !currentPage?.id) return;
+
+    updateAppearance.mutate({
+      url: `admin/UpdateAppearance?pageId=${currentPage.id}`,
+      data: {
+        ...appearanceData,
+        header: {
+          ...appearanceData.header,
+          displayName: pendingDisplayName,
+          bio: pendingBio,
+        },
+      },
+    });
+    
+    setHasPendingChanges(false);
+    showToast('Profile updated successfully', 'success');
+  };
+  
+  const handleDisplayNameChange = (value: string) => {
+    setPendingDisplayName(value);
+    setHasPendingChanges(
+      value !== (appearanceData?.header?.displayName || '') ||
+      pendingBio !== (appearanceData?.header?.bio || '')
+    );
+  };
+  
+  const handleBioChange = (value: string) => {
+    setPendingBio(value);
+    setHasPendingChanges(
+      pendingDisplayName !== (appearanceData?.header?.displayName || '') ||
+      value !== (appearanceData?.header?.bio || '')
+    );
+  };
+
+  const handleOpenSettings = (link: Link) => {
     setSelectedLink(link);
     setSelectedGroupId(link.groupId || null);
     setFormOpen(true);
@@ -688,8 +777,10 @@ export default function LinksPage() {
   };
 
   const handleRemoveFromCollection = (linkId: string) => {
+    if (!currentPage?.id) return;
+    
     updateLinks.mutate({
-      url: 'admin/UpdateLinks',
+      url: `admin/UpdateLinks?pageId=${currentPage.id}`,
       data: {
         links: [{
           operation: 'update',
@@ -701,9 +792,9 @@ export default function LinksPage() {
   };
 
   const handleSelectCollection = (groupId: string | null) => {
-    if (linkToMove) {
+    if (linkToMove && currentPage?.id) {
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: [{
             operation: 'update',
@@ -719,7 +810,7 @@ export default function LinksPage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id || !currentPage?.id) return;
 
     const oldIndex = links.findIndex(l => l.id === active.id);
     const newIndex = links.findIndex(l => l.id === over.id);
@@ -733,7 +824,7 @@ export default function LinksPage() {
 
       // Save new order via bulk update
       updateLinks.mutate({
-        url: 'admin/UpdateLinks',
+        url: `admin/UpdateLinks?pageId=${currentPage.id}`,
         data: {
           links: newLinks.map(l => ({
             operation: 'update' as const,
@@ -790,40 +881,82 @@ export default function LinksPage() {
 
           {/* Main Content */}
           <Box sx={{ flex: 1, minWidth: 0, maxWidth: 640, mx: { xs: 'auto', md: 0 }, mr: { xs: 0, md: '360px' } }}>
-            {/* Profile Header */}
+            {/* Profile Header - Editable */}
             <Card sx={{ mb: 3, borderRadius: 3 }}>
               <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar
-                    src={appearance.profileImageUrl}
-                    sx={{ width: 64, height: 64 }}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="h6" fontWeight={600}>
+                    Profile Information
+                  </Typography>
+                  {hasPendingChanges && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleSaveProfileChanges}
+                      disabled={updateAppearance.isPending}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      Save Changes
+                    </Button>
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  {/* Avatar with edit button */}
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      width: 64,
+                      height: 64,
+                      mt: 1,
+                    }}
                   >
-                    {appearance.header?.displayName?.charAt(0) || 'U'}
-                  </Avatar>
+                    <Avatar
+                      src={appearance.profileImageUrl}
+                      sx={{ width: 64, height: 64 }}
+                    >
+                      {appearance.header?.displayName?.charAt(0) || 'U'}
+                    </Avatar>
+                    <IconButton
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        bottom: -4,
+                        right: -4,
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                        },
+                        width: 28,
+                        height: 28,
+                      }}
+                      onClick={() => {
+                        setEditingAvatar(true);
+                        setAvatarUrl(appearance.profileImageUrl || '');
+                      }}
+                    >
+                      <Edit sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600}>
-                      {appearance.header?.displayName || 'username'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {appearance.header?.bio || 'Your bio goes here'}
-                    </Typography>
-                    <Stack direction="row" spacing={1}>
-                      {[Instagram, YouTube, Twitter, Email, MusicNote].slice(0, 4).map((Icon, idx) => (
-                        <IconButton
-                          key={idx}
-                          size="small"
-                          sx={{color: 'text.secondary'}}
-                        >
-                          <Icon fontSize="small" />
-                        </IconButton>
-                      ))}
-                      <IconButton
-                        size="small"
-                        sx={{color: 'text.secondary'}}
-                      >
-                        <Add fontSize="small" />
-                      </IconButton>
-                    </Stack>
+                    <TextField
+                      label="Display Name"
+                      fullWidth
+                      value={pendingDisplayName}
+                      onChange={(e) => handleDisplayNameChange(e.target.value)}
+                      sx={{ mb: 2 }}
+                      size="small"
+                    />
+                    <TextField
+                      label="Bio"
+                      fullWidth
+                      multiline
+                      rows={2}
+                      value={pendingBio}
+                      onChange={(e) => handleBioChange(e.target.value)}
+                      placeholder="Tell people about yourself..."
+                      size="small"
+                    />
                   </Box>
                 </Box>
               </CardContent>
@@ -1110,6 +1243,41 @@ export default function LinksPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCollectionSelectorOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Avatar URL Dialog */}
+      <Dialog open={editingAvatar} onClose={() => setEditingAvatar(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Update Avatar URL</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Avatar Image URL"
+            fullWidth
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+            placeholder="https://example.com/avatar.jpg"
+            helperText="Enter the URL of your avatar image"
+            sx={{ mt: 2 }}
+          />
+          {avatarUrl && (
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" gutterBottom>
+                Preview:
+              </Typography>
+              <Avatar
+                src={avatarUrl}
+                sx={{ width: 80, height: 80, mx: 'auto', mt: 1 }}
+              >
+                {appearance.header?.displayName?.charAt(0) || 'U'}
+              </Avatar>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditingAvatar(false)}>Cancel</Button>
+          <Button onClick={handleAvatarUrlSave} variant="contained">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
 

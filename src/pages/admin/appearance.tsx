@@ -23,11 +23,6 @@ import {
   Chip,
   Collapse,
   Switch,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Alert,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -69,6 +64,7 @@ import { useToast } from '@/context/ToastContext';
 import { getBackgroundStyle, getButtonStyle } from '@/utils/appearanceUtils';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
+import { usePageContext } from '@/context/PageContext';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { canUseFontFamily, canUseTheme } from '@/utils/tierValidation';
 
@@ -372,15 +368,20 @@ export default function AppearancePage() {
   const [themeTab, setThemeTab] = useState(0);
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
+  const { currentPage } = usePageContext();
 
   const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
-    queryKey: 'admin-appearance',
+    queryKey: `admin-appearance-${currentPage?.id || 'none'}`,
+    params: currentPage?.id ? { pageId: currentPage.id } : undefined,
+    enabled: !!currentPage,
   });
 
   const { data: linksData } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
-    queryKey: 'admin-links',
+    queryKey: `admin-links-${currentPage?.id || 'none'}`,
+    params: currentPage?.id ? { pageId: currentPage.id } : undefined,
+    enabled: !!currentPage,
   });
 
   const { data: profileData } = useApiGet<UserProfile>({
@@ -393,6 +394,15 @@ export default function AppearancePage() {
   const [formData, setFormData] = useState<AppearanceData>(DEFAULT_APPEARANCE);
 
   const dataLoadedRef = useRef(false);
+  const lastPageIdRef = useRef<string | undefined>(undefined);
+
+  // Reset dataLoadedRef when page changes
+  useEffect(() => {
+    if (currentPage?.id !== lastPageIdRef.current) {
+      dataLoadedRef.current = false;
+      lastPageIdRef.current = currentPage?.id;
+    }
+  }, [currentPage?.id]);
 
   useEffect(() => {
     if (data && !dataLoadedRef.current) {
@@ -409,7 +419,7 @@ export default function AppearancePage() {
   }, [data]);
 
   const updateAppearance = useApiPut({
-    relatedQueryKeys: ['admin-appearance', 'admin-profile'],
+    relatedQueryKeys: [`admin-appearance-${currentPage?.id || 'none'}`, 'admin-profile'],
     onSuccess: () => {
       showToast('Appearance updated successfully', 'success');
     },
@@ -478,7 +488,7 @@ export default function AppearancePage() {
     }
     
     updateAppearance.mutate({
-      url: 'admin/UpdateAppearance',
+      url: currentPage?.id ? `admin/UpdateAppearance?pageId=${currentPage.id}` : 'admin/UpdateAppearance',
       data: formData as unknown as Record<string, unknown>,
     });
   };
@@ -540,7 +550,8 @@ export default function AppearancePage() {
     return rest;
   }, [formData]);
 
-  if (isLoading) {
+  // Show loading state if no page selected or data is loading
+  if (!currentPage || isLoading) {
     return (
       <AdminLayout>
         <Box display="flex" justifyContent="center" p={5}>

@@ -16,6 +16,9 @@ export enum UserTier {
  * Feature limits per tier
  */
 export interface TierLimits {
+  // Page features
+  maxPages: number;
+  
   // Link features
   maxLinks: number;
   maxLinkGroups: number;
@@ -53,6 +56,7 @@ export interface TierLimits {
  */
 export const TIER_CONFIG: Record<UserTier, TierLimits> = {
   [UserTier.FREE]: {
+    maxPages: 1,
     maxLinks: 10,
     maxLinkGroups: 2,
     customLayouts: false,
@@ -76,6 +80,7 @@ export const TIER_CONFIG: Record<UserTier, TierLimits> = {
     whiteLabel: false,
   },
   [UserTier.PRO]: {
+    maxPages: 3,
     maxLinks: 50,
     maxLinkGroups: 10,
     customLayouts: true,
@@ -99,6 +104,7 @@ export const TIER_CONFIG: Record<UserTier, TierLimits> = {
     whiteLabel: false,
   },
   [UserTier.PREMIUM]: {
+    maxPages: 10,
     maxLinks: 100,
     maxLinkGroups: 25,
     customLayouts: true,
@@ -122,6 +128,7 @@ export const TIER_CONFIG: Record<UserTier, TierLimits> = {
     whiteLabel: false,
   },
   [UserTier.ENTERPRISE]: {
+    maxPages: -1, // unlimited
     maxLinks: -1, // unlimited
     maxLinkGroups: -1, // unlimited
     customLayouts: true,
