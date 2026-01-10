@@ -229,7 +229,7 @@ export default function PublicProfile() {
       username: username as string,
       ...(pageSlug && { slug: pageSlug })
     },
-    enabled: !!username,
+    enabled: router.isReady && !!username,
   });
 
   // Mutation for tracking link clicks

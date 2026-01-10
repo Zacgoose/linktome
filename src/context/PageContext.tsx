@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/router';
 import { Page } from '@/types/pages';
 import { useApiGet } from '@/hooks/useApiQuery';
 
@@ -17,12 +18,17 @@ interface PageProviderProps {
 }
 
 export function PageProvider({ children }: PageProviderProps) {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState<Page | null>(null);
+  
+  // Only fetch pages on admin routes
+  const isAdminRoute = router.pathname.startsWith('/admin');
 
   // Fetch pages list
   const { data: pagesData, isLoading, refetch } = useApiGet<{ pages: Page[] }>({
     url: 'admin/GetPages',
     queryKey: 'admin-pages-context',
+    enabled: isAdminRoute,
   });
 
   const pages = pagesData?.pages || [];
