@@ -19,8 +19,10 @@ import {
   InputLabel,
   IconButton,
   ListSubheader,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
-import { Brightness4, Brightness7, Key } from '@mui/icons-material';
+import { Brightness4, Brightness7, Key, Search } from '@mui/icons-material';
 import { UiThemeContext } from '@/pages/_app';
 import {
   Dashboard as DashboardIcon,
@@ -122,6 +124,7 @@ const menuItems: MenuItem[] = [
   const { selectedContext, setSelectedContext, contextRoles, contextPermissions } = useRbacContext();
   // managedUsers are already filtered for state === 'accepted' in AuthProvider
   const managedUsers = allManagedUsers || [];
+  const [accountSearchTerm, setAccountSearchTerm] = useState('');
 
   // If user has no managed users, ensure context is 'user'
   useEffect(() => {
@@ -237,21 +240,52 @@ const menuItems: MenuItem[] = [
                 <Select
                   labelId="context-switch-label"
                   value={selectedContext}
-                  label="Context"
+                  label="Accounts"
                   onChange={(e) => {
                     setSelectedContext(e.target.value);
+                    setAccountSearchTerm('');
                   }}
-                  MenuProps={{ PaperProps: { style: { maxHeight: 350 } } }}
+                  MenuProps={{ 
+                    PaperProps: { 
+                      style: { maxHeight: 400 },
+                    },
+                    autoFocus: false,
+                  }}
+                  onClose={() => setAccountSearchTerm('')}
                 >
+                  <Box sx={{ px: 2, py: 1, position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1 }}>
+                    <TextField
+                      size="small"
+                      placeholder="Search accounts..."
+                      value={accountSearchTerm}
+                      onChange={(e) => setAccountSearchTerm(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      fullWidth
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Search fontSize="small" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Box>
                   <MuiMenuItem value="user">My Account</MuiMenuItem>
-                  {managedUsers && managedUsers.length > 0 && [
-                    <ListSubheader key="managed-header">Accounts I Manage</ListSubheader>,
-                    ...managedUsers.map((um) => (
-                      <MuiMenuItem key={um.UserId} value={um.UserId}>
-                        Managed User: {um.DisplayName}
-                      </MuiMenuItem>
-                    )),
-                  ]}
+                  {managedUsers && managedUsers.length > 0 && (() => {
+                    const filteredUsers = managedUsers.filter(um => 
+                      um.DisplayName.toLowerCase().includes(accountSearchTerm.toLowerCase()) ||
+                      um.UserId.toLowerCase().includes(accountSearchTerm.toLowerCase())
+                    );
+                    return [
+                      <ListSubheader key="managed-header">Accounts I Manage</ListSubheader>,
+                      ...filteredUsers.map((um) => (
+                        <MuiMenuItem key={um.UserId} value={um.UserId}>
+                          Managed User: {um.DisplayName}
+                        </MuiMenuItem>
+                      )),
+                    ];
+                  })()}
                 </Select>
               </FormControl>
             )}
