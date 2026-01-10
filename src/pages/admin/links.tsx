@@ -3,8 +3,6 @@ import Head from 'next/head';
 import {
   Container,
   Typography,
-  Card,
-  CardContent,
   Box,
   CircularProgress,
   Stack,
@@ -13,7 +11,6 @@ import {
   Paper,
   Switch,
   Tooltip,
-  Chip,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -31,7 +28,6 @@ import {
   Edit,
   Delete,
   Share,
-  Lock,
   MoreHoriz,
   ContentCopy,
   Archive,
@@ -75,7 +71,6 @@ import { UserProfile } from '@/types/api';
 import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { getTierLimits } from '@/utils/tierValidation';
-import { usePremiumValidation } from '@/hooks/usePremiumValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { usePageContext } from '@/context/PageContext';
 
@@ -408,7 +403,6 @@ function SortableGroup({
 export default function LinksPage() {
   const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
-  const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
   const { currentPage } = usePageContext();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
@@ -435,15 +429,6 @@ export default function LinksPage() {
     queryKey: `admin-appearance-${currentPage?.id || 'none'}`,
     params: currentPage?.id ? { pageId: currentPage.id } : undefined,
     enabled: !!currentPage,
-  });
-  
-  // Appearance update mutation for footer toggle
-  const updateAppearance = useApiPut<any, AppearanceData>({
-    relatedQueryKeys: ['admin-appearance'],
-    onSuccess: () => {
-      showToast('Appearance updated', 'success');
-      refetchAppearance();
-    },
   });
 
   const { data: profileData } = useApiGet<UserProfile>({
@@ -659,31 +644,6 @@ export default function LinksPage() {
     });
     // Optimistic update
     setGroups(prev => prev.map(g => g.id === id ? { ...g, active } : g));
-  };
-  
-  const handleToggleFooter = (checked: boolean) => {
-    // Validate if user is trying to enable hideFooter
-    if (checked) {
-      const isValid = validateFeatures([
-        {
-          featureKey: 'removeFooter',
-          featureName: 'Remove Footer',
-          isUsing: true,
-        },
-      ]);
-      
-      if (!isValid) {
-        return; // Upgrade prompt will show, don't toggle
-      }
-    }
-    
-    // Update appearance with new hideFooter value
-    if (appearanceData) {
-      updateAppearance.mutate({
-        url: 'admin/UpdateAppearance',
-        data: { ...appearanceData, hideFooter: checked },
-      });
-    }
   };
 
   const handleOpenSettings = (link: Link) => {
@@ -920,25 +880,6 @@ export default function LinksPage() {
                 </Button>
               </Paper>
             )}
-
-            {/* Footer Toggle */}
-            <Card sx={{ mt: 3, borderRadius: 3 }}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body1">LinkToMe footer</Typography>
-                  <Chip
-                    label="Pro"
-                    size="small"
-                    icon={<Lock sx={{ fontSize: 14 }} />}
-                    sx={{ height: 20, fontSize: 10 }}
-                  />
-                </Box>
-                <Switch
-                  checked={appearanceData?.hideFooter || false}
-                  onChange={(e) => handleToggleFooter(e.target.checked)}
-                />
-              </CardContent>
-            </Card>
           </Box>
 
           {/* Fixed Preview on Right (Desktop) */}
