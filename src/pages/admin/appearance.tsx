@@ -377,14 +377,14 @@ export default function AppearancePage() {
 
   const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
-    queryKey: ['admin-appearance', currentPage?.id || 'none'],
+    queryKey: `admin-appearance-${currentPage?.id || 'none'}`,
     params: currentPage?.id ? { pageId: currentPage.id } : undefined,
     enabled: !!currentPage,
   });
 
   const { data: linksData } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
-    queryKey: ['admin-links', currentPage?.id || 'none'],
+    queryKey: `admin-links-${currentPage?.id || 'none'}`,
     params: currentPage?.id ? { pageId: currentPage.id } : undefined,
     enabled: !!currentPage,
   });
@@ -424,7 +424,7 @@ export default function AppearancePage() {
   }, [data]);
 
   const updateAppearance = useApiPut({
-    relatedQueryKeys: [['admin-appearance', currentPage?.id || 'none'], 'admin-profile'],
+    relatedQueryKeys: [`admin-appearance-${currentPage?.id || 'none'}`, 'admin-profile'],
     onSuccess: () => {
       showToast('Appearance updated successfully', 'success');
     },
