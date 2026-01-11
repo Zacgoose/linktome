@@ -274,7 +274,7 @@ export default function ShortLinksPage() {
           <Container maxWidth="lg" sx={{ py: 4 }}>
             <Box sx={{ textAlign: 'center', py: 8 }}>
               <LinkIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h4" gutterBottom fontWeight={600}>
+              <Typography variant="h4" gutterBottom fontWeight={600} color="text.primary">
                 Short Links
               </Typography>
               <Typography variant="body1" color="text.secondary" paragraph>
