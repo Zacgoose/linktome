@@ -43,20 +43,34 @@ export function PageProvider({ children }: PageProviderProps) {
 
   // Update current page if it was deleted or modified
   useEffect(() => {
-    if (currentPage && pages.length > 0) {
-      const updatedPage = pages.find(p => p.id === currentPage.id);
-      if (!updatedPage) {
-        // Current page was deleted, switch to default
-        const defaultPage = pages.find(p => p.isDefault) || pages[0];
-        setCurrentPage(defaultPage);
-      } else if (
-        updatedPage.name !== currentPage.name ||
-        updatedPage.slug !== currentPage.slug ||
-        updatedPage.isDefault !== currentPage.isDefault
-      ) {
-        // Page was updated, refresh it
-        setCurrentPage(updatedPage);
+    // Handle empty pages array first - clear current page
+    if (pages.length === 0) {
+      if (currentPage !== null) {
+        setCurrentPage(null);
       }
+      return;
+    }
+    
+    // If no current page but pages exist, set the default
+    if (!currentPage) {
+      const defaultPage = pages.find(p => p.isDefault) || pages[0];
+      setCurrentPage(defaultPage);
+      return;
+    }
+    
+    // Check if current page still exists or needs updating
+    const updatedPage = pages.find(p => p.id === currentPage.id);
+    if (!updatedPage) {
+      // Current page was deleted, switch to default
+      const defaultPage = pages.find(p => p.isDefault) || pages[0];
+      setCurrentPage(defaultPage);
+    } else if (
+      updatedPage.name !== currentPage.name ||
+      updatedPage.slug !== currentPage.slug ||
+      updatedPage.isDefault !== currentPage.isDefault
+    ) {
+      // Page was updated, refresh it
+      setCurrentPage(updatedPage);
     }
   }, [pages, currentPage]);
 

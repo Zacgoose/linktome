@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import {
   Container,
   Typography,
@@ -73,6 +74,8 @@ import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { getTierLimits } from '@/utils/tierValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { usePageContext } from '@/context/PageContext';
+import { usePageValidation } from '@/hooks/usePageValidation';
+import NoPageDialog from '@/components/NoPageDialog';
 
 interface SortableLinkCardProps {
   link: Link;
@@ -401,9 +404,11 @@ function SortableGroup({
 }
 
 export default function LinksPage() {
+  const router = useRouter();
   const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
-  const { currentPage } = usePageContext();
+  const { currentPage, pages } = usePageContext();
+  const { hasPages, noPagesDialogOpen, handleNoPagesDialogClose, showNoPagesDialog } = usePageValidation();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -471,6 +476,11 @@ export default function LinksPage() {
 
   // Handlers
   const handleAddLink = () => {
+    // Check if user has any pages first
+    if (!hasPages) {
+      showNoPagesDialog();
+      return;
+    }
     setSelectedLink(null);
     setSelectedGroupId(null);
     setFormOpen(true);
@@ -565,6 +575,12 @@ export default function LinksPage() {
   };
 
   const handleAddCollection = () => {
+    // Check if user has any pages first
+    if (!hasPages) {
+      showNoPagesDialog();
+      return;
+    }
+    
     // Check if user has reached link groups limit
     const currentGroupsCount = groups.length;
     const tierLimits = getTierLimits(userTier);
@@ -1032,6 +1048,12 @@ export default function LinksPage() {
           <Button onClick={() => setCollectionSelectorOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
+
+      {/* No Pages Dialog */}
+      <NoPageDialog 
+        open={noPagesDialogOpen} 
+        onClose={handleNoPagesDialogClose} 
+      />
 
       {/* Upgrade Prompt */}
       {showUpgrade && upgradeInfo && (
