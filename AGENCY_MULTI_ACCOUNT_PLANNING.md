@@ -1,22 +1,25 @@
-# Agency/Multi-Account Profiles - Planning Document (UPDATED)
+# Agency/Multi-Account Profiles - Planning Document (ULTRA-SIMPLIFIED)
 
 ## Overview
 
-This document outlines the **simplified, API-focused approach** for implementing agency/multi-account profiles in LinkToMe. This feature will allow parent accounts with agency permissions to create and manage sub-accounts (child profiles) where:
+This document outlines the **ultra-simplified approach** for implementing agency/multi-account profiles in LinkToMe, **leveraging existing infrastructure**. This feature will allow parent accounts with agency permissions to create and manage sub-accounts (child profiles) where:
 
-- Sub-accounts do NOT have independent login or authentication (neither password nor API)
-- Sub-accounts do NOT have access to management features (API keys, MFA, user management, subscription management)
-- Sub-accounts operate like regular accounts for all other features (links, pages, appearance, analytics)
-- Parent accounts can manage sub-accounts from the existing Users page
-- Sub-account access is purchased in **subscription packs** (e.g., 3 users, 10 users) independent of the parent's base tier
+- Sub-accounts are stored in the **existing Users table** (just like any other account)
+- Sub-accounts have **flags**: `IsSubAccount = true` and `AuthenticationDisabled = true`
+- A separate **SubAccounts table** tracks the parent-child relationship (one-to-many or many-to-one)
+- Sub-accounts use **existing permissions system** to block access to user management, login, API features
+- Sub-accounts use **existing tier/permissions functions** for all other features
+- Parent accounts manage sub-accounts from the existing Users page
+- Sub-account access is purchased in **subscription packs** (e.g., 3 users, 10 users)
 
-## Key Simplifications from Original Design
+## Key Simplifications - Leveraging Existing Infrastructure
 
-1. **Permission-based, not tier-based**: Uses `agency-basic`, `agency-pro`, etc. permissions instead of PREMIUM/ENTERPRISE tiers
-2. **Parent gets base features**: Parent account has equivalent free/pro features for their own account
-3. **Integrated into existing Users page**: No separate sub-accounts management page needed
-4. **Scalable subscription model**: Buy sub-account packs (3/$x, 10/$y) that scale with parent's base plan
-5. **Simpler architecture**: Sub-accounts are just regular accounts with authentication disabled and parent ownership
+1. **Existing Users table**: Sub-accounts are regular Users entries with flags, not separate tables
+2. **Existing user context mechanism**: Re-use existing auth/context system
+3. **Existing permissions system**: Use permissions to block features (no special code paths)
+4. **Existing tier functions**: Sub-accounts automatically get parent's tier features
+5. **Existing Users page**: Add sub-accounts section (no new pages)
+6. **Simple relationship table**: Just track parent-child links, everything else is standard
 
 ## Business Use Cases
 
@@ -130,121 +133,101 @@ To maintain clarity throughout the implementation:
 
 ## Data Model Changes
 
-### 1. New Database Tables
+### 1. Minimal New Tables
 
-#### AccountRelationships Table
+#### SubAccounts Table (Relationship Tracking Only)
 
-**Purpose**: Track parent-child relationships between accounts
+**Purpose**: Track parent-child relationships - that's it!
 
 **Schema**:
 ```
 PartitionKey: ParentUserId (GUID)
-RowKey: ChildUserId (GUID)
-RelationshipType: "sub-account" | "managed-profile"
+RowKey: ChildUserId (GUID)  
 CreatedAt: DateTime
-UpdatedAt: DateTime
-Status: "active" | "suspended" | "deleted"
-Notes: string (optional, for internal tracking)
+Status: "active" | "deleted"
 ```
+
+**That's all we need!** Everything else uses existing Users table.
 
 **Indexes**:
 - Primary: `PartitionKey` (ParentUserId) + `RowKey` (ChildUserId)
 - Secondary: Filter by ChildUserId for reverse lookup
 
 **Validation Rules**:
-- ParentUserId must be a valid, active user
-- ChildUserId must be a valid user
-- A user cannot be both parent and child in the same relationship
-- Prevent circular relationships (A manages B, B manages A)
-- Relationship type must be valid enum value
+- ParentUserId must exist in Users table
+- ChildUserId must exist in Users table with `IsSubAccount = true`
+- A user cannot be both parent and child
 
-#### SubAccountProfiles Table (Optional Enhancement)
+### 2. Existing Users Table - Add Minimal Flags
 
-**Purpose**: Store additional metadata specific to sub-accounts that differs from regular user profiles
+**New Columns** (just two flags!):
+- `IsSubAccount` (boolean, default: false): Marks this as a sub-account
+- `AuthenticationDisabled` (boolean, default: false): Blocks login/API auth
 
-**Schema**:
-```
-PartitionKey: UserId (GUID) - the sub-account's ID
-RowKey: "profile"
-ParentUserId: GUID - reference to parent
-DisplayLabel: string - how parent sees this account in their dashboard
-InternalNotes: string - parent's notes about this sub-account
-CreatedBy: GUID - which parent account created it
-IsSubAccount: boolean - flag for quick filtering
-```
+**That's it!** No need for:
+- ❌ `ParentAccountId` column (lookup via SubAccounts table instead)
+- ❌ `AccountType` column (just check `IsSubAccount` flag)
+- ❌ `AgencyPermission` column (use existing permissions system)
 
-### 2. Updated Database Tables
+**Migration**: 
+- Add two columns with default `false`
+- Zero changes to existing user rows
 
-#### Users Table - Add Fields
+### 3. Existing Permissions System - Use As-Is
 
-**New Columns**:
-- `IsSubAccount` (boolean): Marks this user as a sub-account (cannot login independently)
-- `ParentAccountId` (string, nullable): Reference to parent account if this is a sub-account
-- `AuthenticationDisabled` (boolean): Explicitly disable authentication for sub-accounts (both password and API)
-- `AgencyPermission` (string, nullable): Permission level for agency features (e.g., "agency-basic", "agency-pro", "agency-premium")
-
-**Migration Considerations**:
-- Default all existing users to `IsSubAccount = false`
-- `ParentAccountId` is NULL for existing users
-- `AuthenticationDisabled = false` for existing users
-- `AgencyPermission` is NULL for existing users (opt-in feature)
-
-#### Subscription Table - Updates
-
-**New Columns**:
-- `AgencyPermission` (string, nullable): The agency permission level purchased
-- `SubAccountPackSize` (integer): Number of sub-accounts in purchased pack (e.g., 3, 10, 25)
-- `UsedSubAccounts` (integer): Current number of active sub-accounts
-
-**Note**: Sub-accounts do NOT have their own subscription records. They operate at parent's base tier level.
-
-### 3. Permissions Model (New)
-
-Instead of tier-based access, use **permission-based access**:
+**Sub-accounts get blocked from features via existing permissions**:
 
 ```typescript
-// In src/types/api.ts or new src/types/permissions.ts
-
-export type AgencyPermission = 'agency-basic' | 'agency-pro' | 'agency-premium' | null;
-
-export interface UserAuth {
+// Already exists in the app - just add new permission checks
+interface UserAuth {
   // ... existing fields ...
-  agencyPermission?: AgencyPermission;
-  subAccountPackSize?: number; // 0 if no pack purchased
-  usedSubAccounts?: number;
+  permissions: string[]; // Already exists!
 }
 
-export interface AgencyLimits {
-  canCreateSubAccounts: boolean;
-  maxSubAccounts: number;
-  baseTierForSubAccounts: UserTier; // What tier level sub-accounts operate at
-}
+// New permissions to check (use existing permission system):
+const BLOCKED_FOR_SUBACCOUNTS = [
+  'user.login',           // Block password login
+  'user.api_auth',        // Block API authentication  
+  'user.manage_mfa',      // Block MFA management
+  'user.manage_api_keys', // Block API key management
+  'user.manage_users',    // Block user management page
+  'user.manage_subscription' // Block subscription management
+];
 
-export const AGENCY_PERMISSIONS: Record<AgencyPermission, AgencyLimits> = {
-  'agency-basic': {
-    canCreateSubAccounts: true,
-    maxSubAccounts: 0, // Set by purchased pack
-    baseTierForSubAccounts: UserTier.FREE,
-  },
-  'agency-pro': {
-    canCreateSubAccounts: true,
-    maxSubAccounts: 0, // Set by purchased pack
-    baseTierForSubAccounts: UserTier.PRO,
-  },
-  'agency-premium': {
-    canCreateSubAccounts: true,
-    maxSubAccounts: 0, // Set by purchased pack
-    baseTierForSubAccounts: UserTier.PREMIUM,
-  },
-};
+// Use existing permission check function:
+function canAccess(feature: string): boolean {
+  if (user.IsSubAccount && BLOCKED_FOR_SUBACCOUNTS.includes(feature)) {
+    return false;
+  }
+  return checkUserPermission(user, feature); // Existing function
+}
 ```
 
-### 4. Sub-Account Feature Access
+### 4. Existing Tier System - Use As-Is
 
-Sub-accounts operate like normal accounts at the parent's **base tier** level:
+**Sub-accounts automatically inherit parent's tier** via existing lookup:
 
-**Example 1**: Parent has Free tier + agency-basic permission + 3-user pack
-- Parent account: Free tier features (10 links, 1 page, etc.)
+```typescript
+// Use existing tier lookup function
+function getUserTier(userId: string): UserTier {
+  const user = getUser(userId);
+  
+  // NEW: If sub-account, get parent's tier
+  if (user.IsSubAccount) {
+    const parentRelation = getSubAccountRelation(userId); // Lookup in SubAccounts table
+    const parent = getUser(parentRelation.ParentUserId);
+    return parent.tier; // Parent's tier
+  }
+  
+  // Existing logic for regular users
+  return user.tier;
+}
+
+// All existing tier checking code works as-is!
+const limits = getTierLimits(getUserTier(userId));
+```
+
+**No changes to existing tier logic needed!**
 - Each sub-account: Free tier features (10 links, 1 page, etc.)
 - Sub-accounts CANNOT: login, access API, manage users, manage MFA
 
@@ -257,82 +240,90 @@ Sub-accounts operate like normal accounts at the parent's **base tier** level:
 
 ## API Changes Needed
 
-### 1. New Sub-Account Management Endpoints
+### 1. Minimal New Sub-Account Endpoints
+
+Only **3 simple endpoints** needed:
 
 #### Create Sub-Account
 ```
 POST /admin/CreateSubAccount
 Authentication: Required (parent account token)
-Permission: Requires agencyPermission (any level)
 
 Request Body:
 {
   "username": "clientbrand1",
-  "email": "client@example.com", // optional, for display
-  "displayName": "Client Brand Name",
-  "bio": "Brief description" // optional
+  "email": "client@example.com", // optional
+  "displayName": "Client Brand Name"
 }
 
-Response (200 OK):
-{
-  "message": "Sub-account created successfully",
-  "subAccount": {
-    "id": "sub-account-guid",
-    "username": "clientbrand1",
-    "email": "client@example.com",
-    "displayName": "Client Brand Name",
-    "parentAccountId": "parent-guid",
-    "isSubAccount": true,
-    "tier": "pro", // Inherited from parent's base tier
-    "createdAt": "2024-01-01T00:00:00Z"
-  }
-}
+Implementation:
+1. Create regular user in Users table
+2. Set IsSubAccount = true, AuthenticationDisabled = true
+3. Add relationship to SubAccounts table
+4. Return user object
 
-Validation:
-- Parent account must have agencyPermission set
-- Check subAccountPackSize limit (based on purchased pack)
-- Username must be unique across ALL users
-- Username follows same validation as regular users
-- Cannot exceed purchased pack size
-
-Errors:
-400 - No agency permission (purchase agency add-on required)
-400 - Sub-account limit reached (upgrade pack or delete sub-accounts)
-400 - Username already taken
-400 - Invalid username format
+That's it! User creation logic already exists.
 ```
 
 #### Get Sub-Accounts
 ```
 GET /admin/GetSubAccounts
 Authentication: Required (parent account token)
-Permission: Requires agencyPermission (returns empty if none)
 
-Response (200 OK):
+Implementation:
+1. Query SubAccounts table by ParentUserId
+2. Join with Users table to get user details
+3. Return list
+
+Uses existing user query logic!
+```
+
+#### Delete Sub-Account
+```
+DELETE /admin/DeleteSubAccount
+Authentication: Required (parent account token)
+
+Request Body:
 {
-  "subAccounts": [
-    {
-      "id": "sub-account-guid-1",
-      "username": "clientbrand1",
-      "email": "client1@example.com",
-      "displayName": "Client Brand 1",
-      "parentAccountId": "parent-guid",
-      "isSubAccount": true,
-      "tier": "pro", // Parent's base tier
-      "status": "active",
-      "createdAt": "2024-01-01T00:00:00Z",
-      "pageCount": 2,
-      "linkCount": 15
-    }
-  ],
-  "limits": {
-    "maxSubAccounts": 10, // From purchased pack
-    "usedSubAccounts": 1,
-    "remainingSubAccounts": 9,
-    "agencyPermission": "agency-pro"
-  }
+  "subAccountId": "sub-account-guid"
+}
+
+Implementation:
+1. Update SubAccounts table Status = "deleted"
+2. Set AuthenticationDisabled = true (if not already)
+3. Optional: soft delete user record
+
+Uses existing user management logic!
+```
+
+### 2. Existing Endpoints - Zero Changes!
+
+**All existing admin endpoints work as-is** because:
+- Sub-accounts are in Users table → all user queries include them naturally
+- Permissions system blocks restricted features automatically
+- Tier system returns parent's tier via lookup
+- URL parameter `?subAccountId=xxx` can be used optionally for parent to specify which account
+
+**Example - Existing Link Management**:
+```
+GET /admin/GetLinks?userId=sub-account-id
+PUT /admin/UpdateLinks?userId=sub-account-id
+
+// Backend uses existing code:
+function getLinks(userId) {
+  // Existing permission check works!
+  if (!canAccess(userId, 'links.view')) throw Unauthorized;
+  
+  // Existing tier check works!
+  const tier = getUserTier(userId); // Returns parent's tier if sub-account
+  const limits = getTierLimits(tier);
+  
+  // Existing query works!
+  return queryLinks(userId);
 }
 ```
+
+**No API changes needed** - existing code handles everything!
       "id": "sub-account-guid-1",
       "username": "clientbrand1",
       "email": "client1@example.com",
@@ -580,83 +571,87 @@ function Validate-FeatureAccess($requestUserId, $feature) {
 
 ## Frontend Changes Needed
 
-### 1. Updated Users Page (Integration Point)
+### 1. Existing Users Page - Add One Section
 
-Instead of creating a new separate page, **integrate sub-accounts into the existing Users page** (`src/pages/admin/users.tsx`).
-
-#### Updated Users Page Layout
-**Route**: `/admin/users` (existing)
-
-**Features**:
-- Keep existing user management functionality (managers/managees)
-- Add new "Sub-Accounts" section below existing sections
-- Show/hide sub-accounts section based on agency permission
-- Create, view, edit, delete sub-accounts inline
-- Display pack limits and upgrade prompts
-
-**Mockup Structure**:
-```
-+--------------------------------------------------+
-| User Management                                   |
-+--------------------------------------------------+
-
-[Existing User Manager section - unchanged]
-[Invite/Accept/Reject flows - unchanged]
-
-+--------------------------------------------------+
-| Sub-Accounts                            [+ Create]|
-| Available with Agency permissions                |
-+--------------------------------------------------+
-| 7 of 10 sub-accounts used (Agency-Pro, 10-pack) |
-| [Upgrade to 25-user pack]                        |
-+--------------------------------------------------+
-| [Search/Filter]                                  |
-+--------------------------------------------------+
-| Client Brand 1                     [Switch] [Delete]|
-| @clientbrand1 | Pro tier | 2 pages | 15 links   |
-+--------------------------------------------------+
-| Client Brand 2                     [Switch] [Delete]|
-| @clientbrand2 | Pro tier | 1 page  | 8 links    |
-+--------------------------------------------------+
-```
+**Route**: `/admin/users` (existing page, no new routes!)
 
 **Changes to `src/pages/admin/users.tsx`**:
-1. Add agency permission check at top
-2. If user has `agencyPermission`, show sub-accounts section
-3. Fetch sub-accounts with `GET /admin/GetSubAccounts`
-4. Show create dialog when "+ Create" clicked
-5. Implement switch context and delete actions
-6. Display pack limits prominently
+1. Add one conditional section after existing user manager sections
+2. Check `user.permissions.includes('agency')` to show/hide
+3. Call `GET /admin/GetSubAccounts` to get list
+4. Render sub-accounts list with create/delete buttons
 
-#### Context Switcher Component
-**Location**: Top navigation bar (when parent has agency permission and sub-accounts)
+**That's it!** Just add one section to existing page.
 
-**Features**:
-- Dropdown showing current context
-- List of sub-accounts for quick switching
-- Visual indicator when in sub-account context
-- "Back to My Account" button when in sub-account context
+### 2. Existing Permission Checks - Add Simple Flags
 
-**Mockup**:
+**Update existing permission check code**:
+
+```typescript
+// In src/pages/admin/settings.tsx (or wherever password change is)
+export default function SettingsPage() {
+  const { user } = useAuthContext(); // Existing context!
+  
+  // NEW: One simple check
+  const isSubAccount = user?.IsSubAccount || false;
+  
+  return (
+    <AdminLayout>
+      {/* Existing password section */}
+      <Card>
+        <CardContent>
+          <Typography variant="h6">Password</Typography>
+          {isSubAccount ? (
+            <Alert severity="info">
+              Sub-accounts cannot change password. Contact your account manager.
+            </Alert>
+          ) : (
+            <PasswordChangeForm /> // Existing component
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Same pattern for MFA, API Keys, etc. */}
+    </AdminLayout>
+  );
+}
 ```
-+----------------------------------------+
-| [☰ Menu] | 🔄 Managing: ClientBrand1 ▼ |
-+----------------------------------------+
-           | ✓ My Account               |
-           | -------------------------- |
-           | → ClientBrand1             |
-           | → ClientBrand2             |
-           | -------------------------- |
-           | ⚙️ Manage Sub-Accounts     |
-           +----------------------------+
+
+**Apply same pattern to**:
+- Settings page (password, MFA)
+- API Keys page (hide entire page)
+- User Management section (hide section)
+- Subscription page (hide page)
+
+**Each is just one `if (isSubAccount)` check using existing user context!**
+
+### 3. Existing User Context - Already Works!
+
+**No changes needed to AuthProvider** - it already:
+- Loads user from API ✓
+- Exposes `user` object ✓
+- Has permissions array ✓
+- Has tier information ✓
+
+Just add `IsSubAccount` flag to the existing `UserAuth` type:
+
+```typescript
+// In src/types/api.ts (existing file)
+export interface UserAuth {
+  UserId: string;
+  email: string;
+  username: string;
+  userRole: string;
+  roles: string[];
+  permissions: string[];
+  tier?: UserTier;
+  // NEW: Just add these two fields
+  IsSubAccount?: boolean;
+  AuthenticationDisabled?: boolean;
+}
 ```
 
-#### Create Sub-Account Dialog
-**Triggered from**: Users page sub-accounts section
-
-**Fields**:
-- Username (required, unique validation)
-- Display Name (required)
+**That's all the frontend changes needed!**
 - Email (optional, for display only)
 - Bio (optional)
 

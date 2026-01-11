@@ -1,19 +1,21 @@
-# Agency/Multi-Account Profiles - Documentation Index (UPDATED)
+# Agency/Multi-Account Profiles - Documentation Index (ULTRA-SIMPLIFIED)
 
 ## Overview
 
-This folder contains comprehensive planning documentation for the **Agency/Multi-Account Profiles** feature in LinkToMe - **updated with simplified, API-focused approach**. This feature will allow parent accounts with **agency permissions** to create and manage sub-accounts that operate like normal accounts but cannot authenticate independently.
+This folder contains comprehensive planning documentation for the **Agency/Multi-Account Profiles** feature in LinkToMe - **ultra-simplified to leverage existing infrastructure**. This feature will allow parent accounts with **agency permissions** to create and manage sub-accounts using mostly existing code.
 
-## Key Changes from Original Plan
+## Ultra-Simplification Approach
 
-Based on team feedback, this approach is **simpler and more API-focused**:
+**Maximize code reuse, minimize new development**:
 
-1. **Permission-based** (not tier-based): Uses `agency-basic`, `agency-pro` permissions
-2. **Parent gets base features**: Parent has free/pro/premium tier for their own account
-3. **Integrated UI**: Sub-accounts section in existing `/admin/users` page (not separate)
-4. **Scalable packs**: Buy sub-accounts in packs (3/$15, 10/$40, 25/$90) independent of tier
-5. **Simpler architecture**: Sub-accounts are regular accounts with `AuthenticationDisabled = true`
-6. **Independent quotas**: Each sub-account gets full tier limits independently (not shared pool)
+1. **Existing Users table**: Sub-accounts are Users with 2 flags (`IsSubAccount`, `AuthenticationDisabled`)
+2. **Existing permissions system**: Block features via existing permission checks
+3. **Existing tier functions**: Update getUserTier() to return parent's tier for sub-accounts
+4. **Existing user context**: Use AuthContext as-is, just add 2 fields
+5. **Existing Users page**: Add one conditional section
+6. **Simple SubAccounts table**: Just parent-child relationship tracking
+
+**Development estimate**: 2-3 weeks (vs 8-12 weeks original plan) due to massive code reuse!
 
 ## Document Purpose
 
@@ -207,36 +209,37 @@ Total: 14-18 weeks (3.5-4.5 months)
 
 ## Database Changes Summary
 
-### New Tables
-1. **AccountRelationships** - Track parent-child relationships (simple join table)
+### Minimal Changes
+1. **Users table**: Add 2 boolean flags (`IsSubAccount`, `AuthenticationDisabled`)
+2. **SubAccounts table**: Simple parent-child relationship (PartitionKey: ParentUserId, RowKey: ChildUserId)
 
-### Updated Tables
-- **Users**: Add `IsSubAccount`, `ParentAccountId`, `AuthenticationDisabled`, `AgencyPermission`
-- **Subscription**: Add `AgencyPermission`, `SubAccountPackSize`, `UsedSubAccounts`
-- **All data tables** (Links, Pages, etc.): No changes needed (use existing UserId)
+**That's it!** No other table changes needed.
 
-## API Endpoints Summary
+## Code Changes Summary
 
-### New Endpoints
-```
-POST /admin/CreateSubAccount        - Create new sub-account
-GET /admin/GetSubAccounts           - List parent's sub-accounts with pack limits
-DELETE /admin/DeleteSubAccount      - Soft delete sub-account
-POST /admin/RestoreSubAccount       - Restore deleted sub-account
-```
+### Backend (PowerShell/Azure Functions)
+1. **3 new endpoints**: CreateSubAccount, GetSubAccounts, DeleteSubAccount
+2. **Update getUserTier()**: Add check for sub-accounts to return parent's tier
+3. **Update authentication**: Check AuthenticationDisabled flag on login
 
-### Updated Endpoints
-All existing `/admin/*` endpoints support:
-- Optional `?subAccountId=xxx` parameter
-- Validate parent ownership when parameter present
-- Return sub-account data when valid
+**Reuse**: All existing endpoints, permission checks, tier logic
 
-## Security Highlights
+### Frontend (React/Next.js)
+1. **Add 2 fields to UserAuth type**: IsSubAccount, AuthenticationDisabled
+2. **Update Users page**: Add one conditional sub-accounts section
+3. **Add permission checks**: `if (isSubAccount)` in Settings, API Keys, etc.
 
-1. **Authentication**: Sub-accounts have `AuthenticationDisabled = true` (cannot login via password or API)
-2. **Authorization**: Parent ownership validated on every request with `subAccountId` parameter
-3. **Feature Access**: Sub-accounts operate at parent's base tier level (independent limits per account)
-4. **Management**: Only parent can manage sub-account (user management, API keys, MFA disabled for sub-accounts)
+**Reuse**: Existing AuthContext, existing UI components, existing API hooks
+
+## Implementation Estimate
+
+**2-3 weeks** (vs 8-12 weeks original plan)
+
+- Week 1: Database changes + 3 API endpoints
+- Week 2: Frontend UI section + permission checks
+- Week 3: Testing, bug fixes, documentation
+
+**Massive time savings due to code reuse!**
 
 ## Next Steps
 
