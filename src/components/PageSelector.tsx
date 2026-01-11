@@ -43,8 +43,23 @@ export default function PageSelector({ compact = false }: PageSelectorProps) {
     );
   }
 
-  if (!currentPage) {
-    return null;
+  // If no pages exist, show a prompt to create one
+  if (pages.length === 0 || !currentPage) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+          No pages
+        </Typography>
+        <Typography
+          variant="body2"
+          color="primary"
+          sx={{ cursor: 'pointer', textDecoration: 'underline' }}
+          onClick={() => router.push('/admin/pages')}
+        >
+          Create one
+        </Typography>
+      </Box>
+    );
   }
 
   return (

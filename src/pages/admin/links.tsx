@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import {
   Container,
   Typography,
@@ -401,9 +402,10 @@ function SortableGroup({
 }
 
 export default function LinksPage() {
+  const router = useRouter();
   const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
-  const { currentPage } = usePageContext();
+  const { currentPage, pages } = usePageContext();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -412,6 +414,7 @@ export default function LinksPage() {
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [collectionSelectorOpen, setCollectionSelectorOpen] = useState(false);
   const [linkToMove, setLinkToMove] = useState<string | null>(null);
+  const [noPagesDialogOpen, setNoPagesDialogOpen] = useState(false);
 
   const maxLinkGroupsCheck = canAccess('maxLinkGroups');
 
@@ -438,6 +441,13 @@ export default function LinksPage() {
 
   const [links, setLinks] = useState<Link[]>([]);
   const [groups, setGroups] = useState<LinkGroup[]>([]);
+
+  // Check if user has any pages when component mounts
+  useEffect(() => {
+    if (pages.length === 0 && !currentPage) {
+      setNoPagesDialogOpen(true);
+    }
+  }, [pages, currentPage]);
 
   useEffect(() => {
     if (linksData) {
@@ -471,9 +481,19 @@ export default function LinksPage() {
 
   // Handlers
   const handleAddLink = () => {
+    // Check if user has any pages first
+    if (pages.length === 0 || !currentPage) {
+      setNoPagesDialogOpen(true);
+      return;
+    }
     setSelectedLink(null);
     setSelectedGroupId(null);
     setFormOpen(true);
+  };
+
+  const handleNoPagesDialogClose = () => {
+    setNoPagesDialogOpen(false);
+    router.push('/admin/pages');
   };
 
   const handleAddLinkToGroup = (groupId: string) => {
@@ -565,6 +585,12 @@ export default function LinksPage() {
   };
 
   const handleAddCollection = () => {
+    // Check if user has any pages first
+    if (pages.length === 0 || !currentPage) {
+      setNoPagesDialogOpen(true);
+      return;
+    }
+    
     // Check if user has reached link groups limit
     const currentGroupsCount = groups.length;
     const tierLimits = getTierLimits(userTier);
@@ -1030,6 +1056,34 @@ export default function LinksPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCollectionSelectorOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* No Pages Dialog */}
+      <Dialog 
+        open={noPagesDialogOpen} 
+        onClose={() => {}} 
+        maxWidth="sm" 
+        fullWidth
+        disableEscapeKeyDown
+      >
+        <DialogTitle>Create a Page First</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Before you can add links, you need to create at least one page. Pages are like different link collections that you can share with different audiences.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            For example, you might have one page for personal links and another for business links.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={handleNoPagesDialogClose} 
+            variant="contained" 
+            fullWidth
+          >
+            Go to Pages
+          </Button>
         </DialogActions>
       </Dialog>
 

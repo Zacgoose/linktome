@@ -374,7 +374,7 @@ export default function AppearancePage() {
   const [themeTab, setThemeTab] = useState(0);
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
-  const { currentPage } = usePageContext();
+  const { currentPage, pages } = usePageContext();
 
   const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
@@ -402,9 +402,17 @@ export default function AppearancePage() {
   // Profile Information states
   const [editingAvatar, setEditingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [noPagesDialogOpen, setNoPagesDialogOpen] = useState(false);
 
   const dataLoadedRef = useRef(false);
   const lastPageIdRef = useRef<string | undefined>(undefined);
+
+  // Check if user has any pages when component mounts
+  useEffect(() => {
+    if (pages.length === 0 && !currentPage && !isLoading) {
+      setNoPagesDialogOpen(true);
+    }
+  }, [pages, currentPage, isLoading]);
 
   // Reset dataLoadedRef when page changes
   useEffect(() => {
@@ -574,6 +582,11 @@ export default function AppearancePage() {
         layoutStyle: theme.appearance.layoutStyle ?? next.layoutStyle,
       };
     });
+  };
+
+  const handleNoPagesDialogClose = () => {
+    setNoPagesDialogOpen(false);
+    router.push('/admin/pages');
   };
 
   const previewAppearance = useMemo(() => {
@@ -1557,6 +1570,34 @@ export default function AppearancePage() {
           <Button onClick={() => setEditingAvatar(false)}>Cancel</Button>
           <Button onClick={handleAvatarUrlSave} variant="contained">
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* No Pages Dialog */}
+      <Dialog 
+        open={noPagesDialogOpen} 
+        onClose={() => {}} 
+        maxWidth="sm" 
+        fullWidth
+        disableEscapeKeyDown
+      >
+        <DialogTitle>Create a Page First</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Before you can customize appearance, you need to create at least one page. Pages are like different link collections that you can share with different audiences.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            For example, you might have one page for personal links and another for business links.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={handleNoPagesDialogClose} 
+            variant="contained" 
+            fullWidth
+          >
+            Go to Pages
           </Button>
         </DialogActions>
       </Dialog>

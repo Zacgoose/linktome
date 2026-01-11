@@ -43,19 +43,24 @@ export function PageProvider({ children }: PageProviderProps) {
 
   // Update current page if it was deleted or modified
   useEffect(() => {
-    if (currentPage && pages.length > 0) {
-      const updatedPage = pages.find(p => p.id === currentPage.id);
-      if (!updatedPage) {
-        // Current page was deleted, switch to default
-        const defaultPage = pages.find(p => p.isDefault) || pages[0];
-        setCurrentPage(defaultPage);
-      } else if (
-        updatedPage.name !== currentPage.name ||
-        updatedPage.slug !== currentPage.slug ||
-        updatedPage.isDefault !== currentPage.isDefault
-      ) {
-        // Page was updated, refresh it
-        setCurrentPage(updatedPage);
+    if (currentPage) {
+      if (pages.length === 0) {
+        // No pages available, clear current page
+        setCurrentPage(null);
+      } else {
+        const updatedPage = pages.find(p => p.id === currentPage.id);
+        if (!updatedPage) {
+          // Current page was deleted, switch to default
+          const defaultPage = pages.find(p => p.isDefault) || pages[0];
+          setCurrentPage(defaultPage);
+        } else if (
+          updatedPage.name !== currentPage.name ||
+          updatedPage.slug !== currentPage.slug ||
+          updatedPage.isDefault !== currentPage.isDefault
+        ) {
+          // Page was updated, refresh it
+          setCurrentPage(updatedPage);
+        }
       }
     }
   }, [pages, currentPage]);
