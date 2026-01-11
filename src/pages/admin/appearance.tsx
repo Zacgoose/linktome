@@ -71,7 +71,9 @@ import { getBackgroundStyle, getButtonStyle } from '@/utils/appearanceUtils';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
 import { usePageContext } from '@/context/PageContext';
+import { usePageValidation } from '@/hooks/usePageValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import NoPageDialog from '@/components/NoPageDialog';
 import { canUseFontFamily, canUseTheme } from '@/utils/tierValidation';
 
 interface SectionProps {
@@ -375,6 +377,7 @@ export default function AppearancePage() {
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
   const { currentPage, pages } = usePageContext();
+  const { hasPages, noPagesDialogOpen, handleNoPagesDialogClose } = usePageValidation();
 
   const { data, isLoading } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
@@ -402,17 +405,9 @@ export default function AppearancePage() {
   // Profile Information states
   const [editingAvatar, setEditingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [noPagesDialogOpen, setNoPagesDialogOpen] = useState(false);
 
   const dataLoadedRef = useRef(false);
   const lastPageIdRef = useRef<string | undefined>(undefined);
-
-  // Check if user has any pages when component mounts
-  useEffect(() => {
-    if (pages.length === 0 && !currentPage && !isLoading) {
-      setNoPagesDialogOpen(true);
-    }
-  }, [pages, currentPage, isLoading]);
 
   // Reset dataLoadedRef when page changes
   useEffect(() => {
@@ -582,11 +577,6 @@ export default function AppearancePage() {
         layoutStyle: theme.appearance.layoutStyle ?? next.layoutStyle,
       };
     });
-  };
-
-  const handleNoPagesDialogClose = () => {
-    setNoPagesDialogOpen(false);
-    router.push('/admin/pages');
   };
 
   const previewAppearance = useMemo(() => {
@@ -1575,32 +1565,10 @@ export default function AppearancePage() {
       </Dialog>
       
       {/* No Pages Dialog */}
-      <Dialog 
+      <NoPageDialog 
         open={noPagesDialogOpen} 
-        onClose={() => {}} 
-        maxWidth="sm" 
-        fullWidth
-        disableEscapeKeyDown
-      >
-        <DialogTitle>Create a Page First</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Before you can customize appearance, you need to create at least one page. Pages are like different link collections that you can share with different audiences.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            For example, you might have one page for personal links and another for business links.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={handleNoPagesDialogClose} 
-            variant="contained" 
-            fullWidth
-          >
-            Go to Pages
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onClose={handleNoPagesDialogClose} 
+      />
       
       {/* Upgrade Prompt Dialog */}
       {showUpgrade && upgradeInfo && (
