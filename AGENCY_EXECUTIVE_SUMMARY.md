@@ -121,54 +121,70 @@ Based on team feedback, this is now **even simpler**:
 
 **Add only 2 flags to Users table**:
 - `IsSubAccount` (boolean)
-- `AuthenticationDisabled` (boolean)
+- `AuthenticationDisabled` (boolean)  (actually `AuthDisabled` in backend)
 
 **New SubAccounts table**: Just relationship tracking (parent-child links)
 
 **That's it!** No complex schema changes.
 
-### 2. Permissions ⭐ USE EXISTING PERMISSION SYSTEM
+### 2. Permissions ⭐ USE BACKEND ROLE SYSTEM
 
-Block features via existing permission checks:
+Backend assigns sub-accounts a limited role (e.g., `sub_account_user`) that doesn't include sensitive permissions.
 
-```typescript
-// Use existing permission check function
-if (user.IsSubAccount && blockedPermission) {
-  return false; // Block access
+**Backend handles permission assignment**:
+```powershell
+# Backend assigns role based on account type
+if ($User.IsSubAccount) {
+  $Role = 'sub_account_user'  # Limited permissions
+} else {
+  $Role = 'user'  # Full permissions
 }
-return checkUserPermission(user, permission); // Existing function
+
+# Backend returns permissions array
+$Permissions = Get-DefaultRolePermissions -Role $Role
 ```
 
-**No new permission infrastructure needed!**
-
-### 3. Tier Access ⭐ UPDATE EXISTING TIER LOOKUP
-
-Add one check to existing function:
-
+**Frontend just checks permissions** (no special sub-account logic):
 ```typescript
-function getUserTier(userId: string): UserTier {
-  const user = getUser(userId);
-  if (user.IsSubAccount) {
-    const parent = getParentUser(userId); // Simple lookup
-    return parent.tier; // Parent's tier
-  }
-  return user.tier; // Existing logic
+// Existing permission check pattern
+if (user.permissions.includes('manage:auth')) {
+  // Show auth settings
+}
+
+if (user.permissions.includes('manage:billing')) {
+  // Show subscription settings
 }
 ```
 
-**All existing tier code works automatically!**
+**Sub-accounts won't have these permissions in their array** - backend handles it!
 
-### 4. Frontend ⭐ ADD ONE SECTION TO EXISTING PAGE
+### 3. Tier Access ⭐ BACKEND TIER LOOKUP
+
+Backend updates `Get-UserSubscription.ps1` to return parent's tier for sub-accounts:
+
+```powershell
+# Backend function
+if ($User.IsSubAccount) {
+  $ParentId = Get-SubAccountOwner -SubAccountId $User.RowKey
+  $Parent = Get-User $ParentId
+  return Get-UserSubscription -User $Parent  # Parent's tier
+}
+return Get-UserSubscription -User $User  # Own tier
+```
+
+**All existing tier code works automatically!** Frontend gets correct tier from API.
+
+### 4. Frontend ⭐ MINIMAL CHANGES
 
 - Add sub-accounts section to `/admin/users` page
-- Add `if (isSubAccount)` checks to settings/API pages
-- Use existing AuthContext (add 2 fields to UserAuth type)
+- Use existing permission checks (`permissions.includes('...')`)
+- No special sub-account detection logic needed!
 
-**No new pages, contexts, or complex state management!**
+**Backend returns correct permissions** - frontend just checks them.
 
 ### 5. API ⭐ 3 NEW ENDPOINTS + REUSE ALL EXISTING
 
-**New**: Create, GetList, Delete sub-accounts  
+**New**: CreateSubAccount, GetSubAccounts, DeleteSubAccount  
 **Existing**: All other endpoints work as-is (links, pages, analytics, etc.)
 
 **Minimal API development needed!**

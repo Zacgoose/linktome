@@ -173,35 +173,48 @@ Status: "active" | "deleted"
 - Add two columns with default `false`
 - Zero changes to existing user rows
 
-### 3. Existing Permissions System - Use As-Is
+### 3. Backend Permission System - Use Existing Role System
 
-**Sub-accounts get blocked from features via existing permissions**:
+**Sub-accounts get blocked from features via backend role assignment**:
 
+The backend will assign sub-accounts a different role (e.g., `sub_account_user`) that doesn't include sensitive permissions. The frontend just checks the `permissions` array that comes from the backend.
+
+**Backend Role Assignment** (in backend code):
 ```typescript
-// Already exists in the app - just add new permission checks
-interface UserAuth {
-  // ... existing fields ...
-  permissions: string[]; // Already exists!
+// Backend assigns role when creating sub-account
+if (user.IsSubAccount) {
+  user.role = 'sub_account_user'; // Limited permissions role
 }
 
-// New permissions to check (use existing permission system):
-const BLOCKED_FOR_SUBACCOUNTS = [
-  'user.login',           // Block password login
-  'user.api_auth',        // Block API authentication  
-  'user.manage_mfa',      // Block MFA management
-  'user.manage_api_keys', // Block API key management
-  'user.manage_users',    // Block user management page
-  'user.manage_subscription' // Block subscription management
-];
+// Backend's Get-DefaultRolePermissions.ps1 defines what each role can do
+const ROLE_PERMISSIONS = {
+  'user': ['manage:auth', 'manage:billing', 'manage:users', 'read:links', ...], // Full permissions
+  'sub_account_user': ['read:links', 'write:links', 'read:pages', ...]  // Limited - no auth/billing/user management
+};
+```
 
-// Use existing permission check function:
+**Frontend Permission Checks** (existing code pattern):
+```typescript
+// Frontend just checks permissions returned by backend
 function canAccess(feature: string): boolean {
-  if (user.IsSubAccount && BLOCKED_FOR_SUBACCOUNTS.includes(feature)) {
-    return false;
-  }
-  return checkUserPermission(user, feature); // Existing function
+  return user.permissions.includes(feature); // Backend provides correct permissions
+}
+
+// Example usage (existing pattern):
+if (user.permissions.includes('manage:auth')) {
+  // Show password change, MFA, API keys
+}
+
+if (user.permissions.includes('manage:billing')) {
+  // Show subscription management
+}
+
+if (user.permissions.includes('manage:users')) {
+  // Show user management section
 }
 ```
+
+**No special sub-account logic in frontend!** Backend handles everything via role-based permissions.
 
 ### 4. Existing Tier System - Use As-Is
 
@@ -577,23 +590,25 @@ function Validate-FeatureAccess($requestUserId, $feature) {
 
 **Changes to `src/pages/admin/users.tsx`**:
 1. Add one conditional section after existing user manager sections
-2. Check `user.permissions.includes('agency')` to show/hide
+2. Check `user.permissions.includes('manage:subaccounts')` to show/hide (backend provides this)
 3. Call `GET /admin/GetSubAccounts` to get list
 4. Render sub-accounts list with create/delete buttons
 
 **That's it!** Just add one section to existing page.
 
-### 2. Existing Permission Checks - Add Simple Flags
+### 2. Use Existing Permission Checks - NO Special Sub-Account Logic
 
-**Update existing permission check code**:
+**Key Point**: The backend returns permissions per user. Sub-accounts will NOT have certain permissions in their `permissions` array. The frontend just needs to check permissions normally - **no special `if (isSubAccount)` logic needed!**
+
+**Example - Settings Page (Existing Code Works)**:
 
 ```typescript
 // In src/pages/admin/settings.tsx (or wherever password change is)
 export default function SettingsPage() {
   const { user } = useAuthContext(); // Existing context!
   
-  // NEW: One simple check
-  const isSubAccount = user?.IsSubAccount || false;
+  // Existing permission check - backend handles sub-account restrictions
+  const canManageAuth = user?.permissions?.includes('manage:auth') || false;
   
   return (
     <AdminLayout>
@@ -601,9 +616,9 @@ export default function SettingsPage() {
       <Card>
         <CardContent>
           <Typography variant="h6">Password</Typography>
-          {isSubAccount ? (
+          {!canManageAuth ? (
             <Alert severity="info">
-              Sub-accounts cannot change password. Contact your account manager.
+              You don't have permission to manage authentication settings.
             </Alert>
           ) : (
             <PasswordChangeForm /> // Existing component
@@ -611,29 +626,31 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
       
-      {/* Same pattern for MFA, API Keys, etc. */}
+      {/* Same pattern for MFA, API Keys, etc. - use existing permission checks */}
     </AdminLayout>
   );
 }
 ```
 
-**Apply same pattern to**:
-- Settings page (password, MFA)
-- API Keys page (hide entire page)
-- User Management section (hide section)
-- Subscription page (hide page)
+**Apply same pattern everywhere**:
+- Settings page → Check `permissions.includes('manage:auth')`
+- API Keys page → Check `permissions.includes('manage:auth')` or `permissions.includes('read:apiauth')`
+- User Management section → Check `permissions.includes('manage:users')`
+- Subscription page → Check `permissions.includes('manage:billing')`
 
-**Each is just one `if (isSubAccount)` check using existing user context!**
+**Backend provides the right permissions** - sub-accounts won't have these permissions in their array. **No frontend logic needed to detect sub-accounts!**
 
 ### 3. Existing User Context - Already Works!
 
 **No changes needed to AuthProvider** - it already:
 - Loads user from API ✓
 - Exposes `user` object ✓
-- Has permissions array ✓
+- Has `permissions` array ✓
 - Has tier information ✓
 
-Just add `IsSubAccount` flag to the existing `UserAuth` type:
+The backend will return the correct permissions for each user (sub-accounts get limited permissions automatically).
+
+**Optional**: Add `IsSubAccount` flag to the existing `UserAuth` type for display purposes only:
 
 ```typescript
 // In src/types/api.ts (existing file)
@@ -643,15 +660,15 @@ export interface UserAuth {
   username: string;
   userRole: string;
   roles: string[];
-  permissions: string[];
+  permissions: string[]; // Backend returns correct permissions per user
   tier?: UserTier;
-  // NEW: Just add these two fields
+  // OPTIONAL: Just for display/UI purposes
   IsSubAccount?: boolean;
   AuthenticationDisabled?: boolean;
 }
 ```
 
-**That's all the frontend changes needed!**
+**That's all the frontend changes needed!** The backend handles all the sub-account logic via permissions.
 - Email (optional, for display only)
 - Bio (optional)
 

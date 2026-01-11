@@ -219,24 +219,27 @@ Total: 14-18 weeks (3.5-4.5 months)
 
 ### Backend (PowerShell/Azure Functions)
 1. **3 new endpoints**: CreateSubAccount, GetSubAccounts, DeleteSubAccount
-2. **Update getUserTier()**: Add check for sub-accounts to return parent's tier
-3. **Update authentication**: Check AuthenticationDisabled flag on login
+2. **Update Get-UserSubscription.ps1**: Check if sub-account, return parent's tier
+3. **Update authentication**: Check `AuthDisabled` flag on login/API key validation
+4. **Update Get-DefaultRolePermissions.ps1**: Add `sub_account_user` role with limited permissions
 
-**Reuse**: All existing endpoints, permission checks, tier logic
+**Reuse**: All existing endpoints, existing permission system, existing tier logic
 
 ### Frontend (React/Next.js)
-1. **Add 2 fields to UserAuth type**: IsSubAccount, AuthenticationDisabled
+1. **Add 2 fields to UserAuth type**: `IsSubAccount`, `AuthDisabled` (optional, for display only)
 2. **Update Users page**: Add one conditional sub-accounts section
-3. **Add permission checks**: `if (isSubAccount)` in Settings, API Keys, etc.
+3. **Use existing permission checks**: Check `user.permissions.includes('...')` everywhere
 
-**Reuse**: Existing AuthContext, existing UI components, existing API hooks
+**No special sub-account logic needed!** Backend returns correct permissions per user role.
+
+**Reuse**: Existing AuthContext, existing permission checks, existing UI components, existing API hooks
 
 ## Implementation Estimate
 
 **2-3 weeks** (vs 8-12 weeks original plan)
 
-- Week 1: Database changes + 3 API endpoints
-- Week 2: Frontend UI section + permission checks
+- Week 1: Database changes + 3 API endpoints + role definition
+- Week 2: Frontend UI section + verify permission checks work
 - Week 3: Testing, bug fixes, documentation
 
 **Massive time savings due to code reuse!**
