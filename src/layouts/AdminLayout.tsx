@@ -33,6 +33,7 @@ import {
   Settings as SettingsIcon,
   CardMembership as SubscriptionIcon,
   Pages as PagesIcon,
+  CallToAction as ShortLinksIcon,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useAuthContext } from '@/providers/AuthProvider';
@@ -90,6 +91,12 @@ const menuItems: MenuItem[] = [
     icon: <AnalyticsIcon />, 
     path: '/admin/analytics',
     requiredPermissions: ['read:analytics'],
+  },
+  { 
+    text: 'Short Links', 
+    icon: <ShortLinksIcon />, 
+    path: '/admin/shortlinks',
+    requiredPermissions: ['read:shortlinks'],
   },
   { 
     text: 'Settings', 

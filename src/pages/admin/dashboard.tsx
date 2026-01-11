@@ -19,6 +19,7 @@ import {
   Visibility as ViewIcon,
   TrendingUp as TrendingUpIcon,
   ContentCopy as ContentCopyIcon,
+  CallToAction as ShortLinksIcon,
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet } from '@/hooks/useApiQuery';
@@ -250,6 +251,34 @@ export default function Dashboard() {
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Track views & clicks
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper
+                    elevation={0}
+                    sx={{ 
+                      p: 3,
+                      border: '2px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textAlign: 'center',
+                      '&:hover': {
+                        borderColor: 'info.main',
+                        transform: 'translateY(-4px)',
+                        boxShadow: 3
+                      }
+                    }}
+                    onClick={() => router.push('/admin/shortlinks')}
+                  >
+                    <ShortLinksIcon sx={{ fontSize: 36, color: 'info.main', mb: 1 }} />
+                    <Typography variant="h6" fontWeight={600} gutterBottom>
+                      Short Links
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Create URL shortcuts
                     </Typography>
                   </Paper>
                 </Grid>
