@@ -229,3 +229,124 @@ export interface AnalyticsData {
  * Analytics API response
  */
 export type AnalyticsResponse = AnalyticsData;
+
+/**
+ * Short Link data
+ */
+export interface ShortLink {
+  slug: string;
+  targetUrl: string;
+  title: string;
+  active: boolean;
+  clicks: number;
+  createdAt: string;
+  lastClickedAt: string | null;
+}
+
+/**
+ * Short Links list response
+ */
+export interface ShortLinksResponse {
+  shortLinks: ShortLink[];
+  total: number;
+}
+
+/**
+ * Short Link operation types
+ */
+export type ShortLinkOperation = 'add' | 'update' | 'remove';
+
+/**
+ * Short Link update request item
+ */
+export interface ShortLinkUpdateItem {
+  operation: ShortLinkOperation;
+  slug?: string; // Required for update/remove, not used for add
+  targetUrl?: string;
+  title?: string;
+  active?: boolean;
+}
+
+/**
+ * Update Short Links request
+ */
+export interface UpdateShortLinksRequest {
+  shortLinks: ShortLinkUpdateItem[];
+}
+
+/**
+ * Update Short Links response
+ */
+export interface UpdateShortLinksResponse {
+  success: boolean;
+  created: Array<{
+    slug: string;
+    targetUrl: string;
+    title: string;
+  }>;
+}
+
+/**
+ * Short Link redirect response
+ */
+export interface ShortLinkRedirectResponse {
+  redirectTo: string;
+}
+
+/**
+ * Short Link Analytics Summary
+ */
+export interface ShortLinkAnalyticsSummary {
+  totalRedirects: number;
+  uniqueVisitors: number;
+}
+
+/**
+ * Top Short Link data
+ */
+export interface TopShortLink {
+  slug: string;
+  targetUrl: string;
+  clicks: number;
+}
+
+/**
+ * Redirects by day data
+ */
+export interface RedirectsByDay {
+  date: string;
+  clicks: number;
+}
+
+/**
+ * Top referrer data
+ */
+export interface TopReferrer {
+  referrer: string;
+  count: number;
+}
+
+/**
+ * Recent redirect data
+ */
+export interface RecentRedirect {
+  timestamp: string;
+  slug: string;
+  targetUrl: string;
+  ipAddress: string;
+  userAgent: string;
+  referrer: string;
+}
+
+/**
+ * Short Link Analytics response
+ */
+export interface ShortLinkAnalyticsResponse {
+  summary: ShortLinkAnalyticsSummary;
+  hasAdvancedAnalytics: boolean;
+  message?: string; // For free tier
+  topShortLinks?: TopShortLink[];
+  redirectsByDay?: RedirectsByDay[];
+  topReferrers?: TopReferrer[];
+  recentRedirects?: RecentRedirect[];
+}
