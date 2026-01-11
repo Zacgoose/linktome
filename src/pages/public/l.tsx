@@ -1,13 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { Box, Container, Typography, CircularProgress, Alert } from '@mui/material';
-import { Warning as WarningIcon } from '@mui/icons-material';
+import { Box, Container, Typography, CircularProgress, Alert, Button } from '@mui/material';
+import { Warning as WarningIcon, Block as BlockIcon } from '@mui/icons-material';
 import axios from 'axios';
 
 export default function ShortLinkRedirect() {
   const router = useRouter();
   const { slug } = router.query;
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
     if (!slug || typeof slug !== 'string') {
@@ -38,7 +39,10 @@ export default function ShortLinkRedirect() {
         }
 
         // If no redirect happened, show error
-        console.error('No redirect URL found');
+        setError({
+          title: 'Redirect Failed',
+          message: 'Unable to redirect to the target URL. Please try again later.',
+        });
         
       } catch (error: any) {
         if (axios.isAxiosError(error)) {
@@ -47,28 +51,83 @@ export default function ShortLinkRedirect() {
 
           // Handle specific error cases
           if (status === 404) {
-            router.push('/404');
+            setError({
+              title: 'Link Not Found',
+              message: 'This short link does not exist or has been deleted.',
+            });
             return;
           }
 
           if (status === 410) {
-            // Link is inactive
+            setError({
+              title: 'Link Inactive',
+              message: 'This short link is no longer active.',
+            });
             return;
           }
 
           if (status === 400) {
-            // Invalid slug format
+            setError({
+              title: 'Invalid Link',
+              message: 'The short link format is invalid.',
+            });
             return;
           }
 
-          // For other errors, log and stay on error page
-          console.error('Redirect error:', errorData?.error || 'Unknown error');
+          // For other errors, show generic error
+          setError({
+            title: 'Error',
+            message: errorData?.error || 'An unexpected error occurred. Please try again later.',
+          });
+        } else {
+          setError({
+            title: 'Error',
+            message: 'An unexpected error occurred. Please try again later.',
+          });
         }
       }
     };
 
     redirect();
   }, [slug, router]);
+
+  // Show error state
+  if (error) {
+    return (
+      <>
+        <Head>
+          <title>{error.title} - LinkToMe</title>
+        </Head>
+        <Container maxWidth="sm">
+          <Box
+            sx={{
+              minHeight: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Box sx={{ textAlign: 'center' }}>
+              <BlockIcon sx={{ fontSize: 80, color: 'error.main', mb: 2 }} />
+              <Typography variant="h4" gutterBottom fontWeight={600}>
+                {error.title}
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                {error.message}
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={() => router.push('/')}
+                sx={{ mt: 2 }}
+              >
+                Go to Home
+              </Button>
+            </Box>
+          </Box>
+        </Container>
+      </>
+    );
+  }
 
   // Show loading state while redirecting
   if (!slug) {
