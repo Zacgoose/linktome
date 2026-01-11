@@ -92,6 +92,12 @@ const menuItems: MenuItem[] = [
     requiredPermissions: ['read:analytics'],
   },
   { 
+    text: 'Short Links', 
+    icon: <LinkIcon />, 
+    path: '/admin/shortlinks',
+    requiredPermissions: ['read:shortlinks'],
+  },
+  { 
     text: 'Settings', 
     icon: <SettingsIcon />, 
     path: '/admin/settings',

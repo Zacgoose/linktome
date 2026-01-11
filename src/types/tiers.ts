@@ -27,6 +27,10 @@ export interface TierLimits {
   linkScheduling: boolean;
   linkLocking: boolean;
   
+  // Short link features
+  maxShortLinks: number;
+  shortLinkAnalytics: boolean;
+  
   // Appearance features
   customThemes: boolean;
   premiumFonts: boolean;
@@ -63,6 +67,8 @@ export const TIER_CONFIG: Record<UserTier, TierLimits> = {
     linkAnimations: false,
     linkScheduling: false,
     linkLocking: false,
+    maxShortLinks: 0,
+    shortLinkAnalytics: false,
     customThemes: true,
     premiumFonts: false,
     customLogos: false,
@@ -87,6 +93,8 @@ export const TIER_CONFIG: Record<UserTier, TierLimits> = {
     linkAnimations: true,
     linkScheduling: true,
     linkLocking: true,
+    maxShortLinks: 5,
+    shortLinkAnalytics: true,
     customThemes: true,
     premiumFonts: true,
     customLogos: true,
@@ -111,6 +119,8 @@ export const TIER_CONFIG: Record<UserTier, TierLimits> = {
     linkAnimations: true,
     linkScheduling: true,
     linkLocking: true,
+    maxShortLinks: 20,
+    shortLinkAnalytics: true,
     customThemes: true,
     premiumFonts: true,
     customLogos: true,
@@ -135,6 +145,8 @@ export const TIER_CONFIG: Record<UserTier, TierLimits> = {
     linkAnimations: true,
     linkScheduling: true,
     linkLocking: true,
+    maxShortLinks: -1, // unlimited
+    shortLinkAnalytics: true,
     customThemes: true,
     premiumFonts: true,
     customLogos: true,
