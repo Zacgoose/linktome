@@ -1,21 +1,68 @@
-# Agency/Multi-Account Profiles - Executive Summary
+# Agency/Multi-Account Profiles - Executive Summary (UPDATED)
 
 ## What We're Building
 
-A feature that allows **parent accounts** (PREMIUM+ tier) to create and manage **sub-accounts** (child profiles) where:
+A **simplified, permission-based** feature that allows parent accounts with **agency permissions** to create and manage **sub-accounts** (child profiles) where:
 
 - ✅ Sub-accounts are separate usernames with independent public profiles
-- ✅ Parent manages everything (links, pages, appearance, analytics)
-- ✅ Sub-accounts inherit feature access from parent's tier
-- ❌ Sub-accounts CANNOT login independently
-- ❌ Sub-accounts CANNOT manage their own API keys, MFA, or subscriptions
+- ✅ Sub-accounts operate like normal accounts (links, pages, appearance, analytics)
+- ✅ Parent manages sub-accounts from existing Users page (integrated, not separate)
+- ✅ Sub-accounts get same tier features as parent's base tier
+- ❌ Sub-accounts CANNOT login (directly or via API)
+- ❌ Sub-accounts CANNOT manage API keys, MFA, user management, or subscriptions
+
+## Key Simplifications from Original Plan
+
+Based on team feedback, this updated approach is **simpler and more API-focused**:
+
+1. **Permission-based access**: Uses `agency-basic`, `agency-pro` permissions (not tier-based)
+2. **Parent gets base features**: Parent has free/pro/premium features for their own account
+3. **Integrated UI**: Sub-accounts section added to existing `/admin/users` page (no new page)
+4. **Scalable packs**: Buy sub-accounts in packs (3-user, 10-user, 25-user) independent of base tier
+5. **Simpler architecture**: Sub-accounts are regular accounts with `AuthenticationDisabled = true`
+6. **No complex context switching**: Can use simple URL parameters (`?subAccountId=xxx`) or session
+
+## Subscription Model
+
+### How It Works
+
+**Base Tier + Agency Permission + User Pack**
+
+1. Parent selects **base tier** (Free, Pro, Premium, Enterprise)
+   - Parent gets these features
+   - Sub-accounts also get these features
+
+2. Parent adds **agency permission** (add-on to enable feature)
+   - `agency-basic`: Works with Free tier base
+   - `agency-pro`: Works with Pro tier base
+   - `agency-premium`: Works with Premium tier base
+
+3. Parent purchases **user pack** (scales independently)
+   - 3-user pack: $15/mo
+   - 10-user pack: $40/mo
+   - 25-user pack: $90/mo
+   - Can purchase multiple packs
+
+### Example Pricing
+
+**Small Agency**: Free ($0) + Agency-Basic ($10) + 3-user pack ($15) = **$25/mo**
+- Parent: Free features
+- 3 sub-accounts: Free features each
+
+**Medium Agency**: Pro ($10) + Agency-Pro ($20) + 10-user pack ($40) = **$70/mo**
+- Parent: Pro features
+- 10 sub-accounts: Pro features each
+
+**Large Agency**: Premium ($30) + Agency-Premium ($30) + 2x25-user pack ($180) = **$240/mo**
+- Parent: Premium features
+- 50 sub-accounts: Premium features each
 
 ## Why This Feature?
 
 ### Target Use Cases
 
-1. **Agencies** managing multiple client brands
-2. **Multi-brand businesses** with separate identities
+1. **Agencies** managing multiple client brands from one dashboard
+2. **Multi-brand businesses** with separate brand identities
 3. **Influencers** with multiple content personas
 
 ### Differentiation from Existing Multi-Page Feature
@@ -24,71 +71,91 @@ A feature that allows **parent accounts** (PREMIUM+ tier) to create and manage *
 |---------|---------------------|---------------------|
 | URL | `/username/slug` | `/sub-account-username` |
 | Username | Shared | Unique per sub-account |
-| Authentication | One user | Only parent logs in |
-| Use Case | One person, different link collections | One person managing multiple identities/clients |
+| Authentication | One user | Only parent logs in, sub-accounts disabled |
+| Features | Based on user's tier | Sub-accounts operate like parent's base tier |
+| Management | User manages own pages | Parent manages sub-accounts from Users page |
+| Use Case | One person, different link collections | Managing multiple brands/clients |
 
 ## Key Business Decisions
 
-### Tier Access
-- **FREE**: 0 sub-accounts
-- **PRO**: 0 sub-accounts (could be changed)
-- **PREMIUM**: 3 sub-accounts
-- **ENTERPRISE**: Unlimited sub-accounts
+### Access Model
+- **Any tier** can add agency permission (Free, Pro, Premium, Enterprise)
+- Agency permission is **add-on** to base tier
+- Sub-account **packs are purchased separately** (3, 10, 25 users)
+- Parent and all sub-accounts get **parent's base tier features**
 
-### Feature Quota Model
-**RECOMMENDED: Shared Quota**
-- Parent + all sub-accounts share one pool of resources
-- Example: PREMIUM has 100 links total across all accounts
-- Simpler to implement, encourages upgrades
-- Can be made more generous later based on feedback
+### Feature Model
+**Each sub-account operates independently** with full tier features:
+- Parent: Pro tier → Gets 50 links, 3 pages, API access, etc.
+- Sub-account 1: Gets 50 links, 3 pages, analytics, etc. (independently)
+- Sub-account 2: Gets 50 links, 3 pages, analytics, etc. (independently)
 
-### Pricing Strategy (Future)
-- PREMIUM: Base price includes 3 sub-accounts
-- ENTERPRISE: Base price includes unlimited
-- Optional: Add-on pricing for additional sub-accounts beyond included limit
+**Blocked features for sub-accounts**:
+- Login (password auth)
+- API authentication
+- MFA management
+- User management
+- Subscription management
+
+### UI Integration
+- **No new pages**: Sub-accounts section integrated into existing `/admin/users` page
+- Appears below existing user manager relationships
+- Only shown if user has agency permission
 
 ## Critical Technical Decisions
 
-### 1. Context Management ⭐ HYBRID APPROACH RECOMMENDED
+### 1. Context Management ⭐ URL PARAMETER (SIMPLEST)
 
-**For UI**: Session-based context switching
-```javascript
-POST /admin/SwitchToSubAccount { subAccountId: "client-1" }
-// Now all API calls operate on client-1
-GET /admin/GetLinks → Returns client-1's links
-```
+**Recommended for MVP**: Simple URL parameter approach
 
-**For API Clients**: Parameter-based
 ```javascript
+// Parent manages sub-account
 GET /admin/GetLinks?subAccountId=client-1
-// Explicit parameter, no session needed
+PUT /admin/UpdateLinks?subAccountId=client-1
+GET /admin/GetAnalytics?subAccountId=client-1
+// All endpoints check parameter and validate parent ownership
 ```
 
 **Benefits**:
-- Clean UI code (single active context)
-- Flexible API for automation
-- Parameter overrides session if both present
+- No session management needed
+- Stateless and simple
+- Explicit on every request
+- Easy to implement
 
-### 2. Deletion Behavior ⭐ SOFT DELETE RECOMMENDED
+**Alternative**: Session-based context for future enhancement
+
+### 2. Feature Access ⭐ PER-ACCOUNT INDEPENDENT
+
+Each sub-account operates **independently** with full tier features:
+
+```typescript
+// Example: Parent is Pro tier with agency-pro permission
+Parent account: 50 links, 3 pages, API access
+Sub-account 1: 50 links, 3 pages, analytics (independent quota)
+Sub-account 2: 50 links, 3 pages, analytics (independent quota)
+Sub-account 3: 50 links, 3 pages, analytics (independent quota)
+```
+
+**Not a shared pool** - each account has independent limits based on parent's tier.
+
+### 3. UI Integration ⭐ EXISTING USERS PAGE
+
+- Add "Sub-Accounts" section to `/admin/users` page
+- Shows below existing user manager relationships
+- Conditional display based on agency permission
+- No new routes or pages needed
+
+### 4. Deletion Behavior ⭐ SOFT DELETE
 
 - Mark as deleted, keep data for 30 days
 - Allow restore during grace period
-- Scheduled job for final cleanup after 30 days
 - Protects against accidental deletion
 
-### 3. Public Profile ⭐ HIDE RELATIONSHIP
+### 5. Public Visibility ⭐ HIDE RELATIONSHIP
 
 - Sub-account profiles look like regular profiles
 - No indication of parent account
 - White-label friendly for agencies
-- Can add optional attribution later
-
-### 4. Email Handling ⭐ ALL TO PARENT (MVP)
-
-- Sub-account email is for display only
-- All notifications go to parent
-- Simple to implement
-- Can add routing options in Phase 2
 
 ## Implementation Timeline
 

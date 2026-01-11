@@ -1,8 +1,19 @@
-# Agency/Multi-Account Profiles - Documentation Index
+# Agency/Multi-Account Profiles - Documentation Index (UPDATED)
 
 ## Overview
 
-This folder contains comprehensive planning documentation for the **Agency/Multi-Account Profiles** feature in LinkToMe. This feature will allow parent accounts (PREMIUM+ tier) to create and manage sub-accounts that inherit features from the parent's subscription plan but cannot login independently.
+This folder contains comprehensive planning documentation for the **Agency/Multi-Account Profiles** feature in LinkToMe - **updated with simplified, API-focused approach**. This feature will allow parent accounts with **agency permissions** to create and manage sub-accounts that operate like normal accounts but cannot authenticate independently.
+
+## Key Changes from Original Plan
+
+Based on team feedback, this approach is **simpler and more API-focused**:
+
+1. **Permission-based** (not tier-based): Uses `agency-basic`, `agency-pro` permissions
+2. **Parent gets base features**: Parent has free/pro/premium tier for their own account
+3. **Integrated UI**: Sub-accounts section in existing `/admin/users` page (not separate)
+4. **Scalable packs**: Buy sub-accounts in packs (3/$15, 10/$40, 25/$90) independent of tier
+5. **Simpler architecture**: Sub-accounts are regular accounts with `AuthenticationDisabled = true`
+6. **Independent quotas**: Each sub-account gets full tier limits independently (not shared pool)
 
 ## Document Purpose
 
@@ -80,11 +91,12 @@ These documents are designed to facilitate planning and discussion with the API 
 ### What is a Sub-Account?
 
 A **sub-account** (also called child account or managed profile) is:
+- ✅ A regular account with full tier features (based on parent's base tier)
 - ✅ A separate username with its own public profile (e.g., `/clientbrand1`)
-- ✅ Managed entirely by a parent account
-- ✅ Inherits feature access from parent's subscription tier
-- ❌ **CANNOT** login independently (no password, no MFA, no API keys)
-- ❌ **CANNOT** manage subscriptions, user settings, or authentication
+- ✅ Managed by parent from existing Users page
+- ✅ Operates independently with own links, pages, appearance, analytics
+- ❌ **CANNOT** login (password or API authentication disabled)
+- ❌ **CANNOT** manage API keys, MFA, users, or subscriptions
 
 ### How is This Different from Multi-Page?
 
@@ -95,7 +107,10 @@ The app already has a **multi-page system** where users can create multiple page
 | User | Same user account | Parent + multiple sub-accounts |
 | URL | `/username/main`, `/username/music` | `/parent`, `/client1`, `/client2` |
 | Username | Shared across pages | Each sub-account has unique username |
-| Login | User logs in | Only parent logs in |
+| Login | User logs in | Only parent logs in, sub-accounts disabled |
+| Management | User manages own pages | Parent manages from existing Users page |
+| Features | Based on user's tier | Each sub-account gets parent's base tier features |
+| Quotas | Shared limits | Independent limits per account |
 | Use Case | One person, different link collections | Managing multiple brands/clients |
 
 **Example**:
@@ -108,34 +123,54 @@ The app already has a **multi-page system** where users can create multiple page
 2. **Multi-Brand Businesses**: Separate identities for different product lines
 3. **Influencers**: Different personas for different content types
 
+### Subscription Model
+
+**Base Tier + Agency Permission + User Pack**
+
+Example pricing:
+- **Small**: Free ($0) + Agency-Basic ($10) + 3-user pack ($15) = $25/mo
+- **Medium**: Pro ($10) + Agency-Pro ($20) + 10-user pack ($40) = $70/mo
+- **Large**: Premium ($30) + Agency-Premium ($30) + 2x25-user pack ($180) = $240/mo
+
 ## Recommended Technical Decisions
 
-Based on analysis in the planning documents, here are the **recommended MVP decisions**:
+Based on the simplified approach, here are the **recommended MVP decisions**:
 
-### 1. Context Management: **Hybrid Approach** ⭐
-- UI uses session-based context switching (cleaner code)
-- API clients can use parameter-based (flexible)
-- Parameter overrides session when both present
+### 1. Context Management: **URL Parameter** ⭐
+- Simple `?subAccountId=xxx` parameter on all admin endpoints
+- No session management needed
+- Stateless and explicit
 
-### 2. Feature Quota: **Shared Quota** ⭐
-- Parent + all sub-accounts share one resource pool
-- Example: PREMIUM 100 links total across all accounts
-- Simpler to implement, encourages tier upgrades
+### 2. Feature Access: **Independent Per-Account** ⭐
+- Each sub-account gets full tier limits independently
+- Not a shared pool - simpler and more generous
+- Example: Pro tier parent + 3 sub-accounts = 4 accounts each with 50 links
 
-### 3. Deletion: **Soft Delete with 30-day Recovery** ⭐
+### 3. UI Integration: **Existing Users Page** ⭐
+- Add sub-accounts section to `/admin/users` page
+- No new routes or pages
+- Conditional display based on agency permission
+
+### 4. Deletion: **Soft Delete with 30-day Recovery** ⭐
 - Mark as deleted, keep data for 30 days
 - Allow restore during grace period
-- Protects against accidental deletion
 
-### 4. Public Visibility: **Hide Parent Relationship** ⭐
+### 5. Public Visibility: **Hide Parent Relationship** ⭐
 - Sub-account profiles look like regular profiles
 - No indication of parent account
 - White-label friendly for agencies
 
-### 5. Email Handling: **All to Parent (MVP)** ⭐
-- Sub-account email is for display only
-- All notifications go to parent account
-- Can add configurable routing in Phase 2
+### 6. Permissions: **Permission-Based Access** ⭐
+- `agency-basic`, `agency-pro`, `agency-premium` permissions
+- Add-on to any base tier
+- Unlocks sub-account creation capability
+
+### 7. Subscription Packs: **Purchased Separately** ⭐
+- 3-user pack ($15/mo)
+- 10-user pack ($40/mo)
+- 25-user pack ($90/mo)
+- Can purchase multiple packs
+- Scales independently of base tier
 
 ## Implementation Timeline
 
@@ -173,44 +208,35 @@ Total: 14-18 weeks (3.5-4.5 months)
 ## Database Changes Summary
 
 ### New Tables
-1. **AccountRelationships** - Track parent-child relationships
-2. **SubAccountProfiles** - Additional sub-account metadata (optional)
+1. **AccountRelationships** - Track parent-child relationships (simple join table)
 
 ### Updated Tables
-- **Users**: Add `IsSubAccount`, `ParentAccountId`, `AccountType`, `AuthenticationDisabled`
-- **Subscription**: Add `IncludedSubAccounts`, `UsedSubAccounts`
-- **All data tables** (Links, Pages, etc.): No changes needed
+- **Users**: Add `IsSubAccount`, `ParentAccountId`, `AuthenticationDisabled`, `AgencyPermission`
+- **Subscription**: Add `AgencyPermission`, `SubAccountPackSize`, `UsedSubAccounts`
+- **All data tables** (Links, Pages, etc.): No changes needed (use existing UserId)
 
 ## API Endpoints Summary
 
 ### New Endpoints
 ```
 POST /admin/CreateSubAccount        - Create new sub-account
-GET /admin/GetSubAccounts           - List all sub-accounts
-PUT /admin/UpdateSubAccount         - Update sub-account details
+GET /admin/GetSubAccounts           - List parent's sub-accounts with pack limits
 DELETE /admin/DeleteSubAccount      - Soft delete sub-account
 POST /admin/RestoreSubAccount       - Restore deleted sub-account
-POST /admin/UpdateSubAccountStatus  - Suspend/reactivate
-
-POST /admin/SwitchToSubAccount      - Set active context
-POST /admin/SwitchToParentAccount   - Clear context
-GET /admin/GetActiveContext         - Get current context
 ```
 
 ### Updated Endpoints
 All existing `/admin/*` endpoints support:
-- Session-based context (automatic)
-- Optional `?subAccountId=xxx` parameter (override)
-- Feature validation against parent's tier
-- Shared quota enforcement
+- Optional `?subAccountId=xxx` parameter
+- Validate parent ownership when parameter present
+- Return sub-account data when valid
 
 ## Security Highlights
 
-1. **Authentication**: Sub-accounts cannot login (no password, no MFA, no API keys)
-2. **Authorization**: Parent ownership validated on every request
-3. **Context Switching**: Only valid relationships allowed, fully audited
-4. **Data Isolation**: Parents can only access their own sub-accounts
-5. **Rate Limiting**: Applied at parent account level
+1. **Authentication**: Sub-accounts have `AuthenticationDisabled = true` (cannot login via password or API)
+2. **Authorization**: Parent ownership validated on every request with `subAccountId` parameter
+3. **Feature Access**: Sub-accounts operate at parent's base tier level (independent limits per account)
+4. **Management**: Only parent can manage sub-account (user management, API keys, MFA disabled for sub-accounts)
 
 ## Next Steps
 
