@@ -19,11 +19,17 @@ import {
   InputAdornment,
   TableContainer,
   Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Chip,
 } from '@mui/material';
-import { Search } from '@mui/icons-material';
+import { Search, Add, Delete } from '@mui/icons-material';
 import AdminLayout from '../../layouts/AdminLayout';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useState as useReactState } from 'react';
+import type { SubAccountsResponse, CreateSubAccountRequest } from '@/types/api';
 
 
 interface UserManagerRelationship {
@@ -43,19 +49,43 @@ interface UserManagerListResponse {
 
 
 export default function UsersPage() {
+  const { user, refreshAuth } = useAuthContext();
+  
   // Fetch user manager relationships
   const { data: userManagerList, isLoading } = useApiGet<UserManagerListResponse>({
     url: 'admin/UserManagerList',
     queryKey: 'admin-user-manager-list',
   });
+  
+  // Fetch sub-accounts if user has permission
+  const canManageSubAccounts = user?.permissions?.includes('manage:subaccounts') || false;
+  const { data: subAccountsData, isLoading: isLoadingSubAccounts } = useApiGet<SubAccountsResponse>({
+    url: 'admin/GetSubAccounts',
+    queryKey: 'admin-sub-accounts',
+    enabled: canManageSubAccounts,
+  });
+  
   // With backend fixed, managers = users who manage me, managees = users I manage
   const managers: UserManagerRelationship[] = userManagerList?.managers || [];
   const managees: UserManagerRelationship[] = userManagerList?.managees || [];
+  const subAccounts = subAccountsData?.subAccounts || [];
+  const subAccountLimits = subAccountsData?.limits;
+  
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [inviteEmail, setInviteEmail] = useReactState('');
   const [managerSearchTerm, setManagerSearchTerm] = useState('');
   const [manageeSearchTerm, setManageeSearchTerm] = useState('');
+  const [subAccountSearchTerm, setSubAccountSearchTerm] = useState('');
+  
+  // Sub-account creation dialog state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newSubAccount, setNewSubAccount] = useState<CreateSubAccountRequest>({
+    username: '',
+    displayName: '',
+    email: '',
+  });
+  
   const inviteRole = 'user_manager';
   const inviteUserManager = useApiPost({
     onSuccess: () => {
@@ -70,8 +100,6 @@ export default function UsersPage() {
     },
     relatedQueryKeys: ['admin-user-manager-list'],
   });
-  const { refreshAuth } = useAuthContext();
-
 
   const userManagerAction = useApiPost({
     onSuccess: () => {
@@ -85,7 +113,34 @@ export default function UsersPage() {
     },
   });
 
-  if (isLoading) {
+  // Sub-account mutations
+  const createSubAccount = useApiPost({
+    onSuccess: () => {
+      setSuccess('Sub-account created successfully!');
+      setCreateDialogOpen(false);
+      setNewSubAccount({ username: '', displayName: '', email: '' });
+    },
+    onError: (err: unknown) => {
+      if (typeof err === 'string') setError(err);
+      else if (err instanceof Error) setError(err.message);
+      else setError('Failed to create sub-account');
+    },
+    relatedQueryKeys: ['admin-sub-accounts'],
+  });
+
+  const deleteSubAccount = useApiPost({
+    onSuccess: () => {
+      setSuccess('Sub-account deleted successfully!');
+    },
+    onError: (err: unknown) => {
+      if (typeof err === 'string') setError(err);
+      else if (err instanceof Error) setError(err.message);
+      else setError('Failed to delete sub-account');
+    },
+    relatedQueryKeys: ['admin-sub-accounts'],
+  });
+
+  if (isLoading || (canManageSubAccounts && isLoadingSubAccounts)) {
     return (
       <AdminLayout>
         <Box display="flex" justifyContent="center" p={5}>
@@ -118,7 +173,28 @@ export default function UsersPage() {
       data = { UserId };
     }
     userManagerAction.mutate({ url, data });
-    
+  };
+
+  // --- Sub-Account Handlers ---
+  const handleCreateSubAccount = () => {
+    setError('');
+    setSuccess('');
+    createSubAccount.mutate({
+      url: 'admin/CreateSubAccount',
+      data: newSubAccount,
+    });
+  };
+
+  const handleDeleteSubAccount = (userId: string) => {
+    if (!confirm('Are you sure you want to delete this sub-account? This action cannot be undone.')) {
+      return;
+    }
+    setError('');
+    setSuccess('');
+    deleteSubAccount.mutate({
+      url: 'admin/DeleteSubAccount',
+      data: { userId },
+    });
   };
 
   return (
@@ -303,6 +379,185 @@ export default function UsersPage() {
               </TableContainer>
             </CardContent>
           </Card>
+
+          {/* Sub-Accounts Section */}
+          {canManageSubAccounts && (
+            <Card sx={{ mt: 4 }}>
+              <CardContent sx={{ p: 4 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                  <Box>
+                    <Typography variant="h6" fontWeight={600} color="text.primary">
+                      Sub-Accounts
+                    </Typography>
+                    {subAccountLimits && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        {subAccountLimits.usedSubAccounts} of {subAccountLimits.maxSubAccounts === -1 ? 'Unlimited' : subAccountLimits.maxSubAccounts} sub-accounts used
+                        {subAccountLimits.userPackType && ` (${subAccountLimits.userPackType} pack)`}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => setCreateDialogOpen(true)}
+                    disabled={
+                      createSubAccount.isPending ||
+                      deleteSubAccount.isPending ||
+                      (subAccountLimits?.maxSubAccounts !== -1 && 
+                       (subAccountLimits?.usedSubAccounts || 0) >= (subAccountLimits?.maxSubAccounts || 0))
+                    }
+                  >
+                    Create Sub-Account
+                  </Button>
+                </Box>
+
+                {subAccountLimits && subAccountLimits.remainingSubAccounts === 0 && subAccountLimits.maxSubAccounts !== -1 && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    You have reached your sub-account limit. Upgrade your user pack to create more sub-accounts.
+                  </Alert>
+                )}
+
+                <Box sx={{ mb: 2 }}>
+                  <TextField
+                    size="small"
+                    placeholder="Search sub-accounts..."
+                    value={subAccountSearchTerm}
+                    onChange={(e) => setSubAccountSearchTerm(e.target.value)}
+                    fullWidth
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                <TableContainer component={Paper} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: 'action.hover' }}>
+                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Username</TableCell>
+                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Display Name</TableCell>
+                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Email</TableCell>
+                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Status</TableCell>
+                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Pages</TableCell>
+                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Links</TableCell>
+                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Created</TableCell>
+                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(() => {
+                        const filteredSubAccounts = subAccounts.filter(sa =>
+                          sa.username?.toLowerCase().includes(subAccountSearchTerm.toLowerCase()) ||
+                          sa.displayName?.toLowerCase().includes(subAccountSearchTerm.toLowerCase()) ||
+                          sa.email?.toLowerCase().includes(subAccountSearchTerm.toLowerCase())
+                        );
+                        if (filteredSubAccounts.length === 0) {
+                          return (
+                            <TableRow>
+                              <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                                {subAccountSearchTerm ? 'No sub-accounts found' : 'No sub-accounts yet. Create one to get started!'}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+                        return filteredSubAccounts.map((sa) => (
+                          <TableRow key={sa.userId} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                            <TableCell sx={{ py: 2 }}>@{sa.username}</TableCell>
+                            <TableCell sx={{ py: 2 }}>{sa.displayName || '-'}</TableCell>
+                            <TableCell sx={{ py: 2 }}>{sa.email || '-'}</TableCell>
+                            <TableCell sx={{ py: 2 }}>
+                              <Chip 
+                                label={sa.status} 
+                                size="small" 
+                                color={sa.status === 'active' ? 'success' : 'default'}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ py: 2 }}>{sa.pagesCount ?? '-'}</TableCell>
+                            <TableCell sx={{ py: 2 }}>{sa.linksCount ?? '-'}</TableCell>
+                            <TableCell sx={{ py: 2 }}>
+                              {new Date(sa.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell sx={{ py: 2 }}>
+                              <Button 
+                                size="small" 
+                                color="error" 
+                                startIcon={<Delete />}
+                                onClick={() => handleDeleteSubAccount(sa.userId)} 
+                                disabled={deleteSubAccount.isPending || createSubAccount.isPending}
+                              >
+                                Delete
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ));
+                      })()}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Create Sub-Account Dialog */}
+          <Dialog 
+            open={createDialogOpen} 
+            onClose={() => !createSubAccount.isPending && setCreateDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Create Sub-Account</DialogTitle>
+            <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+                <TextField
+                  label="Username"
+                  value={newSubAccount.username}
+                  onChange={(e) => setNewSubAccount({ ...newSubAccount, username: e.target.value })}
+                  placeholder="clientbrand1"
+                  required
+                  fullWidth
+                  disabled={createSubAccount.isPending}
+                  helperText="Must be unique across all users"
+                />
+                <TextField
+                  label="Display Name"
+                  value={newSubAccount.displayName}
+                  onChange={(e) => setNewSubAccount({ ...newSubAccount, displayName: e.target.value })}
+                  placeholder="Client Brand Name"
+                  fullWidth
+                  disabled={createSubAccount.isPending}
+                />
+                <TextField
+                  label="Email (optional)"
+                  type="email"
+                  value={newSubAccount.email}
+                  onChange={(e) => setNewSubAccount({ ...newSubAccount, email: e.target.value })}
+                  placeholder="client@example.com"
+                  fullWidth
+                  disabled={createSubAccount.isPending}
+                  helperText="For display purposes only"
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setCreateDialogOpen(false)} 
+                disabled={createSubAccount.isPending}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleCreateSubAccount}
+                variant="contained"
+                disabled={!newSubAccount.username || createSubAccount.isPending}
+              >
+                {createSubAccount.isPending ? 'Creating...' : 'Create'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Container>
       </AdminLayout>
     </>

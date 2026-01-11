@@ -28,6 +28,9 @@ export interface UserAuth {
   twoFactorEnabled?: boolean; // Whether user has 2FA enabled
   twoFactorEmailEnabled?: boolean; // Whether email 2FA is enabled
   twoFactorTotpEnabled?: boolean; // Whether TOTP 2FA is enabled
+  // Sub-account fields (optional, for display purposes)
+  IsSubAccount?: boolean; // Whether this is a sub-account
+  AuthDisabled?: boolean; // Whether authentication is disabled
 }
 
 /**
@@ -144,6 +147,55 @@ export interface ApiKeysResponse {
     perKey: Record<string, { minuteUsed: number; minuteRemaining: number }>;
   };
 }
+
+/**
+ * Sub-Account data
+ */
+export interface SubAccount {
+  userId: string;
+  username: string;
+  displayName?: string;
+  email?: string;
+  type?: string; // e.g., 'agency_client', 'brand', 'project'
+  status: string; // 'active', 'suspended', 'deleted'
+  createdAt: string;
+  pagesCount?: number;
+  linksCount?: number;
+}
+
+/**
+ * Sub-Accounts list response
+ */
+export interface SubAccountsResponse {
+  subAccounts: SubAccount[];
+  total: number;
+  limits?: {
+    maxSubAccounts: number;
+    usedSubAccounts: number;
+    remainingSubAccounts: number;
+    userPackType?: string | null;
+  };
+}
+
+/**
+ * Create Sub-Account request
+ */
+export interface CreateSubAccountRequest {
+  username: string;
+  email?: string;
+  displayName?: string;
+  bio?: string;
+  type?: string;
+}
+
+/**
+ * Create Sub-Account response
+ */
+export interface CreateSubAccountResponse {
+  message: string;
+  subAccount: SubAccount;
+}
+
 
 /**
  * Create API key response
