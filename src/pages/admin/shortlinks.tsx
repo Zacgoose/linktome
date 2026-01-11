@@ -232,7 +232,7 @@ export default function ShortLinksPage() {
 
   // Handle copy link
   const handleCopyLink = (slug: string) => {
-    const shortUrl = `${window.location.origin}/api/public/l?slug=${slug}`;
+    const shortUrl = `${window.location.origin}/l/${slug}`;
     navigator.clipboard.writeText(shortUrl);
     showToast('Short link copied to clipboard', 'success');
     setMenuAnchorEl(null);
