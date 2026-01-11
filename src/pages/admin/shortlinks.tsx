@@ -330,7 +330,7 @@ export default function ShortLinksPage() {
           <Box sx={{ mb: 4 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
               <Box>
-                <Typography variant="h4" fontWeight={700} gutterBottom>
+                <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
                   Short Links
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
