@@ -584,14 +584,44 @@ export default function AppearancePage() {
     return rest;
   }, [formData]);
 
-  // Show loading state if no page selected or data is loading
-  if (!currentPage || isLoading) {
+  // Show loading state only while initially loading
+  if (isLoading) {
     return (
       <AdminLayout>
         <Box display="flex" justifyContent="center" p={5}>
           <CircularProgress />
         </Box>
       </AdminLayout>
+    );
+  }
+
+  // If no current page, show empty state (dialog will handle prompting user)
+  if (!currentPage) {
+    return (
+      <>
+        <Head>
+          <title>Appearance - LinkToMe</title>
+        </Head>
+
+        <AdminLayout>
+          <Container maxWidth="xl" sx={{ py: 4 }}>
+            <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
+              Appearance
+            </Typography>
+            <Box display="flex" justifyContent="center" alignItems="center" p={8}>
+              <Typography variant="body1" color="text.secondary">
+                No page selected
+              </Typography>
+            </Box>
+          </Container>
+        </AdminLayout>
+
+        {/* No Pages Dialog */}
+        <NoPageDialog 
+          open={noPagesDialogOpen} 
+          onClose={handleNoPagesDialogClose} 
+        />
+      </>
     );
   }
 
