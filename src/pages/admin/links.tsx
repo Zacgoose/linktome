@@ -408,7 +408,7 @@ export default function LinksPage() {
   const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
   const { currentPage, pages } = usePageContext();
-  const { hasPages, noPagesDialogOpen, handleNoPagesDialogClose } = usePageValidation();
+  const { hasPages, noPagesDialogOpen, handleNoPagesDialogClose, showNoPagesDialog } = usePageValidation();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -478,6 +478,7 @@ export default function LinksPage() {
   const handleAddLink = () => {
     // Check if user has any pages first
     if (!hasPages) {
+      showNoPagesDialog();
       return;
     }
     setSelectedLink(null);
@@ -576,6 +577,7 @@ export default function LinksPage() {
   const handleAddCollection = () => {
     // Check if user has any pages first
     if (!hasPages) {
+      showNoPagesDialog();
       return;
     }
     

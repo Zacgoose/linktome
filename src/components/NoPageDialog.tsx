@@ -12,6 +12,9 @@ interface NoPageDialogProps {
   onClose: () => void;
 }
 
+// No-op function - dialog should only be closed via the button
+const NOOP = () => {};
+
 /**
  * Dialog that appears when user tries to access features that require a page
  * but they haven't created any pages yet.
@@ -20,7 +23,7 @@ export default function NoPageDialog({ open, onClose }: NoPageDialogProps) {
   return (
     <Dialog 
       open={open} 
-      onClose={() => {}} 
+      onClose={NOOP} // Prevent closing via backdrop or ESC key
       maxWidth="sm" 
       fullWidth
       disableEscapeKeyDown

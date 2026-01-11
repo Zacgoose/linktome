@@ -8,28 +8,33 @@ import { usePageContext } from '@/context/PageContext';
  */
 export function usePageValidation() {
   const router = useRouter();
-  const { pages, currentPage, isLoading } = usePageContext();
+  const { pages, isLoading } = usePageContext();
   const [noPagesDialogOpen, setNoPagesDialogOpen] = useState(false);
   const hasShownDialog = useRef(false);
 
   // Check if user has any pages when component mounts
   useEffect(() => {
-    if (!isLoading && pages.length === 0 && !currentPage && !hasShownDialog.current) {
+    if (!isLoading && pages.length === 0 && !hasShownDialog.current) {
       setNoPagesDialogOpen(true);
       hasShownDialog.current = true;
     }
-  }, [pages, currentPage, isLoading]);
+  }, [pages, isLoading]);
 
   const handleNoPagesDialogClose = () => {
     setNoPagesDialogOpen(false);
     router.push('/admin/pages');
   };
 
-  const hasPages = pages.length > 0 && currentPage !== null;
+  const showNoPagesDialog = () => {
+    setNoPagesDialogOpen(true);
+  };
+
+  const hasPages = pages.length > 0;
 
   return {
     hasPages,
     noPagesDialogOpen,
     handleNoPagesDialogClose,
+    showNoPagesDialog,
   };
 }
