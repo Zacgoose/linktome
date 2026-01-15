@@ -276,7 +276,7 @@ export default function Home() {
                     </Typography>
                   </Avatar>
                   <Typography variant="h6" fontWeight={700} gutterBottom sx={{ color: '#222' }}>
-                    @yourname
+                    yourname
                   </Typography>
                   <Typography variant="body2" sx={{ color: '#444' }}>
                     Content Creator & Influencer

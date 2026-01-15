@@ -586,7 +586,7 @@ export default function UsersPage() {
                         }
                         return filteredSubAccounts.map((sa) => (
                           <TableRow key={sa.userId} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                            <TableCell sx={{ py: 2 }}>@{sa.username}</TableCell>
+                            <TableCell sx={{ py: 2 }}>{sa.username}</TableCell>
                             <TableCell sx={{ py: 2 }}>{sa.displayName || '-'}</TableCell>
                             <TableCell sx={{ py: 2 }}>
                               <Chip 

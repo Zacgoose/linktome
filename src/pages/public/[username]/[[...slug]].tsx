@@ -652,7 +652,7 @@ const ProfileContent: React.FC<ProfileContentProps> = ({
         sx={{ color: textColor, fontFamily: bodyFontFamily, opacity: usernameOpacity }} 
         gutterBottom
       >
-        @{profile.username}
+        {profile.username}
       </Typography>
       
       {/* Bio */}
