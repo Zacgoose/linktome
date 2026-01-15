@@ -145,6 +145,7 @@ export default function UsersPage() {
       setSuccess('Sub-account created successfully!');
       setCreateDialogOpen(false);
       setNewSubAccount({ username: '', displayName: '' });
+      refreshAuth(); // Refresh to get new permissions
     },
     onError: (err: unknown) => {
       if (typeof err === 'string') setError(err);
@@ -157,6 +158,7 @@ export default function UsersPage() {
   const deleteSubAccount = useApiPost({
     onSuccess: () => {
       setSuccess('Sub-account deleted successfully!');
+      refreshAuth(); // Refresh to get new permissions
     },
     onError: (err: unknown) => {
       if (typeof err === 'string') setError(err);
