@@ -95,7 +95,6 @@ export default function UsersPage() {
   const [newSubAccount, setNewSubAccount] = useState<CreateSubAccountRequest>({
     username: '',
     displayName: '',
-    email: '',
   });
   
   const inviteRole = 'user_manager';
@@ -145,7 +144,7 @@ export default function UsersPage() {
     onSuccess: () => {
       setSuccess('Sub-account created successfully!');
       setCreateDialogOpen(false);
-      setNewSubAccount({ username: '', displayName: '', email: '' });
+      setNewSubAccount({ username: '', displayName: '' });
     },
     onError: (err: unknown) => {
       if (typeof err === 'string') setError(err);
@@ -561,7 +560,6 @@ export default function UsersPage() {
                       <TableRow sx={{ bgcolor: 'action.hover' }}>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Username</TableCell>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Display Name</TableCell>
-                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Email</TableCell>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Status</TableCell>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Pages</TableCell>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Links</TableCell>
@@ -573,13 +571,12 @@ export default function UsersPage() {
                       {(() => {
                         const filteredSubAccounts = subAccounts.filter(sa =>
                           sa.username?.toLowerCase().includes(subAccountSearchTerm.toLowerCase()) ||
-                          sa.displayName?.toLowerCase().includes(subAccountSearchTerm.toLowerCase()) ||
-                          sa.email?.toLowerCase().includes(subAccountSearchTerm.toLowerCase())
+                          sa.displayName?.toLowerCase().includes(subAccountSearchTerm.toLowerCase())
                         );
                         if (filteredSubAccounts.length === 0) {
                           return (
                             <TableRow>
-                              <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                              <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                                 {subAccountSearchTerm ? 'No sub-accounts found' : 'No sub-accounts yet. Create one to get started!'}
                               </TableCell>
                             </TableRow>
@@ -589,7 +586,6 @@ export default function UsersPage() {
                           <TableRow key={sa.userId} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
                             <TableCell sx={{ py: 2 }}>@{sa.username}</TableCell>
                             <TableCell sx={{ py: 2 }}>{sa.displayName || '-'}</TableCell>
-                            <TableCell sx={{ py: 2 }}>{sa.email || '-'}</TableCell>
                             <TableCell sx={{ py: 2 }}>
                               <Chip 
                                 label={sa.status} 
@@ -633,17 +629,9 @@ export default function UsersPage() {
             <DialogTitle>Create Sub-Account</DialogTitle>
             <DialogContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                <TextField
-                  label="Email"
-                  type="email"
-                  value={newSubAccount.email}
-                  onChange={(e) => setNewSubAccount({ ...newSubAccount, email: e.target.value })}
-                  placeholder="client@example.com"
-                  required
-                  fullWidth
-                  disabled={createSubAccount.isPending}
-                  helperText="Must be unique across all users"
-                />
+                <Alert severity="info">
+                  Notifications for sub-accounts will be sent to your parent account email address.
+                </Alert>
                 <TextField
                   label="Username"
                   value={newSubAccount.username}
@@ -674,7 +662,7 @@ export default function UsersPage() {
               <Button 
                 onClick={handleCreateSubAccount}
                 variant="contained"
-                disabled={!newSubAccount.username || !newSubAccount.email || createSubAccount.isPending}
+                disabled={!newSubAccount.username || createSubAccount.isPending}
               >
                 {createSubAccount.isPending ? 'Creating...' : 'Create'}
               </Button>

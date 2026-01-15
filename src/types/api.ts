@@ -176,7 +176,6 @@ export interface SubAccount {
   userId: string;
   username: string;
   displayName?: string;
-  email?: string;
   type?: string; // e.g., 'client', 'brand', 'other'
   status: string; // 'active', 'suspended', 'deleted'
   createdAt: string;
@@ -203,7 +202,6 @@ export interface SubAccountsResponse {
  * Create Sub-Account request
  */
 export interface CreateSubAccountRequest {
-  email: string; // Required as per API
   username: string;
   displayName?: string;
   type?: string; // 'client' | 'brand' | 'other'
