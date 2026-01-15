@@ -149,6 +149,27 @@ export interface ApiKeysResponse {
 }
 
 /**
+ * User Pack Purchase request
+ */
+export interface PurchaseUserPackRequest {
+  packType: 'starter' | 'business' | 'enterprise' | 'none';
+  billingCycle: 'monthly' | 'annual';
+  customLimit?: number; // Optional: Only for enterprise pack
+}
+
+/**
+ * User Pack Purchase response
+ */
+export interface PurchaseUserPackResponse {
+  userId: string;
+  packType: string;
+  packLimit: number;
+  role: string;
+  expiresAt: string | null;
+  message: string;
+}
+
+/**
  * Sub-Account data
  */
 export interface SubAccount {
@@ -156,7 +177,7 @@ export interface SubAccount {
   username: string;
   displayName?: string;
   email?: string;
-  type?: string; // e.g., 'agency_client', 'brand', 'project'
+  type?: string; // e.g., 'client', 'brand', 'other'
   status: string; // 'active', 'suspended', 'deleted'
   createdAt: string;
   pagesCount?: number;
@@ -174,6 +195,7 @@ export interface SubAccountsResponse {
     usedSubAccounts: number;
     remainingSubAccounts: number;
     userPackType?: string | null;
+    userPackExpired?: boolean;
   };
 }
 
@@ -181,11 +203,10 @@ export interface SubAccountsResponse {
  * Create Sub-Account request
  */
 export interface CreateSubAccountRequest {
+  email: string; // Required as per API
   username: string;
-  email?: string;
   displayName?: string;
-  bio?: string;
-  type?: string;
+  type?: string; // 'client' | 'brand' | 'other'
 }
 
 /**

@@ -24,12 +24,17 @@ import {
   DialogContent,
   DialogActions,
   Chip,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  LinearProgress,
 } from '@mui/material';
-import { Search, Add, Delete } from '@mui/icons-material';
+import { Search, Add, Delete, ShoppingCart } from '@mui/icons-material';
 import AdminLayout from '../../layouts/AdminLayout';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useState as useReactState } from 'react';
-import type { SubAccountsResponse, CreateSubAccountRequest } from '@/types/api';
+import type { SubAccountsResponse, CreateSubAccountRequest, PurchaseUserPackRequest, PurchaseUserPackResponse } from '@/types/api';
 
 
 interface UserManagerRelationship {
@@ -78,6 +83,13 @@ export default function UsersPage() {
   const [manageeSearchTerm, setManageeSearchTerm] = useState('');
   const [subAccountSearchTerm, setSubAccountSearchTerm] = useState('');
   
+  // User pack management state
+  const [packDialogOpen, setPackDialogOpen] = useState(false);
+  const [userPackRequest, setUserPackRequest] = useState<PurchaseUserPackRequest>({
+    packType: 'starter',
+    billingCycle: 'monthly',
+  });
+  
   // Sub-account creation dialog state
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newSubAccount, setNewSubAccount] = useState<CreateSubAccountRequest>({
@@ -111,6 +123,21 @@ export default function UsersPage() {
       else if (err instanceof Error) setError(err.message);
       else setError('Failed to perform action');
     },
+  });
+
+  // User pack mutation
+  const purchaseUserPack = useApiPost<PurchaseUserPackResponse>({
+    onSuccess: (data) => {
+      setSuccess(data.message);
+      setPackDialogOpen(false);
+      refreshAuth(); // Refresh to get new permissions
+    },
+    onError: (err: unknown) => {
+      if (typeof err === 'string') setError(err);
+      else if (err instanceof Error) setError(err.message);
+      else setError('Failed to purchase user pack');
+    },
+    relatedQueryKeys: ['admin-sub-accounts'],
   });
 
   // Sub-account mutations
@@ -176,12 +203,21 @@ export default function UsersPage() {
   };
 
   // --- Sub-Account Handlers ---
+  const handlePurchaseUserPack = () => {
+    setError('');
+    setSuccess('');
+    purchaseUserPack.mutate({
+      url: 'admin/PurchaseUserPack',
+      data: userPackRequest as unknown as Record<string, unknown>,
+    });
+  };
+
   const handleCreateSubAccount = () => {
     setError('');
     setSuccess('');
     createSubAccount.mutate({
       url: 'admin/CreateSubAccount',
-      data: newSubAccount,
+      data: newSubAccount as unknown as Record<string, unknown>,
     });
   };
 
@@ -380,6 +416,84 @@ export default function UsersPage() {
             </CardContent>
           </Card>
 
+          {/* User Pack Management Section */}
+          {!user?.IsSubAccount && user?.permissions?.includes('write:subscription') && (
+            <Card sx={{ mt: 4 }}>
+              <CardContent sx={{ p: 4 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                  <Box>
+                    <Typography variant="h6" fontWeight={600} color="text.primary">
+                      Agency User Packs
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      Purchase a user pack to create and manage sub-accounts
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    startIcon={<ShoppingCart />}
+                    onClick={() => setPackDialogOpen(true)}
+                    disabled={purchaseUserPack.isPending}
+                  >
+                    {canManageSubAccounts ? 'Manage Pack' : 'Purchase Pack'}
+                  </Button>
+                </Box>
+
+                {canManageSubAccounts && subAccountLimits && (
+                  <Box>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                      <Typography variant="body2" color="text.secondary">
+                        Current Pack: <strong>{subAccountLimits.userPackType || 'None'}</strong>
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {subAccountLimits.usedSubAccounts} / {subAccountLimits.maxSubAccounts === -1 ? '∞' : subAccountLimits.maxSubAccounts} sub-accounts
+                      </Typography>
+                    </Box>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={
+                        subAccountLimits.maxSubAccounts === -1 
+                          ? 0 
+                          : (subAccountLimits.usedSubAccounts / subAccountLimits.maxSubAccounts) * 100
+                      }
+                      sx={{ height: 8, borderRadius: 1 }}
+                    />
+                    {subAccountLimits.userPackExpired && (
+                      <Alert severity="error" sx={{ mt: 2 }}>
+                        Your user pack has expired. Please renew to create new sub-accounts.
+                      </Alert>
+                    )}
+                  </Box>
+                )}
+
+                {!canManageSubAccounts && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Choose a user pack to get started:
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap' }}>
+                      <Paper sx={{ p: 2, flex: '1 1 200px', border: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="subtitle2" fontWeight={600}>Starter</Typography>
+                        <Typography variant="h6" color="primary" sx={{ my: 1 }}>3 Sub-Accounts</Typography>
+                        <Typography variant="body2" color="text.secondary">$15/month</Typography>
+                      </Paper>
+                      <Paper sx={{ p: 2, flex: '1 1 200px', border: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="subtitle2" fontWeight={600}>Business</Typography>
+                        <Typography variant="h6" color="primary" sx={{ my: 1 }}>10 Sub-Accounts</Typography>
+                        <Typography variant="body2" color="text.secondary">$50/month</Typography>
+                      </Paper>
+                      <Paper sx={{ p: 2, flex: '1 1 200px', border: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="subtitle2" fontWeight={600}>Enterprise</Typography>
+                        <Typography variant="h6" color="primary" sx={{ my: 1 }}>Custom Limit</Typography>
+                        <Typography variant="body2" color="text.secondary">Contact us</Typography>
+                      </Paper>
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Sub-Accounts Section */}
           {canManageSubAccounts && (
             <Card sx={{ mt: 4 }}>
@@ -403,6 +517,7 @@ export default function UsersPage() {
                     disabled={
                       createSubAccount.isPending ||
                       deleteSubAccount.isPending ||
+                      subAccountLimits?.userPackExpired ||
                       (subAccountLimits?.maxSubAccounts !== -1 && 
                        (subAccountLimits?.usedSubAccounts || 0) >= (subAccountLimits?.maxSubAccounts || 0))
                     }
@@ -411,9 +526,15 @@ export default function UsersPage() {
                   </Button>
                 </Box>
 
-                {subAccountLimits && subAccountLimits.remainingSubAccounts === 0 && subAccountLimits.maxSubAccounts !== -1 && (
+                {subAccountLimits && subAccountLimits.remainingSubAccounts === 0 && subAccountLimits.maxSubAccounts !== -1 && !subAccountLimits.userPackExpired && (
                   <Alert severity="warning" sx={{ mb: 2 }}>
                     You have reached your sub-account limit. Upgrade your user pack to create more sub-accounts.
+                  </Alert>
+                )}
+
+                {subAccountLimits?.userPackExpired && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    Your user pack has expired. Please renew to create new sub-accounts. Existing sub-accounts remain accessible.
                   </Alert>
                 )}
 
@@ -513,32 +634,33 @@ export default function UsersPage() {
             <DialogContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
                 <TextField
-                  label="Username"
-                  value={newSubAccount.username}
-                  onChange={(e) => setNewSubAccount({ ...newSubAccount, username: e.target.value })}
-                  placeholder="clientbrand1"
+                  label="Email"
+                  type="email"
+                  value={newSubAccount.email}
+                  onChange={(e) => setNewSubAccount({ ...newSubAccount, email: e.target.value })}
+                  placeholder="client@example.com"
                   required
                   fullWidth
                   disabled={createSubAccount.isPending}
                   helperText="Must be unique across all users"
                 />
                 <TextField
-                  label="Display Name"
+                  label="Username"
+                  value={newSubAccount.username}
+                  onChange={(e) => setNewSubAccount({ ...newSubAccount, username: e.target.value })}
+                  placeholder="client-brand"
+                  required
+                  fullWidth
+                  disabled={createSubAccount.isPending}
+                  helperText="3-30 characters, alphanumeric, hyphens, and underscores only"
+                />
+                <TextField
+                  label="Display Name (optional)"
                   value={newSubAccount.displayName}
                   onChange={(e) => setNewSubAccount({ ...newSubAccount, displayName: e.target.value })}
                   placeholder="Client Brand Name"
                   fullWidth
                   disabled={createSubAccount.isPending}
-                />
-                <TextField
-                  label="Email (optional)"
-                  type="email"
-                  value={newSubAccount.email}
-                  onChange={(e) => setNewSubAccount({ ...newSubAccount, email: e.target.value })}
-                  placeholder="client@example.com"
-                  fullWidth
-                  disabled={createSubAccount.isPending}
-                  helperText="For display purposes only"
                 />
               </Box>
             </DialogContent>
@@ -552,9 +674,105 @@ export default function UsersPage() {
               <Button 
                 onClick={handleCreateSubAccount}
                 variant="contained"
-                disabled={!newSubAccount.username || createSubAccount.isPending}
+                disabled={!newSubAccount.username || !newSubAccount.email || createSubAccount.isPending}
               >
                 {createSubAccount.isPending ? 'Creating...' : 'Create'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Purchase User Pack Dialog */}
+          <Dialog 
+            open={packDialogOpen} 
+            onClose={() => !purchaseUserPack.isPending && setPackDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              {canManageSubAccounts ? 'Manage User Pack' : 'Purchase User Pack'}
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+                <Alert severity="info">
+                  {canManageSubAccounts 
+                    ? 'Upgrade, downgrade, or cancel your user pack. You must delete all sub-accounts before cancelling.'
+                    : 'Purchase a user pack to create and manage sub-accounts. Your account will be upgraded to Agency Admin.'}
+                </Alert>
+                
+                <FormControl fullWidth>
+                  <InputLabel>Pack Type</InputLabel>
+                  <Select
+                    value={userPackRequest.packType}
+                    label="Pack Type"
+                    onChange={(e) => setUserPackRequest({ 
+                      ...userPackRequest, 
+                      packType: e.target.value as any,
+                      customLimit: e.target.value === 'enterprise' ? userPackRequest.customLimit : undefined
+                    })}
+                    disabled={purchaseUserPack.isPending}
+                  >
+                    <MenuItem value="starter">Starter (3 sub-accounts) - $15/mo</MenuItem>
+                    <MenuItem value="business">Business (10 sub-accounts) - $50/mo</MenuItem>
+                    <MenuItem value="enterprise">Enterprise (Custom limit) - Contact us</MenuItem>
+                    {canManageSubAccounts && (
+                      <MenuItem value="none">Cancel Pack</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth>
+                  <InputLabel>Billing Cycle</InputLabel>
+                  <Select
+                    value={userPackRequest.billingCycle}
+                    label="Billing Cycle"
+                    onChange={(e) => setUserPackRequest({ 
+                      ...userPackRequest, 
+                      billingCycle: e.target.value as any 
+                    })}
+                    disabled={purchaseUserPack.isPending || userPackRequest.packType === 'none'}
+                  >
+                    <MenuItem value="monthly">Monthly</MenuItem>
+                    <MenuItem value="annual">Annual (Save 15%)</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {userPackRequest.packType === 'enterprise' && (
+                  <TextField
+                    label="Custom Limit"
+                    type="number"
+                    value={userPackRequest.customLimit || ''}
+                    onChange={(e) => setUserPackRequest({ 
+                      ...userPackRequest, 
+                      customLimit: parseInt(e.target.value) || undefined 
+                    })}
+                    placeholder="Enter number of sub-accounts"
+                    fullWidth
+                    disabled={purchaseUserPack.isPending}
+                    helperText="Enter -1 for unlimited sub-accounts"
+                  />
+                )}
+
+                {userPackRequest.packType === 'none' && (
+                  <Alert severity="warning">
+                    Cancelling your user pack will downgrade your account to a regular user. You must delete all sub-accounts before cancelling.
+                  </Alert>
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setPackDialogOpen(false)} 
+                disabled={purchaseUserPack.isPending}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handlePurchaseUserPack}
+                variant="contained"
+                color={userPackRequest.packType === 'none' ? 'error' : 'primary'}
+                disabled={purchaseUserPack.isPending}
+              >
+                {purchaseUserPack.isPending ? 'Processing...' : userPackRequest.packType === 'none' ? 'Cancel Pack' : 'Purchase'}
               </Button>
             </DialogActions>
           </Dialog>
