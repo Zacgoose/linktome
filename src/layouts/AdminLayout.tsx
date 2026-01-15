@@ -146,6 +146,43 @@ const menuItems: MenuItem[] = [
     }
   }, [user, selectedContext, setSelectedContext, managedUsers, subAccounts]);
 
+  // Redirect to dashboard if current page is not accessible after context switch
+  useEffect(() => {
+    if (!user || !contextPermissions || contextPermissions.length === 0) {
+      return;
+    }
+
+    // Find the current page's menu item
+    const currentMenuItem = menuItems.find(item => item.path === router.pathname);
+    
+    if (!currentMenuItem) {
+      // Not a menu page, skip check
+      return;
+    }
+
+    // Check if user has permissions for current page
+    let hasPermission = true;
+
+    // Check role requirements
+    if (currentMenuItem.requiredRoles && currentMenuItem.requiredRoles.length > 0) {
+      if (!currentMenuItem.requiredRoles.some((role) => contextRoles.includes(role))) {
+        hasPermission = false;
+      }
+    }
+
+    // Check permission requirements
+    if (currentMenuItem.requiredPermissions && currentMenuItem.requiredPermissions.length > 0) {
+      if (!currentMenuItem.requiredPermissions.every((perm) => contextPermissions.includes(perm))) {
+        hasPermission = false;
+      }
+    }
+
+    // Redirect to dashboard if no permission
+    if (!hasPermission) {
+      router.push('/admin/dashboard');
+    }
+  }, [selectedContext, contextPermissions, contextRoles, router.pathname, user]);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !user) {
