@@ -91,7 +91,7 @@ export default function Dashboard() {
                       Welcome back, {profile.displayName}!
                     </Typography>
                     <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                      @{profile.username}
+                      {profile.username}
                     </Typography>
                   </Box>
                 </Box>
