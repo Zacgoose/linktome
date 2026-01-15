@@ -48,6 +48,21 @@ export const RbacProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  // Sub-account context (agency admin users)
+  if (
+    selectedContext !== 'user' &&
+    user?.subAccounts && Array.isArray(user.subAccounts)
+  ) {
+    const subAccount = user.subAccounts.find((sa) => sa.userId === selectedContext && sa.status === 'active');
+    if (subAccount) {
+      contextRoles = [subAccount.role || 'sub_account_user'];
+      // Use permissions from the subAccounts entry (from JWT)
+      contextPermissions = Array.isArray(subAccount.permissions) ? subAccount.permissions : [];
+      // Sub-accounts inherit parent's tier
+      contextTier = user.tier;
+    }
+  }
+
   return (
     <RbacContext.Provider value={{ selectedContext, setSelectedContext, contextRoles, contextPermissions, contextTier }}>
       {children}

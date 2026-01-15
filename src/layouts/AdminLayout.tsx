@@ -130,18 +130,21 @@ const menuItems: MenuItem[] = [
   const { selectedContext, setSelectedContext, contextRoles, contextPermissions } = useRbacContext();
   // managedUsers are already filtered for state === 'accepted' in AuthProvider
   const managedUsers = allManagedUsers || [];
+  // Sub-accounts from JWT (for agency admin users)
+  const subAccounts = user?.subAccounts?.filter(sa => sa.status === 'active') || [];
   const [accountSearchTerm, setAccountSearchTerm] = useState('');
 
-  // If user has no managed users, ensure context is 'user'
+  // If user has no managed users or sub-accounts, ensure context is 'user'
   useEffect(() => {
     if (
       user &&
       (!managedUsers || managedUsers.length === 0) &&
+      (!subAccounts || subAccounts.length === 0) &&
       selectedContext !== 'user'
     ) {
       setSelectedContext('user');
     }
-  }, [user, selectedContext, setSelectedContext, managedUsers]);
+  }, [user, selectedContext, setSelectedContext, managedUsers, subAccounts]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -239,8 +242,8 @@ const menuItems: MenuItem[] = [
             <IconButton sx={{ mr: 1 }} onClick={() => setUiTheme(uiTheme === 'light' ? 'dark' : 'light')} color="inherit" aria-label="Toggle UI theme">
               {uiTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
             </IconButton>
-            {/* Context Switcher: Show if user has managed users */}
-            {user && (managedUsers && managedUsers.length > 0) && (
+            {/* Context Switcher: Show if user has managed users or sub-accounts */}
+            {user && ((managedUsers && managedUsers.length > 0) || (subAccounts && subAccounts.length > 0)) && (
               <FormControl size="small" sx={{ minWidth: 220, mr: 2 }}>
                 <InputLabel id="context-switch-label">Accounts</InputLabel>
                 <Select
@@ -288,6 +291,21 @@ const menuItems: MenuItem[] = [
                       ...filteredUsers.map((um) => (
                         <MuiMenuItem key={um.UserId} value={um.UserId}>
                           Managed User: {um.DisplayName}
+                        </MuiMenuItem>
+                      )),
+                    ];
+                  })()}
+                  {subAccounts && subAccounts.length > 0 && (() => {
+                    const filteredSubAccounts = subAccounts.filter(sa => 
+                      (sa.displayName && sa.displayName.toLowerCase().includes(accountSearchTerm.toLowerCase())) ||
+                      (sa.username && sa.username.toLowerCase().includes(accountSearchTerm.toLowerCase())) ||
+                      (sa.userId && sa.userId.toLowerCase().includes(accountSearchTerm.toLowerCase()))
+                    );
+                    return [
+                      <ListSubheader key="subaccounts-header">Sub-Accounts</ListSubheader>,
+                      ...filteredSubAccounts.map((sa) => (
+                        <MuiMenuItem key={sa.userId} value={sa.userId}>
+                          {sa.displayName || sa.username}
                         </MuiMenuItem>
                       )),
                     ];

@@ -65,10 +65,26 @@ export const AuthProvider: React.FC<{ children: ReactNode; queryClient: QueryCli
             updated: um.updated,
           }))
         : [],
+      subAccounts: Array.isArray(user.subAccounts)
+        ? user.subAccounts.map((sa: any) => ({
+            userId: String(sa.UserId || sa.userId),
+            username: String(sa.username || ''),
+            displayName: String(sa.displayName || ''),
+            role: sa.role,
+            permissions: Array.isArray(sa.permissions) ? sa.permissions : [],
+            type: sa.type,
+            status: sa.status,
+            pagesCount: sa.pagesCount,
+            linksCount: sa.linksCount,
+            createdAt: sa.createdAt,
+          }))
+        : [],
       tier: user.tier, // Include tier from backend
       twoFactorEnabled: Boolean(user.twoFactorEnabled),
       twoFactorEmailEnabled: Boolean(user.twoFactorEmailEnabled),
       twoFactorTotpEnabled: Boolean(user.twoFactorTotpEnabled),
+      IsSubAccount: Boolean(user.IsSubAccount),
+      AuthDisabled: Boolean(user.AuthDisabled),
     };
   }
 
