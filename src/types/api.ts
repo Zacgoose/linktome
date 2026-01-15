@@ -24,6 +24,7 @@ export interface UserAuth {
   roles: string[];
   permissions: string[];
   userManagements: UserManagement[];
+  subAccounts?: SubAccount[]; // Array of sub-accounts for agency admin users
   tier?: UserTier; // User's subscription tier
   twoFactorEnabled?: boolean; // Whether user has 2FA enabled
   twoFactorEmailEnabled?: boolean; // Whether email 2FA is enabled
@@ -176,9 +177,11 @@ export interface SubAccount {
   userId: string;
   username: string;
   displayName?: string;
+  role?: string; // Sub-account role (e.g., 'sub_account_user')
+  permissions?: string[]; // Sub-account permissions array
   type?: string; // e.g., 'client', 'brand', 'other'
   status: string; // 'active', 'suspended', 'deleted'
-  createdAt: string;
+  createdAt?: string;
   pagesCount?: number;
   linksCount?: number;
 }
