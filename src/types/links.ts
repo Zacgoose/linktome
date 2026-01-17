@@ -470,7 +470,7 @@ export const DEFAULT_APPEARANCE: AppearanceData = {
   header: {
     profileImageLayout: 'classic',
     titleStyle: 'text',
-    displayName: '@username',
+    displayName: 'username',
   },
   socialIcons: [],
   wallpaper: {

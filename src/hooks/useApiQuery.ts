@@ -64,7 +64,15 @@ const buildMergedParams = (
   
   // Add UserId to params when context is not 'user' and user has permission
   if (selectedContext !== 'user' && user) {
+    // Check if selected context is a managed user
     if (user.userManagements?.find((um: { UserId: string; state: string }) => um.UserId === selectedContext && um.state === 'accepted')) {
+      // Only add to params if not already present
+      if (!mergedParams.UserId) {
+        mergedParams.UserId = selectedContext;
+      }
+    }
+    // Check if selected context is a sub-account
+    else if (user.subAccounts?.find((sa: { userId: string; status: string }) => sa.userId === selectedContext && sa.status === 'active')) {
       // Only add to params if not already present
       if (!mergedParams.UserId) {
         mergedParams.UserId = selectedContext;

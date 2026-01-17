@@ -24,10 +24,14 @@ export interface UserAuth {
   roles: string[];
   permissions: string[];
   userManagements: UserManagement[];
+  subAccounts?: SubAccount[]; // Array of sub-accounts for agency admin users
   tier?: UserTier; // User's subscription tier
   twoFactorEnabled?: boolean; // Whether user has 2FA enabled
   twoFactorEmailEnabled?: boolean; // Whether email 2FA is enabled
   twoFactorTotpEnabled?: boolean; // Whether TOTP 2FA is enabled
+  // Sub-account fields (optional, for display purposes)
+  IsSubAccount?: boolean; // Whether this is a sub-account
+  AuthDisabled?: boolean; // Whether authentication is disabled
 }
 
 /**
@@ -144,6 +148,76 @@ export interface ApiKeysResponse {
     perKey: Record<string, { minuteUsed: number; minuteRemaining: number }>;
   };
 }
+
+/**
+ * User Pack Purchase request
+ */
+export interface PurchaseUserPackRequest {
+  packType: 'starter' | 'business' | 'enterprise' | 'none';
+  billingCycle: 'monthly' | 'annual';
+  customLimit?: number; // Optional: Only for enterprise pack
+}
+
+/**
+ * User Pack Purchase response
+ */
+export interface PurchaseUserPackResponse {
+  userId: string;
+  packType: string;
+  packLimit: number;
+  role: string;
+  expiresAt: string | null;
+  message: string;
+}
+
+/**
+ * Sub-Account data
+ */
+export interface SubAccount {
+  userId: string;
+  username: string;
+  displayName?: string;
+  role?: string; // Sub-account role (e.g., 'sub_account_user')
+  permissions?: string[]; // Sub-account permissions array
+  type?: string; // e.g., 'client', 'brand', 'other'
+  status: string; // 'active', 'suspended', 'deleted'
+  createdAt?: string;
+  pagesCount?: number;
+  linksCount?: number;
+}
+
+/**
+ * Sub-Accounts list response
+ */
+export interface SubAccountsResponse {
+  subAccounts: SubAccount[];
+  total: number;
+  limits?: {
+    maxSubAccounts: number;
+    usedSubAccounts: number;
+    remainingSubAccounts: number;
+    userPackType?: string | null;
+    userPackExpired?: boolean;
+  };
+}
+
+/**
+ * Create Sub-Account request
+ */
+export interface CreateSubAccountRequest {
+  username: string;
+  displayName?: string;
+  type?: string; // 'client' | 'brand' | 'other'
+}
+
+/**
+ * Create Sub-Account response
+ */
+export interface CreateSubAccountResponse {
+  message: string;
+  subAccount: SubAccount;
+}
+
 
 /**
  * Create API key response
