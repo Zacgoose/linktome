@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Head from 'next/head';
 import {
   Box,
@@ -38,6 +38,15 @@ import { Timer, ListTimersResponse, RunTimerResponse, RunTimerRequest } from '@/
 import { useToast } from '@/context/ToastContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
+// Timer status constants
+const TIMER_STATUS = {
+  COMPLETED: 'completed',
+  RUNNING: 'running',
+  STARTED: 'started',
+  FAILED: 'failed',
+  NOT_YET_RUN: 'not yet run',
+} as const;
+
 export default function TimersPage() {
   const { showToast } = useToast();
   const [runDialogOpen, setRunDialogOpen] = useState(false);
@@ -60,7 +69,7 @@ export default function TimersPage() {
     },
   });
 
-  const handleRunTimer = (timer: Timer) => {
+  const showRunTimerDialog = (timer: Timer) => {
     setSelectedTimer(timer);
     setRunDialogOpen(true);
   };
@@ -82,15 +91,16 @@ export default function TimersPage() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
+      case TIMER_STATUS.COMPLETED:
         return 'success';
-      case 'running':
-      case 'started':
+      case TIMER_STATUS.RUNNING:
+      case TIMER_STATUS.STARTED:
         return 'info';
-      case 'failed':
+      case TIMER_STATUS.FAILED:
         return 'error';
-      case 'not yet run':
+      case TIMER_STATUS.NOT_YET_RUN:
         return 'default';
       default:
         return 'warning';
@@ -98,13 +108,14 @@ export default function TimersPage() {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
+      case TIMER_STATUS.COMPLETED:
         return <CheckCircleIcon fontSize="small" />;
-      case 'running':
-      case 'started':
+      case TIMER_STATUS.RUNNING:
+      case TIMER_STATUS.STARTED:
         return <CircularProgress size={16} />;
-      case 'failed':
+      case TIMER_STATUS.FAILED:
         return <ErrorIcon fontSize="small" />;
       default:
         return <ScheduleIcon fontSize="small" />;
@@ -125,6 +136,21 @@ export default function TimersPage() {
     const at = formatDate(timer.manuallyTriggeredAt);
     return `Last triggered by ${by} (${role}) at ${at}`;
   };
+
+  // Memoized summary statistics
+  const timerStats = useMemo(() => {
+    if (!data?.timers) {
+      return { total: 0, running: 0, failed: 0, system: 0 };
+    }
+    return {
+      total: data.count,
+      running: data.timers.filter(
+        (t) => t.status.toLowerCase() === TIMER_STATUS.RUNNING || t.status.toLowerCase() === TIMER_STATUS.STARTED
+      ).length,
+      failed: data.timers.filter((t) => t.status.toLowerCase() === TIMER_STATUS.FAILED).length,
+      system: data.timers.filter((t) => t.isSystem).length,
+    };
+  }, [data]);
 
   return (
     <ProtectedRoute requiredPermissions={['read:siteadmin']}>
@@ -251,10 +277,10 @@ export default function TimersPage() {
                             <Tooltip title="Run Now">
                               <IconButton
                                 color="primary"
-                                onClick={() => handleRunTimer(timer)}
+                                onClick={() => showRunTimerDialog(timer)}
                                 disabled={
-                                  timer.status.toLowerCase() === 'running' ||
-                                  timer.status.toLowerCase() === 'started' ||
+                                  timer.status.toLowerCase() === TIMER_STATUS.RUNNING ||
+                                  timer.status.toLowerCase() === TIMER_STATUS.STARTED ||
                                   runTimerMutation.isPending
                                 }
                                 size="small"
@@ -280,7 +306,7 @@ export default function TimersPage() {
                   Total Timers
                 </Typography>
                 <Typography variant="h5" fontWeight={600}>
-                  {data.count}
+                  {timerStats.total}
                 </Typography>
               </Paper>
               <Paper sx={{ p: 2, flexGrow: 1 }}>
@@ -288,11 +314,7 @@ export default function TimersPage() {
                   Running
                 </Typography>
                 <Typography variant="h5" fontWeight={600} color="info.main">
-                  {
-                    data.timers.filter(
-                      (t) => t.status.toLowerCase() === 'running' || t.status.toLowerCase() === 'started'
-                    ).length
-                  }
+                  {timerStats.running}
                 </Typography>
               </Paper>
               <Paper sx={{ p: 2, flexGrow: 1 }}>
@@ -300,7 +322,7 @@ export default function TimersPage() {
                   Failed
                 </Typography>
                 <Typography variant="h5" fontWeight={600} color="error.main">
-                  {data.timers.filter((t) => t.status.toLowerCase() === 'failed').length}
+                  {timerStats.failed}
                 </Typography>
               </Paper>
               <Paper sx={{ p: 2, flexGrow: 1 }}>
@@ -308,7 +330,7 @@ export default function TimersPage() {
                   System Timers
                 </Typography>
                 <Typography variant="h5" fontWeight={600}>
-                  {data.timers.filter((t) => t.isSystem).length}
+                  {timerStats.system}
                 </Typography>
               </Paper>
             </Box>
