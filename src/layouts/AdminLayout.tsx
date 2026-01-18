@@ -33,6 +33,7 @@ import {
   Settings as SettingsIcon,
   CardMembership as SubscriptionIcon,
   Pages as PagesIcon,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useAuthContext } from '@/providers/AuthProvider';
@@ -120,6 +121,12 @@ const menuItems: MenuItem[] = [
     icon: <Key />,
     path: '/admin/apiauth',
     requiredPermissions: ['read:apiauth'],
+  },
+  {
+    text: 'Site Admin',
+    icon: <AdminIcon />,
+    path: '/admin/siteadmin/timers',
+    requiredPermissions: ['read:siteadmin'],
   }
 ];
 
