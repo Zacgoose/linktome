@@ -43,14 +43,14 @@ export default function TimersPage() {
   const [selectedTimer, setSelectedTimer] = useState<Timer | null>(null);
 
   const { data, isLoading, refetch } = useApiGet<ListTimersResponse>({
-    url: 'siteadmin/timers',
-    queryKey: 'siteadmin-timers',
+    url: 'siteadmin/listtimers',
+    queryKey: 'siteadmin-listtimers',
     staleTime: 10000,
     refetchOnWindowFocus: true,
   });
 
   const runTimerMutation = useApiPost<RunTimerResponse, RunTimerRequest>({
-    relatedQueryKeys: ['siteadmin-timers'],
+    relatedQueryKeys: ['siteadmin-listtimers'],
     onSuccess: (data) => {
       showToast(`Timer ${data.command} executed successfully`, 'success');
       setRunDialogOpen(false);
@@ -123,7 +123,7 @@ export default function TimersPage() {
           {/* Header */}
           <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+              <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
                 Timer Management
               </Typography>
               <Typography variant="body1" color="text.secondary">
