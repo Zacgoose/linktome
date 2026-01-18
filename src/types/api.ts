@@ -424,3 +424,56 @@ export interface ShortLinkAnalyticsResponse {
   topReferrers?: TopReferrer[];
   recentRedirects?: RecentRedirect[];
 }
+
+/**
+ * Site Admin Timer data
+ */
+export interface Timer {
+  id: string;
+  command: string;
+  description: string;
+  cron: string;
+  priority: number;
+  runOnProcessor: string;
+  isSystem: boolean;
+  status: string;
+  lastOccurrence: string | null;
+  nextOccurrence: string | null;
+  orchestratorId: string | null;
+  errorMsg: string | null;
+  manuallyTriggered: boolean;
+  manuallyTriggeredBy: string | null;
+  manuallyTriggeredByRole: string | null;
+  manuallyTriggeredAt: string | null;
+}
+
+/**
+ * Site Admin List Timers response
+ */
+export interface ListTimersResponse {
+  success: boolean;
+  timers: Timer[];
+  count: number;
+}
+
+/**
+ * Site Admin Run Timer request
+ */
+export interface RunTimerRequest {
+  timerId: string;
+}
+
+/**
+ * Site Admin Run Timer response
+ */
+export interface RunTimerResponse {
+  success: boolean;
+  message: string;
+  timerId: string;
+  command: string;
+  status: string;
+  orchestratorId: string | null;
+  executedAt: string;
+  executedBy: string;
+  executedByRole: string;
+}

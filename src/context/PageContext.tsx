@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useRouter } from 'next/router';
 import { Page } from '@/types/pages';
 import { useApiGet } from '@/hooks/useApiQuery';
+import { useRbacContext } from '@/context/RbacContext';
 
 interface PageContextValue {
   currentPage: Page | null;
@@ -9,6 +10,7 @@ interface PageContextValue {
   isLoading: boolean;
   setCurrentPage: (page: Page | null) => void;
   refetchPages: () => void;
+  hasPageAccess: boolean;
 }
 
 const PageContext = createContext<PageContextValue | undefined>(undefined);
@@ -20,15 +22,19 @@ interface PageProviderProps {
 export function PageProvider({ children }: PageProviderProps) {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState<Page | null>(null);
+  const { contextPermissions } = useRbacContext();
   
   // Only fetch pages on admin routes
   const isAdminRoute = router.pathname.startsWith('/admin');
+  
+  // Check if user has read:pages permission
+  const hasPageAccess = contextPermissions.includes('read:pages');
 
-  // Fetch pages list
+  // Fetch pages list - only if user has permission
   const { data: pagesData, isLoading, refetch } = useApiGet<{ pages: Page[] }>({
     url: 'admin/GetPages',
     queryKey: 'admin-pages-context',
-    enabled: isAdminRoute,
+    enabled: isAdminRoute && hasPageAccess,
   });
 
   const pages = pagesData?.pages || [];
@@ -80,6 +86,7 @@ export function PageProvider({ children }: PageProviderProps) {
     isLoading,
     setCurrentPage,
     refetchPages: refetch,
+    hasPageAccess,
   };
 
   return <PageContext.Provider value={value}>{children}</PageContext.Provider>;

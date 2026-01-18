@@ -33,11 +33,13 @@ import {
   Settings as SettingsIcon,
   CardMembership as SubscriptionIcon,
   Pages as PagesIcon,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useRbacContext } from '@/context/RbacContext';
 import PageSelector from '@/components/PageSelector';
+import { usePageContext } from '@/context/PageContext';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -120,6 +122,12 @@ const menuItems: MenuItem[] = [
     icon: <Key />,
     path: '/admin/apiauth',
     requiredPermissions: ['read:apiauth'],
+  },
+  {
+    text: 'Site Admin',
+    icon: <AdminIcon />,
+    path: '/admin/siteadmin/timers',
+    requiredPermissions: ['read:siteadmin'],
   }
 ];
 
@@ -128,6 +136,7 @@ const menuItems: MenuItem[] = [
   const router = useRouter();
   const { user, logout, loading, managedUsers: allManagedUsers } = useAuthContext();
   const { selectedContext, setSelectedContext, contextRoles, contextPermissions } = useRbacContext();
+  const { hasPageAccess } = usePageContext();
   // managedUsers are already filtered for state === 'accepted' in AuthProvider
   const managedUsers = allManagedUsers || [];
   // Sub-accounts from JWT (for agency admin users)
@@ -271,8 +280,9 @@ const menuItems: MenuItem[] = [
             >
               LinkToMe
             </Typography>
-            {/* Page Selector - Show on relevant pages */}
-            {['/admin/links', '/admin/appearance'].includes(router.pathname) && (
+            {/* Page Selector - Show on relevant pages if user has read:pages permission */}
+            {['/admin/links', '/admin/appearance'].includes(router.pathname) && 
+             hasPageAccess && (
               <PageSelector />
             )}
             {/* UI Theme Switcher */}
