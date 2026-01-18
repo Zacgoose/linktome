@@ -76,6 +76,7 @@ export default function TimersPage() {
   const handleCloseDialog = () => {
     if (!runTimerMutation.isPending) {
       setRunDialogOpen(false);
+      setSelectedTimer(null);
     }
   };
 
@@ -111,11 +112,9 @@ export default function TimersPage() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never';
-    try {
-      return new Date(dateString).toLocaleString();
-    } catch {
-      return 'Invalid date';
-    }
+    const timestamp = Date.parse(dateString);
+    if (isNaN(timestamp)) return 'Invalid date';
+    return new Date(dateString).toLocaleString();
   };
 
   return (
