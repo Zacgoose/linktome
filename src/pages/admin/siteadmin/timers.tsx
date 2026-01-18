@@ -36,6 +36,7 @@ import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
 import AdminLayout from '@/layouts/AdminLayout';
 import { Timer, ListTimersResponse, RunTimerResponse, RunTimerRequest } from '@/types/api';
 import { useToast } from '@/context/ToastContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 export default function TimersPage() {
   const { showToast } = useToast();
@@ -73,6 +74,13 @@ export default function TimersPage() {
     }
   };
 
+  const handleCloseDialog = () => {
+    if (!runTimerMutation.isPending) {
+      setRunDialogOpen(false);
+      setSelectedTimer(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'completed':
@@ -105,15 +113,21 @@ export default function TimersPage() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never';
-    try {
-      return new Date(dateString).toLocaleString();
-    } catch {
-      return 'Invalid date';
-    }
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleString();
+  };
+
+  const formatNullableString = (value: string | null, fallback = 'Unknown') => value ?? fallback;
+
+  const formatManualTriggerTooltip = (timer: Timer) => {
+    const by = formatNullableString(timer.manuallyTriggeredBy);
+    const role = formatNullableString(timer.manuallyTriggeredByRole);
+    const at = formatDate(timer.manuallyTriggeredAt);
+    return `Last triggered by ${by} (${role}) at ${at}`;
   };
 
   return (
-    <>
+    <ProtectedRoute requiredPermissions={['read:siteadmin']}>
       <Head>
         <title>Timer Management - Site Admin - LinkToMe</title>
       </Head>
@@ -188,11 +202,7 @@ export default function TimersPage() {
                                 />
                               )}
                               {timer.manuallyTriggered && (
-                                <Tooltip
-                                  title={`Last triggered by ${timer.manuallyTriggeredBy} (${timer.manuallyTriggeredByRole}) at ${formatDate(
-                                    timer.manuallyTriggeredAt
-                                  )}`}
-                                >
+                                <Tooltip title={formatManualTriggerTooltip(timer)}>
                                   <Chip
                                     label="Manual"
                                     size="small"
@@ -243,8 +253,8 @@ export default function TimersPage() {
                                 color="primary"
                                 onClick={() => handleRunTimer(timer)}
                                 disabled={
-                                  timer.status === 'Running' ||
-                                  timer.status === 'Started' ||
+                                  timer.status.toLowerCase() === 'running' ||
+                                  timer.status.toLowerCase() === 'started' ||
                                   runTimerMutation.isPending
                                 }
                                 size="small"
@@ -280,7 +290,7 @@ export default function TimersPage() {
                 <Typography variant="h5" fontWeight={600} color="info.main">
                   {
                     data.timers.filter(
-                      (t) => t.status === 'Running' || t.status === 'Started'
+                      (t) => t.status.toLowerCase() === 'running' || t.status.toLowerCase() === 'started'
                     ).length
                   }
                 </Typography>
@@ -290,7 +300,7 @@ export default function TimersPage() {
                   Failed
                 </Typography>
                 <Typography variant="h5" fontWeight={600} color="error.main">
-                  {data.timers.filter((t) => t.status === 'Failed').length}
+                  {data.timers.filter((t) => t.status.toLowerCase() === 'failed').length}
                 </Typography>
               </Paper>
               <Paper sx={{ p: 2, flexGrow: 1 }}>
@@ -306,7 +316,7 @@ export default function TimersPage() {
         </Container>
 
         {/* Run Timer Confirmation Dialog */}
-        <Dialog open={runDialogOpen} onClose={() => !runTimerMutation.isPending && setRunDialogOpen(false)}>
+        <Dialog open={runDialogOpen} onClose={handleCloseDialog}>
           <DialogTitle>Run Timer Manually</DialogTitle>
           <DialogContent>
             {selectedTimer && (
@@ -332,7 +342,7 @@ export default function TimersPage() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setRunDialogOpen(false)} disabled={runTimerMutation.isPending}>
+            <Button onClick={handleCloseDialog} disabled={runTimerMutation.isPending}>
               Cancel
             </Button>
             <Button
@@ -347,6 +357,6 @@ export default function TimersPage() {
           </DialogActions>
         </Dialog>
       </AdminLayout>
-    </>
+    </ProtectedRoute>
   );
 }
