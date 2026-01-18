@@ -243,8 +243,8 @@ export default function TimersPage() {
                                 color="primary"
                                 onClick={() => handleRunTimer(timer)}
                                 disabled={
-                                  timer.status === 'Running' ||
-                                  timer.status === 'Started' ||
+                                  timer.status.toLowerCase() === 'running' ||
+                                  timer.status.toLowerCase() === 'started' ||
                                   runTimerMutation.isPending
                                 }
                                 size="small"
@@ -280,7 +280,7 @@ export default function TimersPage() {
                 <Typography variant="h5" fontWeight={600} color="info.main">
                   {
                     data.timers.filter(
-                      (t) => t.status === 'Running' || t.status === 'Started'
+                      (t) => t.status.toLowerCase() === 'running' || t.status.toLowerCase() === 'started'
                     ).length
                   }
                 </Typography>
@@ -290,7 +290,7 @@ export default function TimersPage() {
                   Failed
                 </Typography>
                 <Typography variant="h5" fontWeight={600} color="error.main">
-                  {data.timers.filter((t) => t.status === 'Failed').length}
+                  {data.timers.filter((t) => t.status.toLowerCase() === 'failed').length}
                 </Typography>
               </Paper>
               <Paper sx={{ p: 2, flexGrow: 1 }}>
