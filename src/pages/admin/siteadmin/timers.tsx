@@ -73,6 +73,12 @@ export default function TimersPage() {
     }
   };
 
+  const handleCloseDialog = () => {
+    if (!runTimerMutation.isPending) {
+      setRunDialogOpen(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'completed':
@@ -306,7 +312,7 @@ export default function TimersPage() {
         </Container>
 
         {/* Run Timer Confirmation Dialog */}
-        <Dialog open={runDialogOpen} onClose={() => !runTimerMutation.isPending && setRunDialogOpen(false)}>
+        <Dialog open={runDialogOpen} onClose={handleCloseDialog}>
           <DialogTitle>Run Timer Manually</DialogTitle>
           <DialogContent>
             {selectedTimer && (
@@ -332,7 +338,7 @@ export default function TimersPage() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setRunDialogOpen(false)} disabled={runTimerMutation.isPending}>
+            <Button onClick={handleCloseDialog} disabled={runTimerMutation.isPending}>
               Cancel
             </Button>
             <Button
