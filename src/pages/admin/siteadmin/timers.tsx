@@ -36,6 +36,7 @@ import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
 import AdminLayout from '@/layouts/AdminLayout';
 import { Timer, ListTimersResponse, RunTimerResponse, RunTimerRequest } from '@/types/api';
 import { useToast } from '@/context/ToastContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 export default function TimersPage() {
   const { showToast } = useToast();
@@ -117,8 +118,15 @@ export default function TimersPage() {
     return new Date(timestamp).toLocaleString();
   };
 
+  const formatManualTriggerTooltip = (timer: Timer) => {
+    const by = timer.manuallyTriggeredBy ?? 'Unknown';
+    const role = timer.manuallyTriggeredByRole ?? 'Unknown';
+    const at = formatDate(timer.manuallyTriggeredAt);
+    return `Last triggered by ${by} (${role}) at ${at}`;
+  };
+
   return (
-    <>
+    <ProtectedRoute requiredPermissions={['read:siteadmin']}>
       <Head>
         <title>Timer Management - Site Admin - LinkToMe</title>
       </Head>
@@ -193,11 +201,7 @@ export default function TimersPage() {
                                 />
                               )}
                               {timer.manuallyTriggered && (
-                                <Tooltip
-                                  title={`Last triggered by ${timer.manuallyTriggeredBy ?? 'Unknown'} (${timer.manuallyTriggeredByRole ?? 'Unknown'}) at ${formatDate(
-                                    timer.manuallyTriggeredAt
-                                  )}`}
-                                >
+                                <Tooltip title={formatManualTriggerTooltip(timer)}>
                                   <Chip
                                     label="Manual"
                                     size="small"
@@ -352,6 +356,6 @@ export default function TimersPage() {
           </DialogActions>
         </Dialog>
       </AdminLayout>
-    </>
+    </ProtectedRoute>
   );
 }
