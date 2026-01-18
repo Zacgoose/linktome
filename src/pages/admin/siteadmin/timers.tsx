@@ -114,7 +114,7 @@ export default function TimersPage() {
     if (!dateString) return 'Never';
     const timestamp = Date.parse(dateString);
     if (isNaN(timestamp)) return 'Invalid date';
-    return new Date(dateString).toLocaleString();
+    return new Date(timestamp).toLocaleString();
   };
 
   return (
@@ -194,7 +194,7 @@ export default function TimersPage() {
                               )}
                               {timer.manuallyTriggered && (
                                 <Tooltip
-                                  title={`Last triggered by ${timer.manuallyTriggeredBy} (${timer.manuallyTriggeredByRole}) at ${formatDate(
+                                  title={`Last triggered by ${timer.manuallyTriggeredBy ?? 'Unknown'} (${timer.manuallyTriggeredByRole ?? 'Unknown'}) at ${formatDate(
                                     timer.manuallyTriggeredAt
                                   )}`}
                                 >
