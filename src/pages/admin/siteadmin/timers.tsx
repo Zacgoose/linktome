@@ -113,14 +113,15 @@ export default function TimersPage() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never';
-    const timestamp = Date.parse(dateString);
-    if (isNaN(timestamp)) return 'Invalid date';
-    return new Date(timestamp).toLocaleString();
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleString();
   };
 
+  const formatNullableString = (value: string | null, fallback = 'Unknown') => value ?? fallback;
+
   const formatManualTriggerTooltip = (timer: Timer) => {
-    const by = timer.manuallyTriggeredBy ?? 'Unknown';
-    const role = timer.manuallyTriggeredByRole ?? 'Unknown';
+    const by = formatNullableString(timer.manuallyTriggeredBy);
+    const role = formatNullableString(timer.manuallyTriggeredByRole);
     const at = formatDate(timer.manuallyTriggeredAt);
     return `Last triggered by ${by} (${role}) at ${at}`;
   };
