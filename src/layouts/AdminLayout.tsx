@@ -278,8 +278,9 @@ const menuItems: MenuItem[] = [
             >
               LinkToMe
             </Typography>
-            {/* Page Selector - Show on relevant pages */}
-            {['/admin/links', '/admin/appearance'].includes(router.pathname) && (
+            {/* Page Selector - Show on relevant pages if user has read:pages permission */}
+            {['/admin/links', '/admin/appearance'].includes(router.pathname) && 
+             contextPermissions.includes('read:pages') && (
               <PageSelector />
             )}
             {/* UI Theme Switcher */}
