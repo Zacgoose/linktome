@@ -78,8 +78,10 @@ export default function SettingsPage() {
   });
   const [phoneNumber, setPhoneNumber] = useState('');
   const [changeEmailDialogOpen, setChangeEmailDialogOpen] = useState(false);
-  const [reset2FADialogOpen, setReset2FADialogOpen] = useState(false);
-  const [setup2FADialogOpen, setSetup2FADialogOpen] = useState(false);
+  const [resetTotpDialogOpen, setResetTotpDialogOpen] = useState(false);
+  const [resetEmailDialogOpen, setResetEmailDialogOpen] = useState(false);
+  const [setupTotpDialogOpen, setSetupTotpDialogOpen] = useState(false);
+  const [setupEmailDialogOpen, setSetupEmailDialogOpen] = useState(false);
 
   // Track if phone number has been initialized
   const phoneInitialized = useRef(false);
@@ -141,19 +143,63 @@ export default function SettingsPage() {
     },
   });
 
-  const reset2FA = useApiPost({
+  const resetTotp = useApiPost({
     onSuccess: async () => {
-      setSuccess('2FA has been reset successfully');
-      setReset2FADialogOpen(false);
+      setSuccess('Authenticator App 2FA has been disabled');
+      setResetTotpDialogOpen(false);
       await refreshAuth();
       refetch();
       setTimeout(() => setSuccess(''), 3000);
     },
     onError: (err) => {
-      setError(err || 'Failed to reset 2FA');
+      setError(err || 'Failed to disable Authenticator App 2FA');
       setTimeout(() => setError(''), 5000);
     },
   });
+
+  const resetEmail = useApiPost({
+    onSuccess: async () => {
+      setSuccess('Email 2FA has been disabled');
+      setResetEmailDialogOpen(false);
+      await refreshAuth();
+      refetch();
+      setTimeout(() => setSuccess(''), 3000);
+    },
+    onError: (err) => {
+      setError(err || 'Failed to disable Email 2FA');
+      setTimeout(() => setError(''), 5000);
+    },
+  });
+
+  const handleDisableTotp = () => {
+    resetTotp.mutate({
+      url: 'admin/2fatokensetup?action=disable',
+      data: { type: 'totp' },
+    });
+  };
+
+  const handleDisableEmail = () => {
+    resetEmail.mutate({
+      url: 'admin/2fatokensetup?action=disable',
+      data: { type: 'email' },
+    });
+  };
+
+  const handleTotpSetupComplete = async () => {
+    setSetupTotpDialogOpen(false);
+    setSuccess('Authenticator App 2FA has been configured successfully');
+    await refreshAuth();
+    refetch();
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleEmailSetupComplete = async () => {
+    setSetupEmailDialogOpen(false);
+    setSuccess('Email 2FA has been configured successfully');
+    await refreshAuth();
+    refetch();
+    setTimeout(() => setSuccess(''), 3000);
+  };
 
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,21 +254,6 @@ export default function SettingsPage() {
     });
   };
 
-  const handleReset2FA = () => {
-    reset2FA.mutate({
-      url: 'admin/2fatokensetup?action=disable',
-      data: {},
-    });
-  };
-
-  const handle2FASetupComplete = async () => {
-    setSetup2FADialogOpen(false);
-    setSuccess('2FA has been configured successfully');
-    await refreshAuth();
-    refetch();
-    setTimeout(() => setSuccess(''), 3000);
-  };
-
   if (isLoading || !profile) {
     return (
       <AdminLayout>
@@ -234,7 +265,6 @@ export default function SettingsPage() {
   }
 
   // Get 2FA status from user context (available after login)
-  const twoFactorEnabled = user?.twoFactorEnabled || false;
   const twoFactorEmailEnabled = user?.twoFactorEmailEnabled || false;
   const twoFactorTotpEnabled = user?.twoFactorTotpEnabled || false;
 
@@ -378,7 +408,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* 2FA Section */}
+          {/* 2FA Section - Multi-method */}
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 4 }}>
               <Box display="flex" alignItems="center" gap={2} mb={3}>
@@ -388,47 +418,74 @@ export default function SettingsPage() {
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Add an extra layer of security to your account
+                Add an extra layer of security to your account. You can enable one or both methods below.
               </Typography>
-              <Stack spacing={2} mt={2}>
+              <Stack spacing={3} mt={2}>
+                {/* TOTP 2FA */}
                 <Box display="flex" alignItems="center" gap={2}>
-                  <Typography variant="body2">
-                    Status:{' '}
-                    {twoFactorEnabled ? (
-                      <Chip label="Enabled" color="success" size="small" />
-                    ) : (
-                      <Chip label="Disabled" color="default" size="small" />
-                    )}
-                  </Typography>
-                </Box>
-                {twoFactorEnabled && (
-                  <Box display="flex" gap={2} flexWrap="wrap">
-                    {twoFactorEmailEnabled && (
-                      <Chip label="Email 2FA" color="primary" size="small" />
-                    )}
-                    {twoFactorTotpEnabled && (
-                      <Chip label="Authenticator App" color="primary" size="small" />
-                    )}
+                  <PhoneIcon color="primary" />
+                  <Box flex={1}>
+                    <Typography variant="subtitle1" fontWeight={600}>Authenticator App</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Use Google Authenticator, Authy, 1Password, or similar apps for time-based codes.
+                    </Typography>
                   </Box>
-                )}
-                <Box display="flex" gap={2}>
-                  {!twoFactorEnabled && (
+                  {twoFactorTotpEnabled ? (
+                    <>
+                      <Chip label="Enabled" color="success" size="small" sx={{ mr: 1 }} />
+                      <Button
+                        variant="outlined"
+                        color="warning"
+                        size="small"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => setResetTotpDialogOpen(true)}
+                        disabled={resetTotp.isPending}
+                      >
+                        Disable
+                      </Button>
+                    </>
+                  ) : (
                     <Button
                       variant="contained"
+                      size="small"
                       startIcon={<AddIcon />}
-                      onClick={() => setSetup2FADialogOpen(true)}
+                      onClick={() => setSetupTotpDialogOpen(true)}
                     >
-                      Enable 2FA
+                      Enable
                     </Button>
                   )}
-                  {twoFactorEnabled && (
+                </Box>
+                {/* Email 2FA */}
+                <Box display="flex" alignItems="center" gap={2}>
+                  <EmailIcon color="primary" />
+                  <Box flex={1}>
+                    <Typography variant="subtitle1" fontWeight={600}>Email Verification</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Receive a 6-digit code via email each time you login.
+                    </Typography>
+                  </Box>
+                  {twoFactorEmailEnabled ? (
+                    <>
+                      <Chip label="Enabled" color="success" size="small" sx={{ mr: 1 }} />
+                      <Button
+                        variant="outlined"
+                        color="warning"
+                        size="small"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => setResetEmailDialogOpen(true)}
+                        disabled={resetEmail.isPending}
+                      >
+                        Disable
+                      </Button>
+                    </>
+                  ) : (
                     <Button
-                      variant="outlined"
-                      color="warning"
-                      startIcon={<DeleteIcon />}
-                      onClick={() => setReset2FADialogOpen(true)}
+                      variant="contained"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={() => setSetupEmailDialogOpen(true)}
                     >
-                      Reset 2FA
+                      Enable
                     </Button>
                   )}
                 </Box>
@@ -511,36 +568,71 @@ export default function SettingsPage() {
           </DialogActions>
         </Dialog>
 
-        {/* Reset 2FA Dialog */}
-        <Dialog open={reset2FADialogOpen} onClose={() => setReset2FADialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Reset Two-Factor Authentication</DialogTitle>
+        {/* Disable TOTP Dialog */}
+        <Dialog open={resetTotpDialogOpen} onClose={() => setResetTotpDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Disable Authenticator App 2FA</DialogTitle>
           <DialogContent>
             <Alert severity="warning" sx={{ mb: 2 }}>
-              This will disable all two-factor authentication methods on your account.
+              This will disable Authenticator App (TOTP) 2FA for your account.
             </Alert>
             <Typography variant="body2" color="text.secondary">
-              You will need to set up 2FA again if you want to re-enable it. Are you sure you want to continue?
+              Are you sure you want to continue?
             </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setReset2FADialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => setResetTotpDialogOpen(false)}>Cancel</Button>
             <Button
               variant="contained"
               color="warning"
-              onClick={handleReset2FA}
-              disabled={reset2FA.isPending}
+              onClick={handleDisableTotp}
+              disabled={resetTotp.isPending}
             >
-              {reset2FA.isPending ? 'Resetting...' : 'Reset 2FA'}
+              {resetTotp.isPending ? 'Disabling...' : 'Disable'}
             </Button>
           </DialogActions>
         </Dialog>
 
-        {/* 2FA Setup Wizard */}
-        {setup2FADialogOpen && (
+        {/* Disable Email 2FA Dialog */}
+        <Dialog open={resetEmailDialogOpen} onClose={() => setResetEmailDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Disable Email 2FA</DialogTitle>
+          <DialogContent>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              This will disable Email 2FA for your account.
+            </Alert>
+            <Typography variant="body2" color="text.secondary">
+              Are you sure you want to continue?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setResetEmailDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              color="warning"
+              onClick={handleDisableEmail}
+              disabled={resetEmail.isPending}
+            >
+              {resetEmail.isPending ? 'Disabling...' : 'Disable'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* TOTP 2FA Setup Wizard */}
+        {setupTotpDialogOpen && (
           <TwoFactorSetupWizard
-            open={setup2FADialogOpen}
-            onClose={() => setSetup2FADialogOpen(false)}
-            onComplete={handle2FASetupComplete}
+            open={setupTotpDialogOpen}
+            onClose={() => setSetupTotpDialogOpen(false)}
+            onComplete={handleTotpSetupComplete}
+            method="totp"
+          />
+        )}
+
+        {/* Email 2FA Setup Wizard */}
+        {setupEmailDialogOpen && (
+          <TwoFactorSetupWizard
+            open={setupEmailDialogOpen}
+            onClose={() => setSetupEmailDialogOpen(false)}
+            onComplete={handleEmailSetupComplete}
+            method="email"
           />
         )}
       </AdminLayout>

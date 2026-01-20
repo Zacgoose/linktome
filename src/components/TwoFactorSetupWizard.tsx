@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -54,19 +54,23 @@ interface TwoFactorEnableResponse {
   totpEnabled: boolean;
 }
 
-interface TwoFactorSetupWizardProps {
+
+
+export interface TwoFactorSetupWizardProps {
   open: boolean;
   onClose: () => void;
   onComplete: () => void;
+  method?: 'email' | 'totp';
 }
 
 export default function TwoFactorSetupWizard({
   open,
   onClose,
   onComplete,
+  method,
 }: TwoFactorSetupWizardProps) {
   const [activeStep, setActiveStep] = useState(0);
-  const [setupMethod, setSetupMethod] = useState<'email' | 'totp' | null>(null);
+  const [setupMethod, setSetupMethod] = useState<'email' | 'totp' | null>(method ?? null);
   const [setupData, setSetupData] = useState<TwoFactorSetupData | null>(null);
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState('');
@@ -101,14 +105,12 @@ export default function TwoFactorSetupWizard({
     },
   });
 
-  const handleMethodSelect = (method: 'email' | 'totp') => {
-    setSetupMethod(method);
+  const handleMethodSelect = (selectedMethod: 'email' | 'totp') => {
+    setSetupMethod(selectedMethod);
     setError('');
-    
-    // Call setup endpoint
     setupMutation.mutate({
       url: 'admin/2fatokensetup?action=setup',
-      data: { type: method },
+      data: { type: selectedMethod },
     });
   };
 
@@ -158,16 +160,49 @@ export default function TwoFactorSetupWizard({
   };
 
 
+  // If method is provided, trigger setup when dialog opens or method changes
+  useEffect(() => {
+    if (open && method) {
+      setSetupMethod(method);
+      setSetupData(null);
+      setVerificationCode('');
+      setError('');
+      setupMutation.mutate({
+        url: 'admin/2fatokensetup?action=setup',
+        data: { type: method },
+      });
+    }
+    if (!open) {
+      setActiveStep(0);
+      setSetupMethod(method ?? null);
+      setSetupData(null);
+      setVerificationCode('');
+      setError('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, method]);
+
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
-        // Choose Method
+        // If method is provided, show loading spinner while setup is pending
+        if (method) {
+          if (setupMutation.isPending || !setupData) {
+            return (
+              <Box display="flex" justifyContent="center" py={4}>
+                <CircularProgress size={32} />
+              </Box>
+            );
+          }
+          // Otherwise, show next step (should not happen)
+          return null;
+        }
+        // Choose Method (legacy: no method prop)
         return (
           <Stack spacing={3}>
             <Typography variant="body1" color="text.secondary">
               Choose your preferred two-factor authentication method:
             </Typography>
-
             <Stack spacing={2}>
               <Paper
                 elevation={0}
@@ -199,7 +234,6 @@ export default function TwoFactorSetupWizard({
                   </Box>
                 </Box>
               </Paper>
-
               <Paper
                 elevation={0}
                 sx={{
@@ -228,7 +262,6 @@ export default function TwoFactorSetupWizard({
                 </Box>
               </Paper>
             </Stack>
-
             {setupMutation.isPending && (
               <Box display="flex" justifyContent="center" py={2}>
                 <CircularProgress size={32} />

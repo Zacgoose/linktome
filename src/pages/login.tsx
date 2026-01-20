@@ -25,7 +25,7 @@ const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x0000
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setUser } = useAuthContext();
+  const { setUser, refreshAuth } = useAuthContext();
   const isSignup = router.query.signup === 'true';
   const derivedMode: 'login' | 'signup' = isSignup ? 'signup' : 'login';
 
@@ -206,6 +206,7 @@ export default function LoginPage() {
   const handleSetupComplete = () => {
     setShowSetupWizard(false);
     setPendingUser(null);
+    refreshAuth();
     // Continue to dashboard after setup is complete
     router.push('/admin/dashboard');
   };
