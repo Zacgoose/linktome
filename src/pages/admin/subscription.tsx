@@ -402,25 +402,28 @@ export default function SubscriptionPage() {
                   )}
 
                   <Box display="flex" gap={2} flexWrap="wrap">
+                    {/* Show Manage Subscription button for any user who has/had a subscription */}
+                    {(currentTier !== UserTier.FREE || subscription.subscriptionStartedAt) && (
+                      <Button
+                        variant="contained"
+                        startIcon={<CardIcon />}
+                        onClick={handleManageSubscription}
+                        disabled={manageSubscription.isPending}
+                      >
+                        {manageSubscription.isPending ? 'Loading...' : 'Manage Subscription'}
+                      </Button>
+                    )}
+                    
+                    {/* Show Cancel button only for active, non-cancelled subscriptions */}
                     {currentTier !== UserTier.FREE && subscription.status === 'active' && !subscription.cancelledAt && (
-                      <>
-                        <Button
-                          variant="contained"
-                          startIcon={<CardIcon />}
-                          onClick={handleManageSubscription}
-                          disabled={manageSubscription.isPending}
-                        >
-                          {manageSubscription.isPending ? 'Loading...' : 'Manage Subscription'}
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          startIcon={<CancelIcon />}
-                          onClick={() => setCancelDialogOpen(true)}
-                        >
-                          Cancel Subscription
-                        </Button>
-                      </>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<CancelIcon />}
+                        onClick={() => setCancelDialogOpen(true)}
+                      >
+                        Cancel Subscription
+                      </Button>
                     )}
                     
                     {canResubscribe && (
