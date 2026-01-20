@@ -55,6 +55,7 @@ interface SubscriptionInfo {
   amount?: number;
   currency?: string;
   cancelledAt?: string;
+  cancelAt?: string;
   accessUntil?: string;
 }
 
@@ -344,13 +345,22 @@ export default function SubscriptionPage() {
                     </Typography>
                   )}
 
-                  {subscription.nextBillingDate && subscription.status === 'active' && (
+                  {subscription.nextBillingDate && subscription.status === 'active' && !subscription.cancelAt && (
                     <Typography variant="body2" color="text.secondary">
                       Next billing date: <strong>{new Date(subscription.nextBillingDate).toLocaleDateString()}</strong>
                       {subscription.amount && subscription.currency && (
                         <> - ${subscription.amount.toFixed(2)} {subscription.currency}</>
                       )}
                     </Typography>
+                  )}
+
+                  {subscription.cancelAt && subscription.status === 'active' && (
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                      Subscription will not renew. Access until <strong>{new Date(subscription.cancelAt).toLocaleDateString()}</strong>
+                      {subscription.amount && subscription.currency && (
+                        <> (${subscription.amount.toFixed(2)} {subscription.currency})</>
+                      )}.
+                    </Alert>
                   )}
 
                   {subscription.cancelledAt && subscription.hasAccess && subscription.accessUntil && (
@@ -471,7 +481,8 @@ export default function SubscriptionPage() {
                         ))}
                       </List>
 
-                      {!isCurrent && tier !== UserTier.FREE && (
+                      {/* Only show upgrade/switch buttons for FREE tier users or if no active subscription */}
+                      {!isCurrent && tier !== UserTier.FREE && currentTier === UserTier.FREE && (
                         <Button
                           variant={tier > currentTier ? 'contained' : 'outlined'}
                           fullWidth
