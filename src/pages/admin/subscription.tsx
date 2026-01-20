@@ -32,6 +32,7 @@ import {
   Upgrade as UpgradeIcon,
   RadioButtonUnchecked as RadioUncheckedIcon,
   RadioButtonChecked as RadioCheckedIcon,
+  Visibility as PreviewIcon,
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
@@ -358,6 +359,15 @@ export default function SubscriptionPage() {
                       {subscription.amount && subscription.currency && (
                         <> (${subscription.amount.toFixed(2)} {subscription.currency})</>
                       )}.
+                      <Box sx={{ mt: 1 }}>
+                        <Button
+                          size="small"
+                          startIcon={<PreviewIcon />}
+                          onClick={() => window.location.href = '/admin/subscription/downgrade'}
+                        >
+                          Preview What Will Change
+                        </Button>
+                      </Box>
                     </Alert>
                   )}
 
@@ -365,6 +375,15 @@ export default function SubscriptionPage() {
                     <Alert severity="warning">
                       Subscription cancelled on {new Date(subscription.cancelledAt).toLocaleDateString()}.
                       You can continue using your current plan until {new Date(subscription.accessUntil).toLocaleDateString()}.
+                      <Box sx={{ mt: 1 }}>
+                        <Button
+                          size="small"
+                          startIcon={<PreviewIcon />}
+                          onClick={() => window.location.href = '/admin/subscription/downgrade'}
+                        >
+                          Preview What Will Change
+                        </Button>
+                      </Box>
                     </Alert>
                   )}
                   
