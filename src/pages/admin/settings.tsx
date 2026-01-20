@@ -98,7 +98,6 @@ export default function SettingsPage() {
   // Initialize phone number from profile when data loads (only once)
   useEffect(() => {
     if (profile?.phoneNumber && !phoneInitialized.current) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPhoneNumber(profile.phoneNumber);
       phoneInitialized.current = true;
     }

@@ -598,7 +598,7 @@ export default function UsersPage() {
                             <TableCell sx={{ py: 2 }}>{sa.pagesCount ?? '-'}</TableCell>
                             <TableCell sx={{ py: 2 }}>{sa.linksCount ?? '-'}</TableCell>
                             <TableCell sx={{ py: 2 }}>
-                              {new Date(sa.createdAt).toLocaleDateString()}
+                              {sa.createdAt ? new Date(sa.createdAt).toLocaleDateString() : '-'}
                             </TableCell>
                             <TableCell sx={{ py: 2 }}>
                               <Button 

@@ -80,6 +80,16 @@ export const ROUTE_CONFIG: RoutePermission[] = [
     allowedFor: 'authenticated',
     requiredPermissions: ['read:subscription'],
   },
+  {
+    path: '/admin/subscription/success',
+    allowedFor: 'authenticated',
+    requiredPermissions: ['read:subscription'],
+  },
+  {
+    path: '/admin/subscription/cancel',
+    allowedFor: 'authenticated',
+    requiredPermissions: ['read:subscription'],
+  },
 
   // Admin-only routes
   {

@@ -29,7 +29,6 @@ import {
   Diamond as DiamondIcon,
   Business as BusinessIcon,
   CardMembership as CardIcon,
-  Cancel as CancelIcon,
   Upgrade as UpgradeIcon,
   RadioButtonUnchecked as RadioUncheckedIcon,
   RadioButtonChecked as RadioCheckedIcon,
@@ -38,7 +37,10 @@ import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
 import { UserTier, TIER_CONFIG, TIER_INFO } from '@/types/tiers';
 import TierBadge from '@/components/TierBadge';
-import { useAuthContext } from '@/providers/AuthProvider';
+import type { 
+  CreateCheckoutSessionResponse, 
+  CreatePortalSessionResponse
+} from '@/types/api';
 
 interface SubscriptionInfo {
   currentTier: UserTier;
@@ -52,6 +54,7 @@ interface SubscriptionInfo {
   amount?: number;
   currency?: string;
   cancelledAt?: string;
+  cancelAt?: string;
   accessUntil?: string;
 }
 
@@ -67,43 +70,42 @@ export default function SubscriptionPage() {
   const [selectedPlan, setSelectedPlan] = useState<UserTier | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const { refreshAuth } = useAuthContext();
 
   const { data: subscription, isLoading, error: fetchError } = useApiGet<SubscriptionInfo>({
     url: 'admin/GetSubscription',
     queryKey: 'user-subscription',
   });
 
-  const upgradePlan = useApiPost({
+  const upgradePlan = useApiPost<CreateCheckoutSessionResponse>({
     relatedQueryKeys: ['user-subscription'],
-    onSuccess: async (data: any) => {
-      // The API returns a note about payment processing not being implemented
-      const msg = typeof data === 'string' ? data : data?.message || 'Subscription upgrade requested. Payment processing is not yet implemented. Please contact support.';
-      setSuccess(msg);
-      setUpgradeDialogOpen(false);
-      await refreshAuth();
-      setTimeout(() => setSuccess(''), 5000);
+    onSuccess: async (data) => {
+      // Redirect to Stripe checkout
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setError('Failed to create checkout session');
+        setUpgradeDialogOpen(false);
+      }
     },
     onError: (err: any) => {
-      const msg = typeof err === 'string' ? err : err?.message || 'Failed to upgrade subscription';
+      const msg = typeof err === 'string' ? err : err?.message || 'Failed to create checkout session';
       setError(msg);
+      setUpgradeDialogOpen(false);
       setTimeout(() => setError(''), 5000);
     },
   });
 
-  const cancelSubscription = useApiPost({
-    relatedQueryKeys: ['user-subscription'],
-    onSuccess: async (data: any) => {
-      // The API returns a note about payment processing not being implemented
-      const msg = typeof data === 'string' ? data : data?.message || 'Subscription cancellation requested. Payment processing is not yet implemented. Please contact support.';
-      setSuccess(msg);
-      setCancelDialogOpen(false);
-      await refreshAuth();
-      setTimeout(() => setSuccess(''), 5000);
+  const manageSubscription = useApiPost<CreatePortalSessionResponse>({
+    onSuccess: async (data) => {
+      // Redirect to Stripe customer portal
+      if (data.portalUrl) {
+        window.location.href = data.portalUrl;
+      } else {
+        setError('Failed to open customer portal');
+      }
     },
     onError: (err: any) => {
-      const msg = typeof err === 'string' ? err : err?.message || 'Failed to cancel subscription';
+      const msg = typeof err === 'string' ? err : err?.message || 'Failed to open customer portal';
       setError(msg);
       setTimeout(() => setError(''), 5000);
     },
@@ -119,7 +121,7 @@ export default function SubscriptionPage() {
     if (!selectedPlan) return;
 
     upgradePlan.mutate({
-      url: 'admin/UpgradeSubscription',
+      url: 'admin/createCheckoutSession',
       data: {
         tier: selectedPlan,
         billingCycle: selectedBillingCycle,
@@ -127,9 +129,9 @@ export default function SubscriptionPage() {
     });
   };
 
-  const handleCancelSubscription = () => {
-    cancelSubscription.mutate({
-      url: 'admin/CancelSubscription',
+  const handleManageSubscription = () => {
+    manageSubscription.mutate({
+      url: 'admin/createPortalSession',
       data: {},
     });
   };
@@ -248,11 +250,6 @@ export default function SubscriptionPage() {
   const effectiveTier = subscription.effectiveTier;
   const tierInfo = TIER_INFO[currentTier];
   const effectiveTierInfo = TIER_INFO[effectiveTier];
-  
-  // Check if user can resubscribe (cancelled but has current tier access)
-  const canResubscribe = subscription.status === 'cancelled' && 
-                         subscription.hasAccess && 
-                         currentTier !== UserTier.FREE;
 
   return (
     <>
@@ -346,13 +343,22 @@ export default function SubscriptionPage() {
                     </Typography>
                   )}
 
-                  {subscription.nextBillingDate && subscription.status === 'active' && (
+                  {subscription.nextBillingDate && subscription.status === 'active' && !subscription.cancelAt && (
                     <Typography variant="body2" color="text.secondary">
                       Next billing date: <strong>{new Date(subscription.nextBillingDate).toLocaleDateString()}</strong>
                       {subscription.amount && subscription.currency && (
                         <> - ${subscription.amount.toFixed(2)} {subscription.currency}</>
                       )}
                     </Typography>
+                  )}
+
+                  {subscription.cancelAt && subscription.status === 'active' && (
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                      Subscription will not renew. Access until <strong>{new Date(subscription.cancelAt).toLocaleDateString()}</strong>
+                      {subscription.amount && subscription.currency && (
+                        <> (${subscription.amount.toFixed(2)} {subscription.currency})</>
+                      )}.
+                    </Alert>
                   )}
 
                   {subscription.cancelledAt && subscription.hasAccess && subscription.accessUntil && (
@@ -371,26 +377,16 @@ export default function SubscriptionPage() {
                     </Alert>
                   )}
 
-                  <Box display="flex" gap={2}>
-                    {currentTier !== UserTier.FREE && subscription.status === 'active' && !subscription.cancelledAt && (
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        startIcon={<CancelIcon />}
-                        onClick={() => setCancelDialogOpen(true)}
-                      >
-                        Cancel Subscription
-                      </Button>
-                    )}
-                    
-                    {canResubscribe && (
+                  <Box display="flex" gap={2} flexWrap="wrap">
+                    {/* Show Manage Subscription button for any user who has/had a subscription */}
+                    {(currentTier !== UserTier.FREE || subscription.subscriptionStartedAt) && (
                       <Button
                         variant="contained"
-                        color="primary"
-                        startIcon={<UpgradeIcon />}
-                        onClick={() => handleUpgrade(currentTier)}
+                        startIcon={<CardIcon />}
+                        onClick={handleManageSubscription}
+                        disabled={manageSubscription.isPending}
                       >
-                        Resubscribe to {tierInfo.displayName}
+                        {manageSubscription.isPending ? 'Loading...' : 'Manage Subscription'}
                       </Button>
                     )}
                   </Box>
@@ -483,7 +479,8 @@ export default function SubscriptionPage() {
                         ))}
                       </List>
 
-                      {!isCurrent && tier !== UserTier.FREE && (
+                      {/* Only show upgrade/switch buttons for FREE tier users or if no active subscription */}
+                      {!isCurrent && tier !== UserTier.FREE && currentTier === UserTier.FREE && (
                         <Button
                           variant={tier > currentTier ? 'contained' : 'outlined'}
                           fullWidth
@@ -500,37 +497,16 @@ export default function SubscriptionPage() {
               );
             })}
           </Grid>
-
-          {/* Feature Comparison */}
-          <Box sx={{ mt: 6 }}>
-            <Typography variant="h5" fontWeight={600} gutterBottom color="text.primary" sx={{ mb: 3 }}>
-              Feature Comparison
-            </Typography>
-            <Card>
-              <CardContent sx={{ p: 4 }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Compare all features across different plans to find the best fit for your needs.
-                </Typography>
-                <Button variant="outlined" sx={{ mt: 2 }}>
-                  View Full Comparison
-                </Button>
-              </CardContent>
-            </Card>
-          </Box>
         </Container>
 
         {/* Upgrade Dialog */}
         <Dialog open={upgradeDialogOpen} onClose={() => setUpgradeDialogOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>
-            {selectedPlan && canResubscribe && selectedPlan === currentTier
-              ? `Resubscribe to ${TIER_INFO[selectedPlan].displayName}`
-              : selectedPlan && `Upgrade to ${TIER_INFO[selectedPlan].displayName}`}
+            {selectedPlan && `Upgrade to ${TIER_INFO[selectedPlan].displayName}`}
           </DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              {canResubscribe && selectedPlan === currentTier
-                ? `You are about to reactivate your subscription to the ${selectedPlan && TIER_INFO[selectedPlan].displayName} plan.`
-                : `You are about to upgrade your subscription to the ${selectedPlan && TIER_INFO[selectedPlan].displayName} plan.`}
+              {`You are about to upgrade your subscription to the ${selectedPlan && TIER_INFO[selectedPlan].displayName} plan.`}
             </Typography>
             {selectedPlan && selectedPlan !== UserTier.FREE && (
               <Box sx={{ mt: 3 }}>
@@ -601,9 +577,6 @@ export default function SubscriptionPage() {
                 </Stack>
               </Box>
             )}
-            <Alert severity="warning" sx={{ mt: 2 }}>
-              Payment processing is not yet implemented. This will submit your upgrade request, but you will need to contact support to complete the payment.
-            </Alert>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setUpgradeDialogOpen(false)}>Cancel</Button>
@@ -612,36 +585,7 @@ export default function SubscriptionPage() {
               onClick={confirmUpgrade}
               disabled={upgradePlan.isPending}
             >
-              {upgradePlan.isPending 
-                ? 'Processing...' 
-                : (canResubscribe && selectedPlan === currentTier ? 'Resubscribe' : 'Request Upgrade')}
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Cancel Subscription Dialog */}
-        <Dialog open={cancelDialogOpen} onClose={() => setCancelDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Cancel Subscription</DialogTitle>
-          <DialogContent>
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              Are you sure you want to cancel your subscription?
-            </Alert>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Payment processing is not yet implemented. This will submit your cancellation request, but you may need to contact support to confirm the cancellation.
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Normally, your subscription would remain active until the end of the current billing period, after which your account would be downgraded to the Free plan.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setCancelDialogOpen(false)}>Keep Subscription</Button>
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCancelSubscription}
-              disabled={cancelSubscription.isPending}
-            >
-              {cancelSubscription.isPending ? 'Processing...' : 'Request Cancellation'}
+              {upgradePlan.isPending ? 'Processing...' : 'Continue to Payment'}
             </Button>
           </DialogActions>
         </Dialog>
