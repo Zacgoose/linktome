@@ -499,23 +499,6 @@ export default function SubscriptionPage() {
               );
             })}
           </Grid>
-
-          {/* Feature Comparison */}
-          <Box sx={{ mt: 6 }}>
-            <Typography variant="h5" fontWeight={600} gutterBottom color="text.primary" sx={{ mb: 3 }}>
-              Feature Comparison
-            </Typography>
-            <Card>
-              <CardContent sx={{ p: 4 }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Compare all features across different plans to find the best fit for your needs.
-                </Typography>
-                <Button variant="outlined" sx={{ mt: 2 }}>
-                  View Full Comparison
-                </Button>
-              </CardContent>
-            </Card>
-          </Box>
         </Container>
 
         {/* Upgrade Dialog */}
