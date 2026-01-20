@@ -35,6 +35,10 @@ interface TwoFactorSetupData {
     issuer: string;
     accountName: string;
   };
+  email?: {
+    ready: boolean;
+    accountEmail: string;
+  };
 }
 
 interface TwoFactorSetupResponse {
@@ -153,6 +157,7 @@ export default function TwoFactorSetupWizard({
     onClose();
   };
 
+
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
@@ -233,7 +238,7 @@ export default function TwoFactorSetupWizard({
         );
 
       case 1:
-        // Setup - Show QR Code
+        // Setup - Show QR Code or Email Confirmation
         if (setupMethod === 'totp' && setupData?.totp) {
           return (
             <Stack spacing={3}>
@@ -298,6 +303,33 @@ export default function TwoFactorSetupWizard({
                 onClick={() => setActiveStep(2)}
               >
                 I&apos;ve Scanned the Code
+              </Button>
+            </Stack>
+          );
+        }
+        // Handle email 2FA setup confirmation
+        if (setupMethod === 'email' && setupData?.email) {
+          return (
+            <Stack spacing={3}>
+              <Alert severity="info">
+                <Typography variant="body2">
+                  A verification code will be sent to your email address:
+                </Typography>
+                <Typography variant="body2" fontWeight={600} sx={{ mt: 1 }}>
+                  {setupData.email.accountEmail}
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 2 }}>
+                  Enter the 6-digit code you receive below to complete setup.
+                </Typography>
+              </Alert>
+
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                onClick={() => setActiveStep(2)}
+              >
+                I&apos;ve Received the Code
               </Button>
             </Stack>
           );
