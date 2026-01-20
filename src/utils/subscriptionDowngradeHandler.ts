@@ -303,7 +303,7 @@ function assessThemeDowngrade(
   // Check if using premium fonts
   const titleFont = FONT_OPTIONS.find(f => f.value === appearance.text?.titleFont);
   const bodyFont = FONT_OPTIONS.find(f => f.value === appearance.text?.bodyFont);
-  const usingPremiumFonts = (titleFont?.isPro || bodyFont?.isPro) && !premiumFontsAllowed;
+  const usingPremiumFonts = !premiumFontsAllowed && (titleFont?.isPro || bodyFont?.isPro);
 
   // Check if current theme needs to be reverted
   const needsRevert = (isPremiumTheme && !customThemesAllowed) || usingPremiumFonts;
@@ -319,13 +319,11 @@ function assessThemeDowngrade(
   return {
     featureName: 'theme',
     status: 'reverted',
-    details: needsRevert 
-      ? `Premium theme "${currentTheme}" will be reverted to "${defaultTheme}"`
-      : 'Theme is compatible with free tier',
+    details: `Premium theme "${currentTheme}" will be reverted to "${defaultTheme}"`,
     currentTheme,
     isPremium: isPremiumTheme,
     willRevert: needsRevert,
-    defaultTheme: needsRevert ? defaultTheme : undefined,
+    defaultTheme,
   };
 }
 

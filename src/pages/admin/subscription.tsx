@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import {
   Container,
   Typography,
@@ -66,6 +67,7 @@ interface PlanFeature {
 }
 
 export default function SubscriptionPage() {
+  const router = useRouter();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<UserTier | null>(null);
@@ -363,7 +365,7 @@ export default function SubscriptionPage() {
                         <Button
                           size="small"
                           startIcon={<PreviewIcon />}
-                          onClick={() => window.location.href = '/admin/subscription/downgrade'}
+                          onClick={() => router.push('/admin/subscription/downgrade')}
                         >
                           Preview What Will Change
                         </Button>
@@ -379,7 +381,7 @@ export default function SubscriptionPage() {
                         <Button
                           size="small"
                           startIcon={<PreviewIcon />}
-                          onClick={() => window.location.href = '/admin/subscription/downgrade'}
+                          onClick={() => router.push('/admin/subscription/downgrade')}
                         >
                           Preview What Will Change
                         </Button>

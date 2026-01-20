@@ -375,11 +375,15 @@ export default function SubscriptionDowngradePreview({
                           checked={selectedPages.includes(page.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedPages([...selectedPages, page.id].slice(0, features.pages!.pagesToKeep.length));
+                              // Only add if we haven't reached the limit
+                              if (selectedPages.length < features.pages!.pagesToKeep.length) {
+                                setSelectedPages([...selectedPages, page.id]);
+                              }
                             } else {
                               setSelectedPages(selectedPages.filter(id => id !== page.id));
                             }
                           }}
+                          disabled={!selectedPages.includes(page.id) && selectedPages.length >= features.pages!.pagesToKeep.length}
                         />
                       }
                       label={`${page.name} (${page.slug})`}
@@ -405,11 +409,15 @@ export default function SubscriptionDowngradePreview({
                           checked={selectedLinks.includes(link.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedLinks([...selectedLinks, link.id].slice(0, features.links!.linksToKeep.length));
+                              // Only add if we haven't reached the limit
+                              if (selectedLinks.length < features.links!.linksToKeep.length) {
+                                setSelectedLinks([...selectedLinks, link.id]);
+                              }
                             } else {
                               setSelectedLinks(selectedLinks.filter(id => id !== link.id));
                             }
                           }}
+                          disabled={!selectedLinks.includes(link.id) && selectedLinks.length >= features.links!.linksToKeep.length}
                         />
                       }
                       label={`${link.title} - ${link.url}`}
@@ -435,11 +443,15 @@ export default function SubscriptionDowngradePreview({
                           checked={selectedShortLinks.includes(shortLink.slug)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedShortLinks([...selectedShortLinks, shortLink.slug].slice(0, features.shortLinks!.shortLinksToKeep.length));
+                              // Only add if we haven't reached the limit
+                              if (selectedShortLinks.length < features.shortLinks!.shortLinksToKeep.length) {
+                                setSelectedShortLinks([...selectedShortLinks, shortLink.slug]);
+                              }
                             } else {
                               setSelectedShortLinks(selectedShortLinks.filter(slug => slug !== shortLink.slug));
                             }
                           }}
+                          disabled={!selectedShortLinks.includes(shortLink.slug) && selectedShortLinks.length >= features.shortLinks!.shortLinksToKeep.length}
                         />
                       }
                       label={`/${shortLink.slug} → ${shortLink.targetUrl}`}
