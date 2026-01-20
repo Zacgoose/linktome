@@ -37,7 +37,6 @@ import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
 import { UserTier, TIER_CONFIG, TIER_INFO } from '@/types/tiers';
 import TierBadge from '@/components/TierBadge';
-import { useAuthContext } from '@/providers/AuthProvider';
 import type { 
   CreateCheckoutSessionResponse, 
   CreatePortalSessionResponse
@@ -71,7 +70,6 @@ export default function SubscriptionPage() {
   const [selectedPlan, setSelectedPlan] = useState<UserTier | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
-  const { refreshAuth } = useAuthContext();
 
   const { data: subscription, isLoading, error: fetchError } = useApiGet<SubscriptionInfo>({
     url: 'admin/GetSubscription',

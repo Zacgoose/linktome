@@ -9,7 +9,6 @@ import {
   Button,
   Box,
   CircularProgress,
-  Alert,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -21,7 +20,6 @@ import { useAuthContext } from '@/providers/AuthProvider';
 
 export default function SubscriptionSuccessPage() {
   const router = useRouter();
-  const { session_id } = router.query;
   const { refreshAuth } = useAuthContext();
   const [loading, setLoading] = useState(true);
 
@@ -73,17 +71,6 @@ export default function SubscriptionSuccessPage() {
                   Thank you for subscribing to LinkToMe. Your payment has been processed successfully,
                   and your account has been upgraded.
                 </Typography>
-
-                {session_id && (
-                  <Alert severity="info" sx={{ mb: 4, textAlign: 'left' }}>
-                    <Typography variant="body2">
-                      <strong>Session ID:</strong> {session_id}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Please save this for your records. You can find your invoice in your subscription management page.
-                    </Typography>
-                  </Alert>
-                )}
 
                 <Box display="flex" gap={2} justifyContent="center" flexWrap="wrap">
                   <Button
