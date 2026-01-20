@@ -477,3 +477,35 @@ export interface RunTimerResponse {
   executedBy: string;
   executedByRole: string;
 }
+
+/**
+ * Create Checkout Session request
+ */
+export interface CreateCheckoutSessionRequest {
+  tier: 'pro' | 'premium' | 'enterprise';
+  billingCycle: 'monthly' | 'annual';
+}
+
+/**
+ * Create Checkout Session response
+ */
+export interface CreateCheckoutSessionResponse {
+  sessionId: string;
+  checkoutUrl: string;
+}
+
+/**
+ * Create Portal Session response
+ */
+export interface CreatePortalSessionResponse {
+  portalUrl: string;
+}
+
+/**
+ * Cancel Subscription response
+ */
+export interface CancelSubscriptionResponse {
+  message: string;
+  cancelledAt: string;
+  accessUntil: string;
+}

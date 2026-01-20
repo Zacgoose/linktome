@@ -39,6 +39,11 @@ import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
 import { UserTier, TIER_CONFIG, TIER_INFO } from '@/types/tiers';
 import TierBadge from '@/components/TierBadge';
 import { useAuthContext } from '@/providers/AuthProvider';
+import type { 
+  CreateCheckoutSessionResponse, 
+  CreatePortalSessionResponse,
+  CancelSubscriptionResponse 
+} from '@/types/api';
 
 interface SubscriptionInfo {
   currentTier: UserTier;
@@ -75,28 +80,29 @@ export default function SubscriptionPage() {
     queryKey: 'user-subscription',
   });
 
-  const upgradePlan = useApiPost({
+  const upgradePlan = useApiPost<CreateCheckoutSessionResponse>({
     relatedQueryKeys: ['user-subscription'],
-    onSuccess: async (data: any) => {
-      // The API returns a note about payment processing not being implemented
-      const msg = typeof data === 'string' ? data : data?.message || 'Subscription upgrade requested. Payment processing is not yet implemented. Please contact support.';
-      setSuccess(msg);
-      setUpgradeDialogOpen(false);
-      await refreshAuth();
-      setTimeout(() => setSuccess(''), 5000);
+    onSuccess: async (data) => {
+      // Redirect to Stripe checkout
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setError('Failed to create checkout session');
+        setUpgradeDialogOpen(false);
+      }
     },
     onError: (err: any) => {
-      const msg = typeof err === 'string' ? err : err?.message || 'Failed to upgrade subscription';
+      const msg = typeof err === 'string' ? err : err?.message || 'Failed to create checkout session';
       setError(msg);
+      setUpgradeDialogOpen(false);
       setTimeout(() => setError(''), 5000);
     },
   });
 
-  const cancelSubscription = useApiPost({
+  const cancelSubscription = useApiPost<CancelSubscriptionResponse>({
     relatedQueryKeys: ['user-subscription'],
-    onSuccess: async (data: any) => {
-      // The API returns a note about payment processing not being implemented
-      const msg = typeof data === 'string' ? data : data?.message || 'Subscription cancellation requested. Payment processing is not yet implemented. Please contact support.';
+    onSuccess: async (data) => {
+      const msg = data.message || `Subscription cancelled. You will have access until ${new Date(data.accessUntil).toLocaleDateString()}.`;
       setSuccess(msg);
       setCancelDialogOpen(false);
       await refreshAuth();
@@ -104,6 +110,23 @@ export default function SubscriptionPage() {
     },
     onError: (err: any) => {
       const msg = typeof err === 'string' ? err : err?.message || 'Failed to cancel subscription';
+      setError(msg);
+      setCancelDialogOpen(false);
+      setTimeout(() => setError(''), 5000);
+    },
+  });
+
+  const manageSubscription = useApiPost<CreatePortalSessionResponse>({
+    onSuccess: async (data) => {
+      // Redirect to Stripe customer portal
+      if (data.portalUrl) {
+        window.location.href = data.portalUrl;
+      } else {
+        setError('Failed to open customer portal');
+      }
+    },
+    onError: (err: any) => {
+      const msg = typeof err === 'string' ? err : err?.message || 'Failed to open customer portal';
       setError(msg);
       setTimeout(() => setError(''), 5000);
     },
@@ -119,7 +142,7 @@ export default function SubscriptionPage() {
     if (!selectedPlan) return;
 
     upgradePlan.mutate({
-      url: 'admin/UpgradeSubscription',
+      url: 'admin/createCheckoutSession',
       data: {
         tier: selectedPlan,
         billingCycle: selectedBillingCycle,
@@ -127,9 +150,16 @@ export default function SubscriptionPage() {
     });
   };
 
+  const handleManageSubscription = () => {
+    manageSubscription.mutate({
+      url: 'admin/createPortalSession',
+      data: {},
+    });
+  };
+
   const handleCancelSubscription = () => {
     cancelSubscription.mutate({
-      url: 'admin/CancelSubscription',
+      url: 'admin/cancelSubscription',
       data: {},
     });
   };
@@ -371,16 +401,26 @@ export default function SubscriptionPage() {
                     </Alert>
                   )}
 
-                  <Box display="flex" gap={2}>
+                  <Box display="flex" gap={2} flexWrap="wrap">
                     {currentTier !== UserTier.FREE && subscription.status === 'active' && !subscription.cancelledAt && (
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        startIcon={<CancelIcon />}
-                        onClick={() => setCancelDialogOpen(true)}
-                      >
-                        Cancel Subscription
-                      </Button>
+                      <>
+                        <Button
+                          variant="contained"
+                          startIcon={<CardIcon />}
+                          onClick={handleManageSubscription}
+                          disabled={manageSubscription.isPending}
+                        >
+                          {manageSubscription.isPending ? 'Loading...' : 'Manage Subscription'}
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          startIcon={<CancelIcon />}
+                          onClick={() => setCancelDialogOpen(true)}
+                        >
+                          Cancel Subscription
+                        </Button>
+                      </>
                     )}
                     
                     {canResubscribe && (
@@ -601,9 +641,6 @@ export default function SubscriptionPage() {
                 </Stack>
               </Box>
             )}
-            <Alert severity="warning" sx={{ mt: 2 }}>
-              Payment processing is not yet implemented. This will submit your upgrade request, but you will need to contact support to complete the payment.
-            </Alert>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setUpgradeDialogOpen(false)}>Cancel</Button>
@@ -614,7 +651,7 @@ export default function SubscriptionPage() {
             >
               {upgradePlan.isPending 
                 ? 'Processing...' 
-                : (canResubscribe && selectedPlan === currentTier ? 'Resubscribe' : 'Request Upgrade')}
+                : (canResubscribe && selectedPlan === currentTier ? 'Continue to Payment' : 'Continue to Payment')}
             </Button>
           </DialogActions>
         </Dialog>
@@ -626,11 +663,8 @@ export default function SubscriptionPage() {
             <Alert severity="warning" sx={{ mb: 2 }}>
               Are you sure you want to cancel your subscription?
             </Alert>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Payment processing is not yet implemented. This will submit your cancellation request, but you may need to contact support to confirm the cancellation.
-            </Typography>
             <Typography variant="body2" color="text.secondary">
-              Normally, your subscription would remain active until the end of the current billing period, after which your account would be downgraded to the Free plan.
+              Your subscription will remain active until the end of the current billing period, after which your account will be downgraded to the Free plan.
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -641,7 +675,7 @@ export default function SubscriptionPage() {
               onClick={handleCancelSubscription}
               disabled={cancelSubscription.isPending}
             >
-              {cancelSubscription.isPending ? 'Processing...' : 'Request Cancellation'}
+              {cancelSubscription.isPending ? 'Processing...' : 'Cancel Subscription'}
             </Button>
           </DialogActions>
         </Dialog>
