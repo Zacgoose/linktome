@@ -179,7 +179,6 @@ export default function TwoFactorSetupWizard({
       setVerificationCode('');
       setError('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, method]);
 
   const renderStepContent = () => {
