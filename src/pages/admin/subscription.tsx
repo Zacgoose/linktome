@@ -649,9 +649,7 @@ export default function SubscriptionPage() {
               onClick={confirmUpgrade}
               disabled={upgradePlan.isPending}
             >
-              {upgradePlan.isPending 
-                ? 'Processing...' 
-                : (canResubscribe && selectedPlan === currentTier ? 'Continue to Payment' : 'Continue to Payment')}
+              {upgradePlan.isPending ? 'Processing...' : 'Continue to Payment'}
             </Button>
           </DialogActions>
         </Dialog>
