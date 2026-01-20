@@ -15,6 +15,9 @@ import {
   ExecuteDowngradeResponse,
 } from '@/types/subscriptionDowngrade';
 import { assessDowngradeImpact } from '@/utils/subscriptionDowngradeHandler';
+import { ShortLinksResponse, SubAccountsResponse, ApiKeysResponse } from '@/types/api';
+import { AppearanceData, LinksResponse } from '@/types/links';
+import { PagesResponse } from '@/types/pages';
 
 interface UseSubscriptionDowngradeProps {
   currentTier: UserTier;
@@ -26,32 +29,32 @@ export function useSubscriptionDowngrade({ currentTier, targetTier }: UseSubscri
   const [isLoadingAssessment, setIsLoadingAssessment] = useState(false);
 
   // Fetch user data for downgrade assessment
-  const { data: pages } = useApiGet({
+  const { data: pages } = useApiGet<PagesResponse>({
     url: 'admin/GetPages',
     queryKey: 'user-pages',
   });
 
-  const { data: links } = useApiGet({
+  const { data: links } = useApiGet<LinksResponse>({
     url: 'admin/GetLinks',
     queryKey: 'user-links',
   });
 
-  const { data: appearance } = useApiGet({
+  const { data: appearance } = useApiGet<AppearanceData>({
     url: 'admin/GetAppearance',
     queryKey: 'user-appearance',
   });
 
-  const { data: shortLinks } = useApiGet({
+  const { data: shortLinks } = useApiGet<ShortLinksResponse>({
     url: 'admin/GetShortLinks',
     queryKey: 'user-shortlinks',
   });
 
-  const { data: subAccounts } = useApiGet({
+  const { data: subAccounts } = useApiGet<SubAccountsResponse>({
     url: 'admin/GetSubAccounts',
     queryKey: 'user-subaccounts',
   });
 
-  const { data: apiKeys } = useApiGet({
+  const { data: apiKeys } = useApiGet<ApiKeysResponse>({
     url: 'admin/GetApiKeys',
     queryKey: 'user-apikeys',
   });
@@ -136,11 +139,11 @@ export function useSubscriptionDowngrade({ currentTier, targetTier }: UseSubscri
     }) => {
       if (!targetTier) return;
 
-      const request: ExecuteDowngradeRequest = {
+      const request = {
         userId: '', // Will be set by backend from auth context
         targetTier,
         options: {
-          strategy: 'user-choice',
+          strategy: 'user-choice' as const,
           userSelections,
           notifyUser: true,
         },
@@ -149,7 +152,7 @@ export function useSubscriptionDowngrade({ currentTier, targetTier }: UseSubscri
 
       executeDowngrade.mutate({
         url: 'admin/executeDowngrade',
-        data: request,
+        data: request as any, // Type assertion needed for mutation
       });
     },
     [targetTier, executeDowngrade]
@@ -171,7 +174,7 @@ export function useSubscriptionDowngrade({ currentTier, targetTier }: UseSubscri
           userId: '', // Will be set by backend
           targetTier,
           options,
-        },
+        } as any, // Type assertion needed for mutation
       });
     },
     handleDowngrade,

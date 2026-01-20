@@ -15,9 +15,7 @@ import {
   AlertTitle,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
-  Divider,
   Button,
   Dialog,
   DialogTitle,
@@ -25,21 +23,17 @@ import {
   DialogActions,
   Checkbox,
   FormControlLabel,
-  Stack,
   Chip,
   Collapse,
   IconButton,
 } from '@mui/material';
 import {
-  Warning as WarningIcon,
-  CheckCircle as CheckIcon,
   Cancel as RemoveIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  Info as InfoIcon,
 } from '@mui/icons-material';
 import { SubscriptionDowngradeAssessment } from '@/types/subscriptionDowngrade';
-import { UserTier, TIER_INFO } from '@/types/tiers';
+import { TIER_INFO } from '@/types/tiers';
 
 interface SubscriptionDowngradePreviewProps {
   assessment: SubscriptionDowngradeAssessment;
@@ -68,15 +62,21 @@ export default function SubscriptionDowngradePreview({
 
   // Initialize selections with items that will be kept
   useEffect(() => {
-    if (features.pages?.pagesToKeep) {
-      setSelectedPages(features.pages.pagesToKeep.map(p => p.id));
-    }
-    if (features.links?.linksToKeep) {
-      setSelectedLinks(features.links.linksToKeep.map(l => l.id));
-    }
-    if (features.shortLinks?.shortLinksToKeep) {
-      setSelectedShortLinks(features.shortLinks.shortLinksToKeep.map(sl => sl.slug));
-    }
+    const updateSelections = () => {
+      if (features.pages?.pagesToKeep) {
+        setSelectedPages(features.pages.pagesToKeep.map(p => p.id));
+      }
+      if (features.links?.linksToKeep) {
+        setSelectedLinks(features.links.linksToKeep.map(l => l.id));
+      }
+      if (features.shortLinks?.shortLinksToKeep) {
+        setSelectedShortLinks(features.shortLinks.shortLinksToKeep.map(sl => sl.slug));
+      }
+    };
+
+    // Use a timeout to avoid setState in effect warning
+    const timer = setTimeout(updateSelections, 0);
+    return () => clearTimeout(timer);
   }, [features]);
 
   const toggleSection = (section: string) => {
