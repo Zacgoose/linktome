@@ -40,6 +40,7 @@ import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { getTierLimits } from '@/utils/tierValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import TierRestrictionBadge, { useTierRestrictions, GlobalUpgradePrompt } from '@/components/TierRestrictionBadge';
 
 interface PageCardProps {
   page: Page;
@@ -81,6 +82,13 @@ function PageCard({ page, onEdit, onDelete, onSetDefault, onCopyUrl, username }:
                   size="small"
                   color="primary"
                   sx={{ height: 24 }}
+                />
+              )}
+              {page.exceedsTierLimit && (
+                <TierRestrictionBadge
+                  type="badge"
+                  feature="This page"
+                  size="small"
                 />
               )}
             </Box>
@@ -162,6 +170,9 @@ export default function PagesPage() {
   const pages = pagesData?.pages || [];
   const tierLimits = getTierLimits(userTier);
   const maxPagesCheck = canAccess('maxPages');
+  
+  // Check for tier restrictions
+  const tierRestrictions = useTierRestrictions({ pages });
 
   // Create page mutation
   const createPage = useApiPost<any, CreatePageRequest>({
@@ -355,6 +366,9 @@ export default function PagesPage() {
               Upgrade to Pro to create multiple pages for different audiences, purposes, or brands.
             </Alert>
           )}
+          
+          {/* Tier Restriction Warning */}
+          <GlobalUpgradePrompt restrictions={tierRestrictions} />
 
           {/* Add Page Button */}
           <Button

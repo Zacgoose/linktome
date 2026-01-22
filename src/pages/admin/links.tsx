@@ -76,6 +76,7 @@ import UpgradePrompt from '@/components/UpgradePrompt';
 import { usePageContext } from '@/context/PageContext';
 import { usePageValidation } from '@/hooks/usePageValidation';
 import NoPageDialog from '@/components/NoPageDialog';
+import { useTierRestrictions, GlobalUpgradePrompt } from '@/components/TierRestrictionBadge';
 
 interface SortableLinkCardProps {
   link: Link;
@@ -456,6 +457,12 @@ export default function LinksPage() {
     const { theme: _theme, customTheme: _customTheme, ...rest } = source;
     return rest as AppearanceData;
   }, [appearanceData]);
+  
+  // Check for tier restrictions
+  const tierRestrictions = useTierRestrictions({ 
+    links,
+    appearance: appearanceData,
+  });
 
   // DnD sensors
   const sensors = useSensors(
@@ -762,6 +769,10 @@ export default function LinksPage() {
           <Typography variant="body2" color="text.secondary" paragraph>
             Manage the links your visitors will see
           </Typography>
+          
+          {/* Tier Restriction Warning */}
+          <GlobalUpgradePrompt restrictions={tierRestrictions} />
+          
           {/* Mobile Preview - Show at top on small screens */}
           <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>

@@ -47,6 +47,7 @@ import UpgradePrompt from '@/components/UpgradePrompt';
 import TierBadge from '@/components/TierBadge';
 import { getTierLimits } from '@/utils/tierValidation';
 import { UserTier } from '@/types/tiers';
+import { useTierRestrictions, GlobalUpgradePrompt } from '@/components/TierRestrictionBadge';
 import type {
   ShortLink,
   ShortLinksResponse,
@@ -72,6 +73,9 @@ export default function ShortLinksPage() {
 
   const shortLinks = shortLinksData?.shortLinks || [];
   const total = shortLinksData?.total || 0;
+  
+  // Check for tier restrictions
+  const tierRestrictions = useTierRestrictions({ shortLinks });
 
   // Mutations
   const updateShortLinks = useApiPut<UpdateShortLinksResponse, UpdateShortLinksRequest>({
@@ -339,6 +343,9 @@ export default function ShortLinksPage() {
               </Box>
               <TierBadge tier={userTier} size="small" />
             </Stack>
+            
+            {/* Tier Restriction Warning */}
+            <GlobalUpgradePrompt restrictions={tierRestrictions} />
 
             {/* Usage Info */}
             <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
@@ -417,6 +424,14 @@ export default function ShortLinksPage() {
                             }}
                           />
                         </Tooltip>
+                        {link.exceedsTierLimit && (
+                          <Chip
+                            label="Requires Upgrade"
+                            size="small"
+                            color="warning"
+                            sx={{ ml: 1 }}
+                          />
+                        )}
                       </TableCell>
                       <TableCell>
                         <Tooltip title={link.targetUrl}>

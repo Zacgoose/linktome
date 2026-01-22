@@ -26,6 +26,11 @@ export interface Link {
   clicks?: number;
   clicksTrend?: 'up' | 'down' | 'neutral';
   groupId?: string | null;
+  // Tier restriction flags (optional, only present when feature exceeds tier)
+  layoutExceedsTier?: boolean; // Custom layout exceeds tier
+  animationExceedsTier?: boolean; // Animation exceeds tier
+  scheduleExceedsTier?: boolean; // Scheduling exceeds tier
+  lockExceedsTier?: boolean; // Lock feature exceeds tier
 }
 
 export interface LinkGroup {
@@ -127,6 +132,10 @@ export interface AppearanceData {
   
   // Footer
   hideFooter: boolean;
+  
+  // Tier restriction flags (optional, only present when feature exceeds tier)
+  exceedsTierLimit?: boolean; // Custom theme or premium theme exceeds tier
+  videoExceedsTierLimit?: boolean; // Video background exceeds tier
   
   // Legacy support (for backwards compatibility)
   buttonStyle?: string;

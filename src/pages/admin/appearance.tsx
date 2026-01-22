@@ -75,6 +75,7 @@ import { usePageValidation } from '@/hooks/usePageValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import NoPageDialog from '@/components/NoPageDialog';
 import { canUseFontFamily, canUseTheme } from '@/utils/tierValidation';
+import { useTierRestrictions, GlobalUpgradePrompt } from '@/components/TierRestrictionBadge';
 
 interface SectionProps {
   title: string;
@@ -401,6 +402,11 @@ export default function AppearancePage() {
   const activeLinks = linksData?.links?.filter(link => link.active).sort((a, b) => a.order - b.order) || [];
 
   const [formData, setFormData] = useState<AppearanceData>(DEFAULT_APPEARANCE);
+  
+  // Check for tier restrictions
+  const tierRestrictions = useTierRestrictions({ 
+    appearance: data,
+  });
 
   // Profile Information states
   const [editingAvatar, setEditingAvatar] = useState(false);
@@ -639,6 +645,9 @@ export default function AppearancePage() {
           <Typography variant="body2" color="text.secondary" paragraph>
             Customize how your profile looks to visitors
           </Typography>
+          
+          {/* Tier Restriction Warning */}
+          <GlobalUpgradePrompt restrictions={tierRestrictions} />
 
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4 }}>
             {/* Mobile Preview - Show at top on small screens */}

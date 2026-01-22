@@ -315,6 +315,7 @@ export interface ShortLink {
   clicks: number;
   createdAt: string;
   lastClickedAt: string | null;
+  exceedsTierLimit?: boolean; // Optional: true when short link exceeds user's tier limit
 }
 
 /**
