@@ -37,7 +37,8 @@ export function PageProvider({ children }: PageProviderProps) {
     enabled: isAdminRoute && hasPageAccess,
   });
 
-  const pages = pagesData?.pages || [];
+  // Exclude pages that exceed tier limit
+  const pages = (pagesData?.pages || []).filter(p => !p.exceedsTierLimit);
 
   // Set initial current page to default page when pages load
   useEffect(() => {
