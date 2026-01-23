@@ -182,9 +182,6 @@ export default function PagesPage() {
       setDialogOpen(false);
       resetForm();
     },
-    onError: (error) => {
-      showToast(`Failed to create page: ${error}`, 'error');
-    },
   });
 
   // Update page mutation
@@ -195,9 +192,6 @@ export default function PagesPage() {
       setDialogOpen(false);
       resetForm();
     },
-    onError: (error) => {
-      showToast(`Failed to update page: ${error}`, 'error');
-    },
   });
 
   // Delete page mutation
@@ -205,9 +199,6 @@ export default function PagesPage() {
     onSuccess: () => {
       showToast('Page deleted successfully', 'success');
       refetch();
-    },
-    onError: (error) => {
-      showToast(`Failed to delete page: ${error}`, 'error');
     },
   });
 
