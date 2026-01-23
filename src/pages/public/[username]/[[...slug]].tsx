@@ -239,9 +239,7 @@ export default function PublicProfile() {
   });
 
   // Mutation for verifying link codes
-  const verifyCode = useApiPost<{ success: boolean }>({
-    onError: (error) => console.error('Invalid code:', error),
-  });
+  const verifyCode = useApiPost<{ success: boolean }>({});
 
   const handleLinkClick = async (link: Link, e: React.MouseEvent) => {
     e.preventDefault();

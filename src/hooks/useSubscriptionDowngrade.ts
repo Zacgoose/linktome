@@ -102,9 +102,6 @@ export function useSubscriptionDowngrade({ currentTier, targetTier }: UseSubscri
     onSuccess: (data) => {
       setAssessment(data.assessment);
     },
-    onError: (error) => {
-      console.error('Failed to preview downgrade:', error);
-    },
   });
 
   /**
@@ -120,12 +117,6 @@ export function useSubscriptionDowngrade({ currentTier, targetTier }: UseSubscri
       'user-subaccounts',
       'user-apikeys',
     ],
-    onSuccess: (data) => {
-      console.log('Downgrade executed successfully:', data.message);
-    },
-    onError: (error) => {
-      console.error('Failed to execute downgrade:', error);
-    },
   });
 
   /**

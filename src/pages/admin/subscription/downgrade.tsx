@@ -22,7 +22,6 @@ import {
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
-  CheckCircle as ConfirmIcon,
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import SubscriptionDowngradePreview from '@/components/SubscriptionDowngradePreview';
@@ -56,7 +55,6 @@ export default function SubscriptionDowngradePage() {
     isExecuting,
     generateAssessment,
     handleDowngrade,
-    requiresUserAction,
     hasWarnings,
   } = useSubscriptionDowngrade({
     currentTier: subscription?.currentTier || UserTier.FREE,

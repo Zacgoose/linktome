@@ -36,7 +36,6 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPost, useApiPut, useApiDelete } from '@/hooks/useApiQuery';
 import { Page, PagesResponse, CreatePageRequest, UpdatePageRequest, validatePageSlug, generateSlug } from '@/types/pages';
-import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { getTierLimits } from '@/utils/tierValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
@@ -147,7 +146,6 @@ function PageCard({ page, onEdit, onDelete, onSetDefault, onCopyUrl, username }:
 }
 
 export default function PagesPage() {
-  const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
   
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -177,7 +175,6 @@ export default function PagesPage() {
   // Create page mutation
   const createPage = useApiPost<any, CreatePageRequest>({
     onSuccess: () => {
-      showToast('Page created successfully', 'success');
       refetch();
       setDialogOpen(false);
       resetForm();
@@ -187,7 +184,6 @@ export default function PagesPage() {
   // Update page mutation
   const updatePage = useApiPut<any, UpdatePageRequest>({
     onSuccess: () => {
-      showToast('Page updated successfully', 'success');
       refetch();
       setDialogOpen(false);
       resetForm();
@@ -197,7 +193,6 @@ export default function PagesPage() {
   // Delete page mutation
   const deletePage = useApiDelete({
     onSuccess: () => {
-      showToast('Page deleted successfully', 'success');
       refetch();
     },
   });
@@ -231,7 +226,6 @@ export default function PagesPage() {
   const handleDeletePage = (id: string) => {
     const page = pages.find(p => p.id === id);
     if (page?.isDefault) {
-      showToast('Cannot delete the default page', 'error');
       return;
     }
 
@@ -258,7 +252,6 @@ export default function PagesPage() {
         : `${window.location.origin}/public/${profileData?.username}/${page.slug}`;
       
       navigator.clipboard.writeText(pageUrl);
-      showToast('Page URL copied to clipboard', 'success');
     }
   };
 
@@ -288,7 +281,6 @@ export default function PagesPage() {
     }
 
     if (!formData.name.trim()) {
-      showToast('Please enter a page name', 'error');
       return;
     }
 

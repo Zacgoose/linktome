@@ -42,7 +42,6 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPut } from '@/hooks/useApiQuery';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
-import { useToast } from '@/context/ToastContext';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import TierBadge from '@/components/TierBadge';
 import { getTierLimits } from '@/utils/tierValidation';
@@ -56,7 +55,6 @@ import type {
 } from '@/types/api';
 
 export default function ShortLinksPage() {
-  const { showToast } = useToast();
   const { userTier, canAccess, showUpgrade, upgradeInfo, openUpgradePrompt, closeUpgradePrompt } = useFeatureGate();
   
   // Check if user can access short links feature
@@ -81,12 +79,7 @@ export default function ShortLinksPage() {
   const updateShortLinks = useApiPut<UpdateShortLinksResponse, UpdateShortLinksRequest>({
     onSuccess: (data) => {
       refetch();
-      if (data.created && data.created.length > 0) {
-        const newLink = data.created[0];
-        showToast(`Short link created: ${newLink.slug}`, 'success');
-      } else {
-        showToast('Short link updated successfully', 'success');
-      }
+      if (data.created && data.created.length > 0) {} else {}
     },
     onError: (error: any) => {
       const errorData = error.response?.data;
@@ -99,12 +92,8 @@ export default function ShortLinksPage() {
       
       // Handle limit exceeded
       if (errorData?.currentCount !== undefined && errorData?.limit !== undefined) {
-        showToast(errorData.error || 'Short link limit exceeded', 'error');
         return;
       }
-      
-      // Generic error
-      showToast(errorData?.error || 'Failed to update short link', 'error');
     },
   });
 
@@ -131,7 +120,6 @@ export default function ShortLinksPage() {
     
     // Check limit
     if (maxShortLinks !== -1 && total >= maxShortLinks) {
-      showToast(`You have reached your limit of ${maxShortLinks} short links. Upgrade to create more.`, 'warning');
       openUpgradePrompt('Short Links', userTier === UserTier.PRO ? UserTier.PREMIUM : UserTier.PRO);
       return;
     }
@@ -144,7 +132,6 @@ export default function ShortLinksPage() {
 
   const handleCreate = () => {
     if (!targetUrl.trim()) {
-      showToast('Please enter a target URL', 'error');
       return;
     }
 
@@ -175,7 +162,6 @@ export default function ShortLinksPage() {
 
   const handleEdit = () => {
     if (!selectedLink || !targetUrl.trim()) {
-      showToast('Please enter a target URL', 'error');
       return;
     }
 
@@ -238,7 +224,6 @@ export default function ShortLinksPage() {
   const handleCopyLink = (slug: string) => {
     const shortUrl = `${window.location.origin}/l/${slug}`;
     navigator.clipboard.writeText(shortUrl);
-    showToast('Short link copied to clipboard', 'success');
     setMenuAnchorEl(null);
   };
 

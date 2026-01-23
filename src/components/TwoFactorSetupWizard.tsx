@@ -82,17 +82,12 @@ export default function TwoFactorSetupWizard({
     onSuccess: (data) => {
       setSetupData(data.data);
       setActiveStep(1); // Move to setup step
-      setError('');
-    },
-    onError: (error: string) => {
-      setError(error || 'Failed to initialize 2FA setup');
     },
   });
 
   // Enable mutation
   const enableMutation = useApiPost<TwoFactorEnableResponse>({
-    onSuccess: (data) => {
-      setError('');
+    onSuccess: () => {
       if (setupMethod === 'totp') {
         setActiveStep(3); // Move to backup codes step
       } else {
@@ -100,14 +95,10 @@ export default function TwoFactorSetupWizard({
         onComplete();
       }
     },
-    onError: (error: string) => {
-      setError(error || 'Invalid verification code. Please try again.');
-    },
   });
 
   const handleMethodSelect = (selectedMethod: 'email' | 'totp') => {
     setSetupMethod(selectedMethod);
-    setError('');
     setupMutation.mutate({
       url: 'admin/2fatokensetup?action=setup',
       data: { type: selectedMethod },
@@ -116,7 +107,6 @@ export default function TwoFactorSetupWizard({
 
   const handleVerify = () => {
     if (!verificationCode || verificationCode.length !== 6) {
-      setError('Please enter a 6-digit code');
       return;
     }
 
@@ -155,7 +145,6 @@ export default function TwoFactorSetupWizard({
     setSetupMethod(null);
     setSetupData(null);
     setVerificationCode('');
-    setError('');
     onClose();
   };
 
@@ -166,7 +155,6 @@ export default function TwoFactorSetupWizard({
       setSetupMethod(method);
       setSetupData(null);
       setVerificationCode('');
-      setError('');
       setupMutation.mutate({
         url: 'admin/2fatokensetup?action=setup',
         data: { type: method },
@@ -177,7 +165,6 @@ export default function TwoFactorSetupWizard({
       setSetupMethod(method ?? null);
       setSetupData(null);
       setVerificationCode('');
-      setError('');
     }
   }, [open, method]);
 

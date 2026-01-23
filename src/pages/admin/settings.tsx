@@ -33,7 +33,6 @@ import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPut, useApiPost } from '@/hooks/useApiQuery';
 import TwoFactorSetupWizard from '@/components/TwoFactorSetupWizard';
 import { useAuthContext } from '@/providers/AuthProvider';
-import { useToast } from '@/context/ToastContext';
 
 interface UserProfile {
   UserId: string;
@@ -63,7 +62,6 @@ const validatePassword = (
 };
 
 export default function SettingsPage() {
-  const { showToast } = useToast();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

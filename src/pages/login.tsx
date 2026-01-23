@@ -68,22 +68,10 @@ export default function LoginPage() {
         router.push('/admin/dashboard');
       }
     },
-    onError: (error: string) => {
-      setError(error);
-      setTimeout(() => setError(''), 5000);
-    },
   });
 
   // 2FA resend code mutation
-  const resend2FAMutation = useApiPost({
-    onSuccess: () => {
-      // Success message is handled by the component's cooldown timer
-    },
-    onError: (error: string) => {
-      setError(error);
-      setTimeout(() => setError(''), 5000);
-    },
-  });
+  const resend2FAMutation = useApiPost({});
 
   const loginMutation = useApiPost<LoginResponse>({
     onSuccess: (data: LoginResponse) => {
@@ -106,10 +94,8 @@ export default function LoginPage() {
         }
       }
     },
-    onError: (error: string) => {
-      setError(error);
+    onError: () => {
       resetTurnstile(); // Reset on failure so user can retry
-      setTimeout(() => setError(''), 5000);
     },
   });
 
@@ -134,16 +120,13 @@ export default function LoginPage() {
         }
       }
     },
-    onError: (error: string) => {
-      setError(error);
+    onError: () => {
       resetTurnstile();
-      setTimeout(() => setError(''), 5000);
     },
   });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
     
     if (!turnstileToken) {
       setError('Please complete the security verification');
@@ -186,7 +169,6 @@ export default function LoginPage() {
   const handle2FABack = () => {
     setShow2FA(false);
     setTwoFactorSessionId('');
-    setError('');
     resetTurnstile();
   };
 
@@ -293,7 +275,6 @@ export default function LoginPage() {
                         }}
                         onError={() => {
                           setTurnstileStatus('error');
-                          setError('Security verification failed to load. Please refresh the page.');
                         }}
                         onExpire={() => {
                           setTurnstileToken(null);

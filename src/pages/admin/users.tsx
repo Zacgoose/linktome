@@ -76,8 +76,6 @@ export default function UsersPage() {
   const subAccounts = subAccountsData?.subAccounts || [];
   const subAccountLimits = subAccountsData?.limits;
   
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
   const [inviteEmail, setInviteEmail] = useReactState('');
   const [managerSearchTerm, setManagerSearchTerm] = useState('');
   const [manageeSearchTerm, setManageeSearchTerm] = useState('');
@@ -100,41 +98,23 @@ export default function UsersPage() {
   const inviteRole = 'user_manager';
   const inviteUserManager = useApiPost({
     onSuccess: () => {
-      setSuccess('User invite sent!');
       setInviteEmail('');
       refreshAuth();
-    },
-    onError: (err: unknown) => {
-      if (typeof err === 'string') setError(err);
-      else if (err instanceof Error) setError(err.message);
-      else setError('Failed to send invite');
     },
     relatedQueryKeys: ['admin-user-manager-list'],
   });
 
   const userManagerAction = useApiPost({
     onSuccess: () => {
-      setSuccess('Action successful!');
       refreshAuth();
-    },
-    onError: (err: unknown) => {
-      if (typeof err === 'string') setError(err);
-      else if (err instanceof Error) setError(err.message);
-      else setError('Failed to perform action');
     },
   });
 
   // User pack mutation
   const purchaseUserPack = useApiPost<PurchaseUserPackResponse>({
     onSuccess: (data) => {
-      setSuccess(data.message);
       setPackDialogOpen(false);
       refreshAuth(); // Refresh to get new permissions
-    },
-    onError: (err: unknown) => {
-      if (typeof err === 'string') setError(err);
-      else if (err instanceof Error) setError(err.message);
-      else setError('Failed to purchase user pack');
     },
     relatedQueryKeys: ['admin-sub-accounts'],
   });
@@ -142,28 +122,16 @@ export default function UsersPage() {
   // Sub-account mutations
   const createSubAccount = useApiPost({
     onSuccess: () => {
-      setSuccess('Sub-account created successfully!');
       setCreateDialogOpen(false);
       setNewSubAccount({ username: '', displayName: '' });
       refreshAuth(); // Refresh to get new permissions
-    },
-    onError: (err: unknown) => {
-      if (typeof err === 'string') setError(err);
-      else if (err instanceof Error) setError(err.message);
-      else setError('Failed to create sub-account');
     },
     relatedQueryKeys: ['admin-sub-accounts'],
   });
 
   const deleteSubAccount = useApiPost({
     onSuccess: () => {
-      setSuccess('Sub-account deleted successfully!');
       refreshAuth(); // Refresh to get new permissions
-    },
-    onError: (err: unknown) => {
-      if (typeof err === 'string') setError(err);
-      else if (err instanceof Error) setError(err.message);
-      else setError('Failed to delete sub-account');
     },
     relatedQueryKeys: ['admin-sub-accounts'],
   });
@@ -180,8 +148,6 @@ export default function UsersPage() {
 
   // --- User Management Handlers ---
   const handleUserInvite = () => {
-    setError('');
-    setSuccess('');
     inviteUserManager.mutate({
       url: 'admin/UserManagerInvite',
       data: { email: inviteEmail, role: inviteRole },
@@ -189,8 +155,6 @@ export default function UsersPage() {
   };
 
   const handleUserAction = (UserId: string, action: 'accept' | 'reject' | 'remove') => {
-    setError('');
-    setSuccess('');
     let url = '';
     let data: any = {};
     if (action === 'accept' || action === 'reject') {
@@ -205,8 +169,6 @@ export default function UsersPage() {
 
   // --- Sub-Account Handlers ---
   const handlePurchaseUserPack = () => {
-    setError('');
-    setSuccess('');
     purchaseUserPack.mutate({
       url: 'admin/PurchaseUserPack',
       data: userPackRequest as unknown as Record<string, unknown>,
@@ -214,8 +176,6 @@ export default function UsersPage() {
   };
 
   const handleCreateSubAccount = () => {
-    setError('');
-    setSuccess('');
     createSubAccount.mutate({
       url: 'admin/CreateSubAccount',
       data: newSubAccount as unknown as Record<string, unknown>,
@@ -226,8 +186,6 @@ export default function UsersPage() {
     if (!confirm('Are you sure you want to delete this sub-account? This action cannot be undone.')) {
       return;
     }
-    setError('');
-    setSuccess('');
     deleteSubAccount.mutate({
       url: 'admin/DeleteSubAccount',
       data: { userId },
@@ -244,18 +202,6 @@ export default function UsersPage() {
           <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
             User Management
           </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-              {error}
-            </Alert>
-          )}
-
-          {success && (
-            <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
-              {success}
-            </Alert>
-          )}
 
           {/* User Management Section */}
           <Card sx={{ mt: 2 }}>

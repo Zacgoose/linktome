@@ -48,7 +48,6 @@ const TIMER_STATUS = {
 } as const;
 
 export default function TimersPage() {
-  const { showToast } = useToast();
   const [runDialogOpen, setRunDialogOpen] = useState(false);
   const [selectedTimer, setSelectedTimer] = useState<Timer | null>(null);
 
@@ -61,8 +60,7 @@ export default function TimersPage() {
 
   const runTimerMutation = useApiPost<RunTimerResponse, RunTimerRequest>({
     relatedQueryKeys: ['siteadmin-listtimers'],
-    onSuccess: (data) => {
-      showToast(`Timer ${data.command} executed successfully`, 'success');
+    onSuccess: () => {
       setRunDialogOpen(false);
       setSelectedTimer(null);
       refetch();

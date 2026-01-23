@@ -86,15 +86,11 @@ export default function SubscriptionPage() {
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        setError('Failed to create checkout session');
         setUpgradeDialogOpen(false);
       }
     },
-    onError: (err: any) => {
-      const msg = typeof err === 'string' ? err : err?.message || 'Failed to create checkout session';
-      setError(msg);
+    onError: () => {
       setUpgradeDialogOpen(false);
-      setTimeout(() => setError(''), 5000);
     },
   });
 
@@ -104,13 +100,7 @@ export default function SubscriptionPage() {
       if (data.portalUrl) {
         window.location.href = data.portalUrl;
       } else {
-        setError('Failed to open customer portal');
       }
-    },
-    onError: (err: any) => {
-      const msg = typeof err === 'string' ? err : err?.message || 'Failed to open customer portal';
-      setError(msg);
-      setTimeout(() => setError(''), 5000);
     },
   });
 

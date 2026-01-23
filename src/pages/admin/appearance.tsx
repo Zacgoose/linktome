@@ -439,9 +439,6 @@ export default function AppearancePage() {
 
   const updateAppearance = useApiPut({
     relatedQueryKeys: [`admin-appearance-${currentPage?.id || 'none'}`, 'admin-profile'],
-    onSuccess: () => {
-      showToast('Appearance updated successfully', 'success');
-    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -558,7 +555,6 @@ export default function AppearancePage() {
     });
     
     setEditingAvatar(false);
-    showToast('Avatar updated successfully', 'success');
   };
 
   const handleThemeSelect = (theme: AppearanceTheme) => {

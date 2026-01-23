@@ -69,7 +69,6 @@ import {
   UpdateLinksRequest,
 } from '@/types/links';
 import { UserProfile } from '@/types/api';
-import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { getTierLimits } from '@/utils/tierValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
@@ -405,8 +404,6 @@ function SortableGroup({
 }
 
 export default function LinksPage() {
-  const router = useRouter();
-  const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
   const { currentPage, pages } = usePageContext();
   const { hasPages, noPagesDialogOpen, handleNoPagesDialogClose, showNoPagesDialog } = usePageValidation();
@@ -476,7 +473,6 @@ export default function LinksPage() {
   const updateLinks = useApiPut<any, UpdateLinksRequest>({
     relatedQueryKeys: [`admin-links-${currentPage?.id ?? 'none'}`],
     onSuccess: () => {
-      showToast('Changes saved', 'success');
       refetch();
     },
   });
