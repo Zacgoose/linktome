@@ -33,6 +33,7 @@ import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPut, useApiPost } from '@/hooks/useApiQuery';
 import TwoFactorSetupWizard from '@/components/TwoFactorSetupWizard';
 import { useAuthContext } from '@/providers/AuthProvider';
+import { useToast } from '@/context/ToastContext';
 
 interface UserProfile {
   UserId: string;
@@ -62,8 +63,7 @@ const validatePassword = (
 };
 
 export default function SettingsPage() {
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const { showToast } = useToast();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -105,68 +105,38 @@ export default function SettingsPage() {
 
   const updatePassword = useApiPut({
     onSuccess: () => {
-      setSuccess('Password updated successfully');
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setTimeout(() => setSuccess(''), 3000);
-    },
-    onError: (err) => {
-      setError(err || 'Failed to update password');
-      setTimeout(() => setError(''), 5000);
     },
   });
 
   const updateEmail = useApiPut({
     onSuccess: async () => {
-      setSuccess('Email updated successfully');
       setEmailData({ newEmail: '', password: '' });
       setChangeEmailDialogOpen(false);
       await refreshAuth();
       refetch();
-      setTimeout(() => setSuccess(''), 5000);
-    },
-    onError: (err) => {
-      setError(err || 'Failed to update email');
-      setTimeout(() => setError(''), 5000);
     },
   });
 
   const updatePhone = useApiPut({
     onSuccess: () => {
-      setSuccess('Phone number updated successfully');
       refetch();
-      setTimeout(() => setSuccess(''), 3000);
-    },
-    onError: (err) => {
-      setError(err || 'Failed to update phone number');
-      setTimeout(() => setError(''), 5000);
     },
   });
 
   const resetTotp = useApiPost({
     onSuccess: async () => {
-      setSuccess('Authenticator App 2FA has been disabled');
       setResetTotpDialogOpen(false);
       await refreshAuth();
       refetch();
-      setTimeout(() => setSuccess(''), 3000);
-    },
-    onError: (err) => {
-      setError(err || 'Failed to disable Authenticator App 2FA');
-      setTimeout(() => setError(''), 5000);
     },
   });
 
   const resetEmail = useApiPost({
     onSuccess: async () => {
-      setSuccess('Email 2FA has been disabled');
       setResetEmailDialogOpen(false);
       await refreshAuth();
       refetch();
-      setTimeout(() => setSuccess(''), 3000);
-    },
-    onError: (err) => {
-      setError(err || 'Failed to disable Email 2FA');
-      setTimeout(() => setError(''), 5000);
     },
   });
 
@@ -186,24 +156,18 @@ export default function SettingsPage() {
 
   const handleTotpSetupComplete = async () => {
     setSetupTotpDialogOpen(false);
-    setSuccess('Authenticator App 2FA has been configured successfully');
     await refreshAuth();
     refetch();
-    setTimeout(() => setSuccess(''), 3000);
   };
 
   const handleEmailSetupComplete = async () => {
     setSetupEmailDialogOpen(false);
-    setSuccess('Email 2FA has been configured successfully');
     await refreshAuth();
     refetch();
-    setTimeout(() => setSuccess(''), 3000);
   };
 
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     const validation = validatePassword(
       passwordData.currentPassword,
@@ -212,8 +176,6 @@ export default function SettingsPage() {
     );
 
     if (!validation.valid) {
-      setError(validation.error || 'Invalid password');
-      setTimeout(() => setError(''), 5000);
       return;
     }
 
@@ -227,12 +189,8 @@ export default function SettingsPage() {
   };
 
   const handleEmailChange = () => {
-    setError('');
-    setSuccess('');
 
     if (!emailData.newEmail || !emailData.password) {
-      setError('Please fill in all fields');
-      setTimeout(() => setError(''), 5000);
       return;
     }
 
@@ -244,8 +202,6 @@ export default function SettingsPage() {
 
   const handlePhoneUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     updatePhone.mutate({
       url: 'admin/UpdatePhone',
@@ -281,18 +237,6 @@ export default function SettingsPage() {
           <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
             Manage your security and account preferences
           </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-              {error}
-            </Alert>
-          )}
-
-          {success && (
-            <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
-              {success}
-            </Alert>
-          )}
 
           {/* Password Section */}
           <Card sx={{ mb: 3 }}>

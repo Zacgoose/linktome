@@ -5,7 +5,7 @@
  * Shows affected features and allows user to choose which items to keep.
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
