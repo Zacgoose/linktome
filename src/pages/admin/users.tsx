@@ -390,9 +390,6 @@ export default function UsersPage() {
                   <Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                       <Typography variant="body2" color="text.secondary">
-                        Current Pack: <strong>{subAccountLimits.userPackType || 'None'}</strong>
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
                         {subAccountLimits.usedSubAccounts} / {subAccountLimits.maxSubAccounts === -1 ? '∞' : subAccountLimits.maxSubAccounts} sub-accounts
                       </Typography>
                     </Box>
@@ -508,7 +505,7 @@ export default function UsersPage() {
                       <TableRow sx={{ bgcolor: 'action.hover' }}>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Username</TableCell>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Display Name</TableCell>
-                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Status</TableCell>
+                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Disabled</TableCell>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Pages</TableCell>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Links</TableCell>
                         <TableCell sx={{ fontWeight: 600, py: 2 }}>Created</TableCell>
@@ -536,9 +533,9 @@ export default function UsersPage() {
                             <TableCell sx={{ py: 2 }}>{sa.displayName || '-'}</TableCell>
                             <TableCell sx={{ py: 2 }}>
                               <Chip 
-                                label={sa.status} 
+                                label={sa.disabled === 'true' ? 'No' : 'Yes'} 
                                 size="small" 
-                                color={sa.status === 'active' ? 'success' : 'default'}
+                                color={sa.disabled === true ? 'error' : 'success'}
                               />
                             </TableCell>
                             <TableCell sx={{ py: 2 }}>{sa.pagesCount ?? '-'}</TableCell>

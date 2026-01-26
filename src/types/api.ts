@@ -130,6 +130,8 @@ export interface ApiKey {
   createdAt: string;
   lastUsedAt: string | null;
   lastUsedIP: string | null;
+  disabledReason: string | null;
+  active: boolean;
 }
 
 /**
@@ -147,27 +149,6 @@ export interface ApiKeysResponse {
     dailyRemaining: number;
     perKey: Record<string, { minuteUsed: number; minuteRemaining: number }>;
   };
-}
-
-/**
- * User Pack Purchase request
- */
-export interface PurchaseUserPackRequest {
-  packType: 'starter' | 'business' | 'enterprise' | 'none';
-  billingCycle: 'monthly' | 'annual';
-  customLimit?: number; // Optional: Only for enterprise pack
-}
-
-/**
- * User Pack Purchase response
- */
-export interface PurchaseUserPackResponse {
-  userId: string;
-  packType: string;
-  packLimit: number;
-  role: string;
-  expiresAt: string | null;
-  message: string;
 }
 
 /**
@@ -198,6 +179,8 @@ export interface SubAccountsResponse {
     remainingSubAccounts: number;
     userPackType?: string | null;
     userPackExpired?: boolean;
+    disabled: boolean;
+    disabledReason?: string;
   };
 }
 
