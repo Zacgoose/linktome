@@ -90,7 +90,6 @@ export interface TextStyle {
   pageTextColor: string;
   usernameOpacity?: number;
   bioOpacity?: number;
-  footerOpacity?: number;
 }
 
 export interface HeaderStyle {

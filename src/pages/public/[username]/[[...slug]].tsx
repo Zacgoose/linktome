@@ -387,7 +387,6 @@ export default function PublicProfile() {
   const bodyFontFamily = getFontFamily(appearance.text?.bodyFont);
   const usernameOpacity = appearance.text?.usernameOpacity ?? 0.9;
   const bioOpacity = appearance.text?.bioOpacity ?? 0.8;
-  const footerOpacity = appearance.text?.footerOpacity ?? 0.8;
   
   // Separate links into grouped and ungrouped
   const ungroupedLinks = links.filter(link => !link.groupId);
@@ -451,7 +450,6 @@ export default function PublicProfile() {
                   bodyFontFamily={bodyFontFamily}
                   usernameOpacity={usernameOpacity}
                   bioOpacity={bioOpacity}
-                  footerOpacity={footerOpacity}
                   socialIcons={socialIcons}
                   ungroupedLinks={ungroupedLinks}
                   sortedGroups={sortedGroups}
@@ -472,7 +470,6 @@ export default function PublicProfile() {
                 bodyFontFamily={bodyFontFamily}
                 usernameOpacity={usernameOpacity}
                 bioOpacity={bioOpacity}
-                footerOpacity={footerOpacity}
                 socialIcons={socialIcons}
                 ungroupedLinks={ungroupedLinks}
                 sortedGroups={sortedGroups}
@@ -489,7 +486,7 @@ export default function PublicProfile() {
             <Box sx={{ mt: 4, textAlign: 'center' }}>
               <Typography 
                 variant="caption" 
-                sx={{ color: isLayoutCard ? 'text.secondary' : textColor, opacity: isLayoutCard ? 1 : footerOpacity }}
+                sx={{ color: isLayoutCard ? 'text.secondary' : textColor }}
               >
                 Powered by LinkToMe
               </Typography>
@@ -559,7 +556,6 @@ interface ProfileContentProps {
   bodyFontFamily: string;
   usernameOpacity: number;
   bioOpacity: number;
-  footerOpacity: number;
   socialIcons: SocialIcon[];
   ungroupedLinks: Link[];
   sortedGroups: LinkGroup[];

@@ -1267,7 +1267,6 @@ export default function AppearancePage() {
                           <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
                             Text opacity
                           </Typography>
-                          
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                               Username opacity: {Math.round((formData.text.usernameOpacity ?? 0.9) * 100)}%
@@ -1282,7 +1281,6 @@ export default function AppearancePage() {
                               valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
                             />
                           </Box>
-
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                               Bio opacity: {Math.round((formData.text.bioOpacity ?? 0.8) * 100)}%
@@ -1290,21 +1288,6 @@ export default function AppearancePage() {
                             <Slider
                               value={formData.text.bioOpacity ?? 0.8}
                               onChange={(_, v) => updateText({ bioOpacity: v as number })}
-                              min={0}
-                              max={1}
-                              step={0.05}
-                              valueLabelDisplay="auto"
-                              valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
-                            />
-                          </Box>
-
-                          <Box>
-                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                              Footer opacity: {Math.round((formData.text.footerOpacity ?? 0.8) * 100)}%
-                            </Typography>
-                            <Slider
-                              value={formData.text.footerOpacity ?? 0.8}
-                              onChange={(_, v) => updateText({ footerOpacity: v as number })}
                               min={0}
                               max={1}
                               step={0.05}

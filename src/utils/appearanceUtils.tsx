@@ -326,5 +326,4 @@ export const DEFAULT_TEXT: TextStyle = {
   pageTextColor: '#010101',
   usernameOpacity: 0.9,
   bioOpacity: 0.8,
-  footerOpacity: 0.8,
 };
