@@ -361,20 +361,13 @@ Return the complete rendered appearance (same format as above) for the public pr
 
 **On retrieval:** Return stored data without merging with defaults
 
-## Migration Notes
+## Database Schema
 
-### For Existing Users
-
-Users who already have saved appearances should continue to work:
-1. If they have `customTheme: true` or theme is "custom", treat as fully customizable
-2. If they have a curated theme but old format, use theme defaults and allow color customization going forward
-3. Frontend will handle the new structure going forward
-
-### Database Schema
-
-No schema changes required if appearance is stored as JSON. The new fields are:
+The appearance data is stored as JSON. Required fields:
 - `customTheme` (boolean) - indicates whether full customization is allowed
-- Frontend will send filtered data for curated themes automatically
+- `theme` (string) - the theme ID
+- For curated themes: Only store the customizable properties (colors)
+- For custom themes: Store all appearance properties
 
 ## Testing Checklist
 
@@ -383,7 +376,6 @@ No schema changes required if appearance is stored as JSON. The new fields are:
 - [ ] Modify colors on curated theme, verify colors save but other properties use defaults
 - [ ] Switch from custom to curated theme, verify restrictions apply
 - [ ] Switch from curated to custom theme, verify full customization available
-- [ ] Load existing profiles, verify backward compatibility
 - [ ] Verify public profile page renders correctly for both theme types
 
 ## Questions?

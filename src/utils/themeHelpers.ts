@@ -34,21 +34,14 @@ export function restoreThemeDefaults(themeId: string): Partial<AppearanceData> |
 
 /**
  * Check if a specific property is customizable for a given theme
- * Returns true for themes without customization rules (backward compatibility)
  */
 export function isPropertyCustomizable(
   themeId: string,
   property: keyof NonNullable<AppearanceTheme['customizableProperties']>
 ): boolean {
   const theme = getThemeById(themeId);
-  if (!theme) {
-    // Unknown theme - allow customization for safety
-    return true;
-  }
-  
-  if (!theme.customizableProperties) {
-    // No customization rules defined - treat as fully customizable (legacy support)
-    return true;
+  if (!theme || !theme.customizableProperties) {
+    return false;
   }
   
   return theme.customizableProperties[property] === true;
@@ -84,17 +77,8 @@ export function prepareAppearanceDataForApi(appearanceData: AppearanceData): App
   }
 
   // For curated themes, only send customizable properties
-  const customizable = theme.customizableProperties || {};
-  const themePreset = theme.appearance || {};
-  
-  // Ensure theme has required appearance defaults
-  if (!themePreset.wallpaper || !themePreset.buttons || !themePreset.text) {
-    console.warn(`Theme ${appearanceData.theme} is missing appearance defaults. Falling back to full customization.`);
-    return {
-      ...appearanceData,
-      customTheme: true,
-    };
-  }
+  const customizable = theme.customizableProperties!;
+  const themePreset = theme.appearance!;
   
   // Start with base data that's always sent
   const apiData: AppearanceData = {
@@ -105,10 +89,10 @@ export function prepareAppearanceDataForApi(appearanceData: AppearanceData): App
     hideFooter: appearanceData.hideFooter,
     pageId: appearanceData.pageId,
     
-    // Use theme defaults as base (safe to use non-null assertion after check above)
-    wallpaper: { ...themePreset.wallpaper },
-    buttons: { ...themePreset.buttons },
-    text: { ...themePreset.text },
+    // Use theme defaults as base
+    wallpaper: { ...themePreset.wallpaper! },
+    buttons: { ...themePreset.buttons! },
+    text: { ...themePreset.text! },
   };
 
   // Override with user customizations only if allowed
