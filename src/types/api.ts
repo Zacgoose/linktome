@@ -165,6 +165,8 @@ export interface SubAccount {
   createdAt?: string;
   pagesCount?: number;
   linksCount?: number;
+  disabled: boolean;
+  disabledReason?: string;
 }
 
 /**
@@ -179,8 +181,6 @@ export interface SubAccountsResponse {
     remainingSubAccounts: number;
     userPackType?: string | null;
     userPackExpired?: boolean;
-    disabled: boolean;
-    disabledReason?: string;
   };
 }
 
