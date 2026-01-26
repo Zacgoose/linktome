@@ -569,24 +569,6 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       socialIcons: true, // Allow social icons
     },
   },
-      buttons: {
-        type: 'glass',
-        cornerRadius: 'pill',
-        shadow: 'subtle',
-        backgroundColor: '#FDDC9D',
-        textColor: '#000000',
-        borderColor: '#fcbf49',
-      },
-      text: {
-        titleFont: 'inter',
-        titleColor: '#000000',
-        titleSize: 'small',
-        bodyFont: 'inter',
-        pageTextColor: '#000000',
-      },
-      layoutStyle: 'centered',
-    },
-  },
 ];
 
 // Pattern options
