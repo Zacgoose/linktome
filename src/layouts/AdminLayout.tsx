@@ -139,8 +139,8 @@ const menuItems: MenuItem[] = [
   const { hasPageAccess } = usePageContext();
   // managedUsers are already filtered for state === 'accepted' in AuthProvider
   const managedUsers = allManagedUsers || [];
-  // Sub-accounts from JWT (for agency admin users)
-  const subAccounts = user?.subAccounts?.filter(sa => sa.status === 'active') || [];
+  // Sub-accounts from JWT (for agency admin users) are filtered for status === 'active' and disabled === false here
+  const subAccounts = user?.subAccounts?.filter(sa => sa.status === 'active' && sa.disabled === false) || [];
   const [accountSearchTerm, setAccountSearchTerm] = useState('');
 
   // If user has no managed users or sub-accounts, ensure context is 'user'
