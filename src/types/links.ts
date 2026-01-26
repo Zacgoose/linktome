@@ -26,6 +26,11 @@ export interface Link {
   clicks?: number;
   clicksTrend?: 'up' | 'down' | 'neutral';
   groupId?: string | null;
+  // Tier restriction flags (optional, only present when feature exceeds tier)
+  layoutExceedsTier?: boolean; // Custom layout exceeds tier
+  animationExceedsTier?: boolean; // Animation exceeds tier
+  scheduleExceedsTier?: boolean; // Scheduling exceeds tier
+  lockExceedsTier?: boolean; // Lock feature exceeds tier
 }
 
 export interface LinkGroup {
@@ -85,7 +90,6 @@ export interface TextStyle {
   pageTextColor: string;
   usernameOpacity?: number;
   bioOpacity?: number;
-  footerOpacity?: number;
 }
 
 export interface HeaderStyle {
@@ -127,6 +131,10 @@ export interface AppearanceData {
   
   // Footer
   hideFooter: boolean;
+  
+  // Tier restriction flags (optional, only present when feature exceeds tier)
+  exceedsTierLimit?: boolean; // Custom theme or premium theme exceeds tier
+  videoExceedsTierLimit?: boolean; // Video background exceeds tier
   
   // Legacy support (for backwards compatibility)
   buttonStyle?: string;
@@ -184,6 +192,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'air',
     name: 'Air',
     type: 'customizable',
+    isPro: false,
     appearance: {
       wallpaper: { type: 'gradient', gradientStart: '#d7e8ff', gradientEnd: '#f5f7fb', gradientDirection: 135 },
       buttons: {
@@ -207,6 +216,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'blocks',
     name: 'Blocks',
     type: 'customizable',
+    isPro: false,
     appearance: {
       wallpaper: { type: 'pattern', patternType: 'grid', color: '#0b1021', patternColor: '#16213e' },
       buttons: {
@@ -229,6 +239,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'lake',
     name: 'Lake',
     type: 'customizable',
+    isPro: false,
     appearance: {
       wallpaper: { type: 'pattern', patternType: 'waves', color: '#0b132b', patternColor: '#1c2541' },
       buttons: {
@@ -253,6 +264,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'mineral',
     name: 'Mineral',
     type: 'customizable',
+    isPro: false,
     appearance: {
       wallpaper: { type: 'fill', color: '#0f172a' },
       buttons: {
@@ -277,7 +289,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'agate',
     name: 'Agate',
     type: 'customizable',
-    isPro: false,
+    isPro: true,
     appearance: {
       wallpaper: { type: 'gradient', gradientStart: '#1f1c2c', gradientEnd: '#928dab', gradientDirection: 220 },
       buttons: {
@@ -301,7 +313,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'astrid',
     name: 'Astrid',
     type: 'customizable',
-    isPro: false,
+    isPro: true,
     appearance: {
       wallpaper: { type: 'blur', color: '#0b0f1a', blur: 14, opacity: 0.94 },
       buttons: {
@@ -326,7 +338,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'aura',
     name: 'Aura',
     type: 'customizable',
-    isPro: false,
+    isPro: true,
     appearance: {
       wallpaper: { type: 'pattern', patternType: 'dots', color: '#0d1b2a', patternColor: '#415a77' },
       buttons: {
@@ -351,7 +363,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'bloom',
     name: 'Bloom',
     type: 'customizable',
-    isPro: false,
+    isPro: true,
     appearance: {
       wallpaper: { type: 'gradient', gradientStart: '#ff9a9e', gradientEnd: '#fecfef', gradientDirection: 160 },
       buttons: {
@@ -375,7 +387,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'breeze',
     name: 'Breeze',
     type: 'customizable',
-    isPro: false,
+    isPro: true,
     appearance: {
       wallpaper: { type: 'pattern', patternType: 'lines', color: '#e6f1ff', patternColor: '#c1d6f5' },
       buttons: {
@@ -400,7 +412,7 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     id: 'honeycomb',
     name: 'Honeycomb',
     type: 'customizable',
-    isPro: false,
+    isPro: true,
     appearance: {
       wallpaper: { type: 'pattern', patternType: 'honey', color: '#4E4E4E', patternColor: '#ECC94B' },
       buttons: {

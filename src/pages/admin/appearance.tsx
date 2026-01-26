@@ -66,7 +66,6 @@ import {
   PATTERN_OPTIONS,
   DEFAULT_APPEARANCE,
 } from '@/types/links';
-import { useToast } from '@/context/ToastContext';
 import { getBackgroundStyle, getButtonStyle } from '@/utils/appearanceUtils';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
@@ -75,6 +74,7 @@ import { usePageValidation } from '@/hooks/usePageValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import NoPageDialog from '@/components/NoPageDialog';
 import { canUseFontFamily, canUseTheme } from '@/utils/tierValidation';
+import { useTierRestrictions, GlobalUpgradePrompt } from '@/components/TierRestrictionBadge';
 
 interface SectionProps {
   title: string;
@@ -327,10 +327,11 @@ function ThemeCard({ theme, selected, onClick, userTier }: ThemeCardProps) {
         }}
       >
         {renderPreview()}
-        {theme.isPro && !canUseTheme(userTier, theme.isPro).allowed && (
+        {/* Pro icon for all pro themes */}
+        {theme.isPro && (
           <Chip
             icon={<LockIcon sx={{ fontSize: 12 }} />}
-            label="Premium"
+            label="Pro"
             size="small"
             sx={{
               position: 'absolute',
@@ -340,6 +341,26 @@ function ThemeCard({ theme, selected, onClick, userTier }: ThemeCardProps) {
               height: 20,
               bgcolor: 'rgba(0,0,0,0.7)',
               color: 'white',
+              zIndex: 2,
+              '& .MuiChip-icon': { color: 'white' },
+            }}
+          />
+        )}
+        {/* Premium lock overlay for restricted access */}
+        {theme.isPro && !canUseTheme(userTier, theme.isPro).allowed && (
+          <Chip
+            icon={<LockIcon sx={{ fontSize: 12 }} />}
+            label="Premium"
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 32,
+              right: 8,
+              fontSize: 10,
+              height: 20,
+              bgcolor: 'rgba(0,0,0,0.7)',
+              color: 'white',
+              zIndex: 2,
               '& .MuiChip-icon': { color: 'white' },
             }}
           />
@@ -372,7 +393,6 @@ function ThemeCard({ theme, selected, onClick, userTier }: ThemeCardProps) {
 
 export default function AppearancePage() {
   const router = useRouter();
-  const { showToast } = useToast();
   const [themeTab, setThemeTab] = useState(0);
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
@@ -401,6 +421,11 @@ export default function AppearancePage() {
   const activeLinks = linksData?.links?.filter(link => link.active).sort((a, b) => a.order - b.order) || [];
 
   const [formData, setFormData] = useState<AppearanceData>(DEFAULT_APPEARANCE);
+  
+  // Check for tier restrictions
+  const tierRestrictions = useTierRestrictions({ 
+    appearance: data,
+  });
 
   // Profile Information states
   const [editingAvatar, setEditingAvatar] = useState(false);
@@ -433,9 +458,6 @@ export default function AppearancePage() {
 
   const updateAppearance = useApiPut({
     relatedQueryKeys: [`admin-appearance-${currentPage?.id || 'none'}`, 'admin-profile'],
-    onSuccess: () => {
-      showToast('Appearance updated successfully', 'success');
-    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -552,7 +574,6 @@ export default function AppearancePage() {
     });
     
     setEditingAvatar(false);
-    showToast('Avatar updated successfully', 'success');
   };
 
   const handleThemeSelect = (theme: AppearanceTheme) => {
@@ -639,6 +660,9 @@ export default function AppearancePage() {
           <Typography variant="body2" color="text.secondary" paragraph>
             Customize how your profile looks to visitors
           </Typography>
+          
+          {/* Tier Restriction Warning */}
+          <GlobalUpgradePrompt restrictions={tierRestrictions} />
 
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4 }}>
             {/* Mobile Preview - Show at top on small screens */}
@@ -1243,7 +1267,6 @@ export default function AppearancePage() {
                           <Typography variant="body2" fontWeight={500} sx={{ mb: 2 }}>
                             Text opacity
                           </Typography>
-                          
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                               Username opacity: {Math.round((formData.text.usernameOpacity ?? 0.9) * 100)}%
@@ -1258,7 +1281,6 @@ export default function AppearancePage() {
                               valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
                             />
                           </Box>
-
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                               Bio opacity: {Math.round((formData.text.bioOpacity ?? 0.8) * 100)}%
@@ -1266,21 +1288,6 @@ export default function AppearancePage() {
                             <Slider
                               value={formData.text.bioOpacity ?? 0.8}
                               onChange={(_, v) => updateText({ bioOpacity: v as number })}
-                              min={0}
-                              max={1}
-                              step={0.05}
-                              valueLabelDisplay="auto"
-                              valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
-                            />
-                          </Box>
-
-                          <Box>
-                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                              Footer opacity: {Math.round((formData.text.footerOpacity ?? 0.8) * 100)}%
-                            </Typography>
-                            <Slider
-                              value={formData.text.footerOpacity ?? 0.8}
-                              onChange={(_, v) => updateText({ footerOpacity: v as number })}
                               min={0}
                               max={1}
                               step={0.05}

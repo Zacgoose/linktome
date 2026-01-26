@@ -149,7 +149,6 @@ export default function PhonePreview({
   const darkBg = isDarkBackground(wallpaper);
   const usernameOpacity = text.usernameOpacity ?? 0.9;
   const bioOpacity = text.bioOpacity ?? 0.8;
-  const footerOpacity = text.footerOpacity ?? 0.8;
 
   // Preview window dimensions (same as phone)
   const previewWidth = compact ? 240 : 300;
@@ -579,7 +578,6 @@ export default function PhonePreview({
                     variant="caption"
                     sx={{
                       color: text.pageTextColor,
-                      opacity: footerOpacity,
                       mt: 3,
                       display: 'block',
                       fontFamily: bodyFontFamily,

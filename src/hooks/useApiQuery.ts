@@ -225,6 +225,10 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
           refreshAuth,
           { params: mergedParams, signal }
         );
+        // Show success toast if response has a message
+        if (data && typeof data === 'object' && 'message' in data && data.message) {
+          showToast(data.message, 'success');
+        }
         if (onSuccess) onSuccess(data);
         return data;
       } catch (err: any) {
@@ -306,6 +310,10 @@ function createMutationHook(method: 'post' | 'put' | 'delete') {
           relatedQueryKeys.forEach((key) => {
             queryClient.invalidateQueries({ queryKey: buildRelatedQueryKey(key, params) });
           });
+        }
+        // Show success toast if response has a message
+        if (data && typeof data === 'object' && 'message' in data && data.message) {
+          showToast(data.message, 'success');
         }
         if (onSuccess) {
           onSuccess(data);

@@ -13,6 +13,7 @@ export interface Page {
   isDefault: boolean; // Whether this is the default page shown at /{username}
   createdAt: string;
   updatedAt: string;
+  exceedsTierLimit?: boolean; // Optional: true when page exceeds user's tier limit
 }
 
 /**

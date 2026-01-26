@@ -22,11 +22,17 @@ export const RbacProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 'user';
   });
 
+  // Persist selectedContext to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('selectedContext', selectedContext);
     }
   }, [selectedContext]);
+
+  // Reset selectedContext to 'user' when user changes (e.g., after login/logout)
+  useEffect(() => {
+    setSelectedContext('user');
+  }, [user]);
 
 
   let contextRoles: string[] = user?.roles || [];

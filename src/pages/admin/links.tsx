@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
 import {
   Container,
   Typography,
@@ -69,13 +68,13 @@ import {
   UpdateLinksRequest,
 } from '@/types/links';
 import { UserProfile } from '@/types/api';
-import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { getTierLimits } from '@/utils/tierValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { usePageContext } from '@/context/PageContext';
 import { usePageValidation } from '@/hooks/usePageValidation';
 import NoPageDialog from '@/components/NoPageDialog';
+import { useTierRestrictions, GlobalUpgradePrompt } from '@/components/TierRestrictionBadge';
 
 interface SortableLinkCardProps {
   link: Link;
@@ -172,7 +171,7 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onMoveToCollection
                 }}
               >
                 <LinkIcon sx={{ fontSize: 14 }} />
-                {link.url}
+                {link.url.length > 50 ? `${link.url.slice(0, 47)}...` : link.url}
               </Typography>
             </Box>
 
@@ -404,8 +403,6 @@ function SortableGroup({
 }
 
 export default function LinksPage() {
-  const router = useRouter();
-  const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
   const { currentPage, pages } = usePageContext();
   const { hasPages, noPagesDialogOpen, handleNoPagesDialogClose, showNoPagesDialog } = usePageValidation();
@@ -456,6 +453,12 @@ export default function LinksPage() {
     const { theme: _theme, customTheme: _customTheme, ...rest } = source;
     return rest as AppearanceData;
   }, [appearanceData]);
+  
+  // Check for tier restrictions
+  const tierRestrictions = useTierRestrictions({ 
+    links,
+    appearance: appearanceData,
+  });
 
   // DnD sensors
   const sensors = useSensors(
@@ -469,7 +472,6 @@ export default function LinksPage() {
   const updateLinks = useApiPut<any, UpdateLinksRequest>({
     relatedQueryKeys: [`admin-links-${currentPage?.id ?? 'none'}`],
     onSuccess: () => {
-      showToast('Changes saved', 'success');
       refetch();
     },
   });
@@ -762,6 +764,10 @@ export default function LinksPage() {
           <Typography variant="body2" color="text.secondary" paragraph>
             Manage the links your visitors will see
           </Typography>
+          
+          {/* Tier Restriction Warning */}
+          <GlobalUpgradePrompt restrictions={tierRestrictions} />
+          
           {/* Mobile Preview - Show at top on small screens */}
           <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>

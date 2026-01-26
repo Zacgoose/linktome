@@ -130,6 +130,8 @@ export interface ApiKey {
   createdAt: string;
   lastUsedAt: string | null;
   lastUsedIP: string | null;
+  disabledReason: string | null;
+  active: boolean;
 }
 
 /**
@@ -150,27 +152,6 @@ export interface ApiKeysResponse {
 }
 
 /**
- * User Pack Purchase request
- */
-export interface PurchaseUserPackRequest {
-  packType: 'starter' | 'business' | 'enterprise' | 'none';
-  billingCycle: 'monthly' | 'annual';
-  customLimit?: number; // Optional: Only for enterprise pack
-}
-
-/**
- * User Pack Purchase response
- */
-export interface PurchaseUserPackResponse {
-  userId: string;
-  packType: string;
-  packLimit: number;
-  role: string;
-  expiresAt: string | null;
-  message: string;
-}
-
-/**
  * Sub-Account data
  */
 export interface SubAccount {
@@ -184,6 +165,8 @@ export interface SubAccount {
   createdAt?: string;
   pagesCount?: number;
   linksCount?: number;
+  disabled: boolean;
+  disabledReason?: string;
 }
 
 /**
@@ -315,6 +298,7 @@ export interface ShortLink {
   clicks: number;
   createdAt: string;
   lastClickedAt: string | null;
+  exceedsTierLimit?: boolean; // Optional: true when short link exceeds user's tier limit
 }
 
 /**

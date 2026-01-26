@@ -305,6 +305,8 @@ export default function ApiKeysPage() {
                 <TableCell>Permissions</TableCell>
                 <TableCell>Usage (min)</TableCell>
                 <TableCell>Last Used</TableCell>
+                <TableCell>Active</TableCell>
+                <TableCell>Disabled Reason</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -313,10 +315,12 @@ export default function ApiKeysPage() {
                 [...Array(3)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton width={120} /></TableCell>
-                    <TableCell><Skeleton width={80} /></TableCell>
+                    <TableCell><Skeleton width={60} /></TableCell>
                     <TableCell><Skeleton width={200} /></TableCell>
                     <TableCell><Skeleton width={60} /></TableCell>
                     <TableCell><Skeleton width={100} /></TableCell>
+                    <TableCell><Skeleton width={60} /></TableCell>
+                    <TableCell><Skeleton width={80} /></TableCell>
                     <TableCell><Skeleton width={80} /></TableCell>
                   </TableRow>
                 ))
@@ -385,6 +389,16 @@ export default function ApiKeysPage() {
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
                           {formatDate(key.lastUsedAt)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {(key.active ? 'Active' : 'Disabled')}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {(key.disabledReason)}
                         </Typography>
                       </TableCell>
                       <TableCell align="right">

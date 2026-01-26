@@ -36,10 +36,10 @@ import {
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPost, useApiPut, useApiDelete } from '@/hooks/useApiQuery';
 import { Page, PagesResponse, CreatePageRequest, UpdatePageRequest, validatePageSlug, generateSlug } from '@/types/pages';
-import { useToast } from '@/context/ToastContext';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { getTierLimits } from '@/utils/tierValidation';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import TierRestrictionBadge, { useTierRestrictions, GlobalUpgradePrompt } from '@/components/TierRestrictionBadge';
 
 interface PageCardProps {
   page: Page;
@@ -53,10 +53,8 @@ interface PageCardProps {
 function PageCard({ page, onEdit, onDelete, onSetDefault, onCopyUrl, username }: PageCardProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  // Build URL - use relative path for SSR compatibility
-  const pageUrl = page.isDefault 
-    ? `/public/${username}`
-    : `/public/${username}/${page.slug}`;
+  // Build URL - use relative path
+  const pageUrl = `/public/${username}/${page.slug}`;
   
   const handleViewPage = () => {
     // Use window.location.origin only on client side
@@ -81,6 +79,13 @@ function PageCard({ page, onEdit, onDelete, onSetDefault, onCopyUrl, username }:
                   size="small"
                   color="primary"
                   sx={{ height: 24 }}
+                />
+              )}
+              {page.exceedsTierLimit && (
+                <TierRestrictionBadge
+                  type="badge"
+                  feature="This page"
+                  size="small"
                 />
               )}
             </Box>
@@ -139,7 +144,6 @@ function PageCard({ page, onEdit, onDelete, onSetDefault, onCopyUrl, username }:
 }
 
 export default function PagesPage() {
-  const { showToast } = useToast();
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, openUpgradePrompt, userTier } = useFeatureGate();
   
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -162,41 +166,32 @@ export default function PagesPage() {
   const pages = pagesData?.pages || [];
   const tierLimits = getTierLimits(userTier);
   const maxPagesCheck = canAccess('maxPages');
+  
+  // Check for tier restrictions
+  const tierRestrictions = useTierRestrictions({ pages });
 
   // Create page mutation
   const createPage = useApiPost<any, CreatePageRequest>({
     onSuccess: () => {
-      showToast('Page created successfully', 'success');
       refetch();
       setDialogOpen(false);
       resetForm();
-    },
-    onError: (error) => {
-      showToast(`Failed to create page: ${error}`, 'error');
     },
   });
 
   // Update page mutation
   const updatePage = useApiPut<any, UpdatePageRequest>({
     onSuccess: () => {
-      showToast('Page updated successfully', 'success');
       refetch();
       setDialogOpen(false);
       resetForm();
-    },
-    onError: (error) => {
-      showToast(`Failed to update page: ${error}`, 'error');
     },
   });
 
   // Delete page mutation
   const deletePage = useApiDelete({
     onSuccess: () => {
-      showToast('Page deleted successfully', 'success');
       refetch();
-    },
-    onError: (error) => {
-      showToast(`Failed to delete page: ${error}`, 'error');
     },
   });
 
@@ -229,7 +224,6 @@ export default function PagesPage() {
   const handleDeletePage = (id: string) => {
     const page = pages.find(p => p.id === id);
     if (page?.isDefault) {
-      showToast('Cannot delete the default page', 'error');
       return;
     }
 
@@ -251,12 +245,9 @@ export default function PagesPage() {
   const handleCopyUrl = (page: Page) => {
     // Build full URL only on client side
     if (typeof window !== 'undefined') {
-      const pageUrl = page.isDefault 
-        ? `${window.location.origin}/public/${profileData?.username}`
-        : `${window.location.origin}/public/${profileData?.username}/${page.slug}`;
+      const pageUrl = `${window.location.origin}/public/${profileData?.username}/${page.slug}`;
       
       navigator.clipboard.writeText(pageUrl);
-      showToast('Page URL copied to clipboard', 'success');
     }
   };
 
@@ -286,7 +277,6 @@ export default function PagesPage() {
     }
 
     if (!formData.name.trim()) {
-      showToast('Please enter a page name', 'error');
       return;
     }
 
@@ -355,6 +345,9 @@ export default function PagesPage() {
               Upgrade to Pro to create multiple pages for different audiences, purposes, or brands.
             </Alert>
           )}
+          
+          {/* Tier Restriction Warning */}
+          <GlobalUpgradePrompt restrictions={tierRestrictions} />
 
           {/* Add Page Button */}
           <Button

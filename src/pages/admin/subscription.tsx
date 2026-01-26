@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import {
   Container,
   Typography,
@@ -32,6 +33,7 @@ import {
   Upgrade as UpgradeIcon,
   RadioButtonUnchecked as RadioUncheckedIcon,
   RadioButtonChecked as RadioCheckedIcon,
+  Visibility as PreviewIcon,
 } from '@mui/icons-material';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useApiGet, useApiPost } from '@/hooks/useApiQuery';
@@ -56,6 +58,8 @@ interface SubscriptionInfo {
   cancelledAt?: string;
   cancelAt?: string;
   accessUntil?: string;
+  SubscriptionQuantity?: number;
+  SubAccountLimit?: number;
 }
 
 interface PlanFeature {
@@ -65,11 +69,13 @@ interface PlanFeature {
 }
 
 export default function SubscriptionPage() {
+  const router = useRouter();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<UserTier | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
 
   const { data: subscription, isLoading, error: fetchError } = useApiGet<SubscriptionInfo>({
     url: 'admin/GetSubscription',
@@ -83,15 +89,11 @@ export default function SubscriptionPage() {
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        setError('Failed to create checkout session');
         setUpgradeDialogOpen(false);
       }
     },
-    onError: (err: any) => {
-      const msg = typeof err === 'string' ? err : err?.message || 'Failed to create checkout session';
-      setError(msg);
+    onError: () => {
       setUpgradeDialogOpen(false);
-      setTimeout(() => setError(''), 5000);
     },
   });
 
@@ -101,13 +103,7 @@ export default function SubscriptionPage() {
       if (data.portalUrl) {
         window.location.href = data.portalUrl;
       } else {
-        setError('Failed to open customer portal');
       }
-    },
-    onError: (err: any) => {
-      const msg = typeof err === 'string' ? err : err?.message || 'Failed to open customer portal';
-      setError(msg);
-      setTimeout(() => setError(''), 5000);
     },
   });
 
@@ -125,6 +121,7 @@ export default function SubscriptionPage() {
       data: {
         tier: selectedPlan,
         billingCycle: selectedBillingCycle,
+        quantity: selectedQuantity,
       },
     });
   };
@@ -134,6 +131,21 @@ export default function SubscriptionPage() {
       url: 'admin/createPortalSession',
       data: {},
     });
+  };
+
+  const getVolumeDiscount = (quantity: number): number => {
+    if (quantity === 1) return 0;
+    if (quantity === 2) return 5;
+    if (quantity >= 3 && quantity <= 5) return 15;
+    if (quantity >= 6 && quantity <= 10) return 25;
+    if (quantity >= 11 && quantity <= 25) return 35;
+    if (quantity >= 26 && quantity <= 50) return 50;
+    return 0;
+  };
+
+  const getDiscountedPrice = (basePrice: number, quantity: number): number => {
+    const discount = getVolumeDiscount(quantity);
+    return basePrice * (1 - discount / 100);
   };
 
   const getPlanFeatures = (tier: UserTier): PlanFeature[] => {
@@ -248,6 +260,7 @@ export default function SubscriptionPage() {
 
   const currentTier = subscription.currentTier;
   const effectiveTier = subscription.effectiveTier;
+  const SubAccountLimit = subscription.SubAccountLimit || 0;
   const tierInfo = TIER_INFO[currentTier];
   const effectiveTierInfo = TIER_INFO[effectiveTier];
 
@@ -288,7 +301,7 @@ export default function SubscriptionPage() {
                 <TierBadge tier={effectiveTier} size="medium" />
                 <Box>
                   <Typography variant="h5" fontWeight={600}>
-                    {tierInfo.displayName} Plan
+                    {tierInfo.displayName} Plan {SubAccountLimit > 1 ? `+ ${SubAccountLimit} Sub-Accounts` : ''}
                   </Typography>
                   {effectiveTier !== currentTier && (
                     <Typography variant="body2" color="text.secondary">
@@ -358,6 +371,15 @@ export default function SubscriptionPage() {
                       {subscription.amount && subscription.currency && (
                         <> (${subscription.amount.toFixed(2)} {subscription.currency})</>
                       )}.
+                      <Box sx={{ mt: 1 }}>
+                        <Button
+                          size="small"
+                          startIcon={<PreviewIcon />}
+                          onClick={() => router.push('/admin/subscription/downgrade')}
+                        >
+                          Preview What Will Change
+                        </Button>
+                      </Box>
                     </Alert>
                   )}
 
@@ -365,6 +387,15 @@ export default function SubscriptionPage() {
                     <Alert severity="warning">
                       Subscription cancelled on {new Date(subscription.cancelledAt).toLocaleDateString()}.
                       You can continue using your current plan until {new Date(subscription.accessUntil).toLocaleDateString()}.
+                      <Box sx={{ mt: 1 }}>
+                        <Button
+                          size="small"
+                          startIcon={<PreviewIcon />}
+                          onClick={() => router.push('/admin/subscription/downgrade')}
+                        >
+                          Preview What Will Change
+                        </Button>
+                      </Box>
                     </Alert>
                   )}
                   
@@ -575,6 +606,73 @@ export default function SubscriptionPage() {
                     </CardContent>
                   </Card>
                 </Stack>
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="body2" fontWeight={600} gutterBottom>
+                    Number of Users (including yourself):
+                  </Typography>
+                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
+                    <Button 
+                      variant="outlined" 
+                      onClick={() => setSelectedQuantity(Math.max(1, selectedQuantity - 1))}
+                      disabled={selectedQuantity <= 1}
+                    >
+                      -
+                    </Button>
+                    <Typography variant="h6" sx={{ minWidth: 60, textAlign: 'center' }}>
+                      {selectedQuantity}
+                    </Typography>
+                    <Button 
+                      variant="outlined" 
+                      onClick={() => setSelectedQuantity(Math.min(50, selectedQuantity + 1))}
+                      disabled={selectedQuantity >= 50}
+                    >
+                      +
+                    </Button>
+                  </Stack>
+                  
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    1 main account + {selectedQuantity - 1} sub-account{selectedQuantity !== 2 ? 's' : ''}
+                  </Typography>
+                  
+                  {/* Volume discount indicator */}
+                  {getVolumeDiscount(selectedQuantity) > 0 && (
+                    <Box sx={{ mt: 2, p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+                      <Typography variant="body2" color="success.dark" fontWeight={600}>
+                        🎉 {getVolumeDiscount(selectedQuantity)}% Volume Discount Applied!
+                      </Typography>
+                      <Typography variant="caption" color="success.dark">
+                        ${getDiscountedPrice(
+                          TIER_INFO[selectedPlan].pricing[selectedBillingCycle], 
+                          selectedQuantity
+                        ).toFixed(2)} per user (was ${TIER_INFO[selectedPlan].pricing[selectedBillingCycle].toFixed(2)})
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {selectedPlan && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="body1" fontWeight={600}>
+                        Total: ${(
+                          getDiscountedPrice(
+                            TIER_INFO[selectedPlan].pricing[selectedBillingCycle], 
+                            selectedQuantity
+                          ) * selectedQuantity
+                        ).toFixed(2)}/{selectedBillingCycle === 'monthly' ? 'month' : 'year'}
+                      </Typography>
+                      {getVolumeDiscount(selectedQuantity) > 0 && (
+                        <Typography variant="caption" color="text.secondary">
+                          You save ${(
+                            (TIER_INFO[selectedPlan].pricing[selectedBillingCycle] * selectedQuantity) -
+                            (getDiscountedPrice(
+                              TIER_INFO[selectedPlan].pricing[selectedBillingCycle], 
+                              selectedQuantity
+                            ) * selectedQuantity)
+                          ).toFixed(2)}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </Box>
               </Box>
             )}
           </DialogContent>
