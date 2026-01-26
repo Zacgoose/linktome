@@ -1,38 +1,36 @@
-# Appearance API - Updated Documentation
+# Appearance API Documentation
 
 ## Overview
 
-This document describes the updated appearance customization system that differentiates between **curated themes** (with limited customization) and **custom/customizable themes** (with full customization).
+This document describes the appearance customization system for the LinkToMe platform. The frontend handles all theme logic and filtering - the backend simply stores and returns the appearance data as provided.
 
-## Key Changes
+## Key Concepts
 
 ### Theme Types
 
 1. **Custom/Customizable Themes** (`type: 'customizable'`)
    - Full customization allowed
    - Examples: Custom, Air, Blocks, Lake, Mineral
-   - All appearance properties can be modified
-   - `customTheme: true` flag sent to API
+   - Frontend sends complete appearance configuration
+   - `customTheme: true` flag
 
 2. **Curated Themes** (`type: 'curated'`)
    - Limited customization to preserve designer intent
    - Examples: Agate, Astrid, Aura, Bloom, Breeze, Honeycomb
-   - Only specific properties can be customized
-   - `customTheme: false` flag sent to API
-   - Theme name is sent, plus only the customizable properties
+   - Frontend filters data before sending (theme name + customizable properties only)
+   - `customTheme: false` flag
 
-## API Endpoint
+**Note:** All theme logic, filtering, and defaults are handled by the frontend. The backend treats all appearance data uniformly.
+
+## API Endpoints
 
 ### `PUT /api/admin/UpdateAppearance?pageId={pageId}`
 
-#### Request Body Structure
+Stores the appearance configuration exactly as received.
 
-The request body structure varies based on the theme type:
+**Request Body:** JSON object containing appearance configuration
 
-##### For Custom/Customizable Themes
-
-Send the **complete** appearance configuration:
-
+**Custom/Customizable Theme Example:**
 ```json
 {
   "theme": "custom",
@@ -77,10 +75,7 @@ Send the **complete** appearance configuration:
 }
 ```
 
-##### For Curated Themes
-
-Send **only** the theme name and customizable properties:
-
+**Curated Theme Example:**
 ```json
 {
   "theme": "agate",
@@ -112,181 +107,28 @@ Send **only** the theme name and customizable properties:
     "bodyFont": "dm-sans",
     "pageTextColor": "#d5d5d5"
   },
-  "socialIcons": [
-    {
-      "platform": "instagram",
-      "url": "https://instagram.com/username",
-      "order": 0,
-      "active": true
-    }
-  ],
+  "socialIcons": [],
   "hideFooter": false,
   "profileImageUrl": "https://example.com/avatar.jpg"
 }
 ```
 
-**Note:** For curated themes:
-- Wallpaper colors (gradient/pattern colors) are customizable
-- Wallpaper **type** is NOT sent (backend should use theme default)
-- Button colors are customizable
-- Button **type**, **cornerRadius**, **shadow** are NOT customizable (backend should use theme defaults)
-- Text colors are customizable
-- Font families are NOT customizable (backend should use theme defaults)
-
-## Customization Rules by Theme
-
-### Customizable Themes (Full Customization)
-- **Custom, Air, Blocks, Lake, Mineral**
-- All properties can be modified
-- User has full control over:
-  - Wallpaper type and colors
-  - Button styles and colors
-  - Font families and colors
-  - Header layout
-  - Social icons
-
-### Curated Themes (Limited Customization)
-- **Agate, Astrid, Aura, Bloom, Breeze, Honeycomb**
-- Limited customization to maintain design integrity
-- **Allowed:**
-  - Wallpaper colors (gradient/pattern/blur colors, opacity)
-  - Button colors (background, text, border)
-  - Text colors
-  - Header layout (classic vs hero)
-  - Social icons
-  - Display name, bio, profile image
-  
-- **NOT Allowed (use theme defaults):**
-  - Wallpaper type (gradient → pattern, etc.)
-  - Button type (solid → glass → outline)
-  - Button corner radius (square → rounded → pill)
-  - Button shadow style
-  - Font families (title and body fonts)
-
-## Backend Implementation Guidance
-
-### 1. Data Storage
-
-Store both the theme name and the customized properties:
-
-```typescript
-interface StoredAppearance {
-  theme: string;              // "agate", "custom", "air", etc.
-  customTheme: boolean;       // true for custom/customizable, false for curated
-  
-  // Store only the properties that were sent in the request
-  // For curated themes, this will be a subset
-  customizations: {
-    wallpaper?: Partial<WallpaperStyle>;
-    buttons?: Partial<ButtonStyle>;
-    text?: Partial<TextStyle>;
-    header: HeaderStyle;
-    socialIcons: SocialIcon[];
-    hideFooter: boolean;
-    profileImageUrl?: string;
-  };
-}
-```
-
-### 2. Retrieval Logic
-
-When fetching appearance data for rendering:
-
-```typescript
-function getAppearanceForRendering(stored: StoredAppearance): AppearanceData {
-  if (stored.customTheme) {
-    // For custom themes, use stored data as-is
-    return stored.customizations;
-  }
-  
-  // For curated themes, merge with theme defaults
-  const themeDefaults = getThemeDefaults(stored.theme);
-  
-  return {
-    ...themeDefaults,
-    // Override only the customizable properties
-    wallpaper: {
-      ...themeDefaults.wallpaper,
-      // Allow color overrides, but keep type/pattern from theme
-      ...(stored.customizations.wallpaper?.color && { color: stored.customizations.wallpaper.color }),
-      ...(stored.customizations.wallpaper?.gradientStart && { gradientStart: stored.customizations.wallpaper.gradientStart }),
-      ...(stored.customizations.wallpaper?.gradientEnd && { gradientEnd: stored.customizations.wallpaper.gradientEnd }),
-      ...(stored.customizations.wallpaper?.gradientDirection && { gradientDirection: stored.customizations.wallpaper.gradientDirection }),
-      ...(stored.customizations.wallpaper?.patternColor && { patternColor: stored.customizations.wallpaper.patternColor }),
-    },
-    buttons: {
-      ...themeDefaults.buttons,
-      // Allow color overrides, but keep type/style from theme
-      ...(stored.customizations.buttons?.backgroundColor && { backgroundColor: stored.customizations.buttons.backgroundColor }),
-      ...(stored.customizations.buttons?.textColor && { textColor: stored.customizations.buttons.textColor }),
-      ...(stored.customizations.buttons?.borderColor && { borderColor: stored.customizations.buttons.borderColor }),
-    },
-    text: {
-      ...themeDefaults.text,
-      // Allow color overrides, but keep fonts from theme
-      ...(stored.customizations.text?.titleColor && { titleColor: stored.customizations.text.titleColor }),
-      ...(stored.customizations.text?.pageTextColor && { pageTextColor: stored.customizations.text.pageTextColor }),
-    },
-    header: stored.customizations.header,
-    socialIcons: stored.customizations.socialIcons,
-    hideFooter: stored.customizations.hideFooter,
-    profileImageUrl: stored.customizations.profileImageUrl,
-  };
-}
-```
-
-### 3. Theme Defaults
-
-The backend should maintain a copy of the theme defaults. Here's the structure for reference:
-
-```typescript
-const THEME_DEFAULTS = {
-  agate: {
-    wallpaper: { type: 'gradient', gradientStart: '#1f1c2c', gradientEnd: '#928dab', gradientDirection: 220 },
-    buttons: { type: 'solid', cornerRadius: 'pill', shadow: 'strong', backgroundColor: '#f8fafc', textColor: '#1f2937' },
-    text: { titleFont: 'playfair', titleColor: '#f8fafc', titleSize: 'small', bodyFont: 'dm-sans', pageTextColor: '#e2e8f0' },
-  },
-  astrid: {
-    wallpaper: { type: 'blur', color: '#0b0f1a', blur: 14, opacity: 0.94 },
-    buttons: { type: 'glass', cornerRadius: 'pill', shadow: 'subtle', backgroundColor: '#7c3aed', textColor: '#f8f7ff', borderColor: '#c084fc' },
-    text: { titleFont: 'poppins', titleColor: '#f5f3ff', titleSize: 'small', bodyFont: 'inter', pageTextColor: '#e0def7' },
-  },
-  // ... other themes
-};
-```
-
-## Response Format
+**Response:** Success/error status
 
 ### `GET /api/admin/GetAppearance?pageId={pageId}`
 
-Return the complete appearance data for editing:
+Returns the stored appearance configuration exactly as it was saved.
 
+**Response Format:**
 ```json
 {
   "theme": "agate",
   "customTheme": false,
   "pageId": "page-uuid-here",
   "header": { ... },
-  "wallpaper": {
-    "type": "gradient",
-    "gradientStart": "#1f1c2c",
-    "gradientEnd": "#928dab",
-    "gradientDirection": 220
-  },
-  "buttons": {
-    "type": "solid",
-    "cornerRadius": "pill",
-    "shadow": "strong",
-    "backgroundColor": "#f8fafc",
-    "textColor": "#1f2937"
-  },
-  "text": {
-    "titleFont": "playfair",
-    "titleColor": "#f8fafc",
-    "titleSize": "small",
-    "bodyFont": "dm-sans",
-    "pageTextColor": "#e2e8f0"
-  },
+  "wallpaper": { ... },
+  "buttons": { ... },
+  "text": { ... },
   "socialIcons": [...],
   "hideFooter": false,
   "profileImageUrl": "..."
@@ -295,92 +137,68 @@ Return the complete appearance data for editing:
 
 ### `GET /api/public/GetUserProfile`
 
-Return the complete rendered appearance (same format as above) for the public profile page.
+Returns the complete user profile including appearance data, exactly as stored.
 
-## Examples
+**Response includes:**
+- username, displayName, bio, avatar
+- appearance configuration (as stored)
+- links and groups
+- social icons
 
-### Example 1: User selects "Agate" curated theme and changes colors
+## Frontend Responsibilities
 
-**Request to API:**
-```json
-{
-  "theme": "agate",
-  "customTheme": false,
-  "wallpaper": {
-    "type": "gradient",
-    "gradientStart": "#3a2a4c",
-    "gradientEnd": "#b8a8cb"
-  },
-  "buttons": {
-    "backgroundColor": "#e8e8ff",
-    "textColor": "#2a1a3a"
-  },
-  "text": {
-    "titleColor": "#ffffff",
-    "pageTextColor": "#f0f0ff"
-  }
-}
-```
+The frontend is responsible for:
 
-**Backend stores:** Theme name + color overrides only
+1. **Theme Defaults:** Maintaining theme default configurations
+2. **Filtering:** Sending only relevant data based on theme type
+   - Custom themes: Send complete configuration
+   - Curated themes: Send theme name + only customizable properties (colors)
+3. **Rendering:** Merging stored data with theme defaults when displaying curated themes
+4. **Validation:** Ensuring theme restrictions are enforced in the UI
 
-**On retrieval:** Merge overrides with "agate" defaults for type, fonts, etc.
+## Data Storage
 
-### Example 2: User selects "Custom" theme with full customization
+The backend stores appearance data as JSON without any transformation:
+- Stores exactly what the frontend sends
+- Returns exactly what was stored
+- No merging, filtering, or validation of theme data
 
-**Request to API:**
-```json
-{
-  "theme": "custom",
-  "customTheme": true,
-  "wallpaper": {
-    "type": "pattern",
-    "patternType": "dots",
-    "color": "#1a1a2e",
-    "patternColor": "#4a4a5e"
-  },
-  "buttons": {
-    "type": "outline",
-    "cornerRadius": "pill",
-    "shadow": "none",
-    "backgroundColor": "#ff6b6b",
-    "textColor": "#ffffff",
-    "borderColor": "#ff6b6b"
-  },
-  "text": {
-    "titleFont": "montserrat",
-    "titleColor": "#ffffff",
-    "titleSize": "large",
-    "bodyFont": "inter",
-    "pageTextColor": "#e0e0e0"
-  }
-}
-```
+## Frontend Implementation Notes
 
-**Backend stores:** All properties as-is
+### For Curated Themes
 
-**On retrieval:** Return stored data without merging with defaults
+When saving a curated theme, the frontend uses `prepareAppearanceDataForApi()` to send only:
+- Theme name and ID
+- Customizable properties (colors only for curated themes)
+- Header, social icons, and other non-theme-specific data
 
-## Database Schema
+When loading a curated theme, the frontend:
+- Retrieves stored data from API
+- Merges with theme defaults to get complete configuration
+- Applies stored color overrides to the theme defaults
 
-The appearance data is stored as JSON. Required fields:
-- `customTheme` (boolean) - indicates whether full customization is allowed
-- `theme` (string) - the theme ID
-- For curated themes: Only store the customizable properties (colors)
-- For custom themes: Store all appearance properties
+### For Custom Themes
+
+When saving a custom theme:
+- Frontend sends complete appearance configuration
+- All properties are stored
+
+When loading a custom theme:
+- Frontend uses stored data as-is
+- No merging with defaults needed
 
 ## Testing Checklist
 
-- [ ] Create new profile with custom theme, verify all properties save and load
-- [ ] Create profile with curated theme (e.g., "Agate"), verify theme defaults are used
-- [ ] Modify colors on curated theme, verify colors save but other properties use defaults
-- [ ] Switch from custom to curated theme, verify restrictions apply
-- [ ] Switch from curated to custom theme, verify full customization available
-- [ ] Verify public profile page renders correctly for both theme types
+- [ ] Save and load custom theme with all properties
+- [ ] Save and load curated theme with color customizations
+- [ ] Verify curated theme color overrides persist
+- [ ] Switch between custom and curated themes
+- [ ] Verify public profile renders correctly for both theme types
+- [ ] Test "Restore Theme Defaults" button for curated themes
 
 ## Questions?
 
-Contact the frontend team for clarification on:
+Contact the frontend team for:
 - Theme default values
 - Customization rules for specific themes
-- Edge cases in data handling
+- Frontend filtering logic
