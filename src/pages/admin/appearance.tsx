@@ -327,10 +327,11 @@ function ThemeCard({ theme, selected, onClick, userTier }: ThemeCardProps) {
         }}
       >
         {renderPreview()}
-        {theme.isPro && !canUseTheme(userTier, theme.isPro).allowed && (
+        {/* Pro icon for all pro themes */}
+        {theme.isPro && (
           <Chip
             icon={<LockIcon sx={{ fontSize: 12 }} />}
-            label="Premium"
+            label="Pro"
             size="small"
             sx={{
               position: 'absolute',
@@ -340,6 +341,26 @@ function ThemeCard({ theme, selected, onClick, userTier }: ThemeCardProps) {
               height: 20,
               bgcolor: 'rgba(0,0,0,0.7)',
               color: 'white',
+              zIndex: 2,
+              '& .MuiChip-icon': { color: 'white' },
+            }}
+          />
+        )}
+        {/* Premium lock overlay for restricted access */}
+        {theme.isPro && !canUseTheme(userTier, theme.isPro).allowed && (
+          <Chip
+            icon={<LockIcon sx={{ fontSize: 12 }} />}
+            label="Premium"
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 32,
+              right: 8,
+              fontSize: 10,
+              height: 20,
+              bgcolor: 'rgba(0,0,0,0.7)',
+              color: 'white',
+              zIndex: 2,
               '& .MuiChip-icon': { color: 'white' },
             }}
           />
