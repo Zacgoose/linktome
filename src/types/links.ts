@@ -56,6 +56,17 @@ export interface AppearanceTheme {
   preview?: string;
   isPro?: boolean;
   appearance?: Partial<AppearanceData>;
+  // Define which properties can be customized for this theme
+  customizableProperties?: {
+    wallpaperColors?: boolean; // Allow color adjustments for wallpaper
+    wallpaperType?: boolean; // Allow changing wallpaper type
+    buttonColors?: boolean; // Allow button color customization
+    buttonStyle?: boolean; // Allow button style changes (type, radius, shadow)
+    textColors?: boolean; // Allow text color changes
+    fonts?: boolean; // Allow font family changes
+    headerLayout?: boolean; // Allow header layout changes
+    socialIcons?: boolean; // Allow social icon customization
+  };
 }
 
 export interface WallpaperStyle {
@@ -187,7 +198,22 @@ export const FONT_OPTIONS: FontOption[] = [
 
 // Theme presets
 export const THEME_PRESETS: AppearanceTheme[] = [
-  { id: 'custom', name: 'Custom', type: 'customizable' },
+  { 
+    id: 'custom', 
+    name: 'Custom', 
+    type: 'customizable',
+    // Custom theme allows full customization
+    customizableProperties: {
+      wallpaperColors: true,
+      wallpaperType: true,
+      buttonColors: true,
+      buttonStyle: true,
+      textColors: true,
+      fonts: true,
+      headerLayout: true,
+      socialIcons: true,
+    },
+  },
   {
     id: 'air',
     name: 'Air',
@@ -211,6 +237,17 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         pageTextColor: '#23335b',
       },
     },
+    // Free customizable theme - full customization allowed
+    customizableProperties: {
+      wallpaperColors: true,
+      wallpaperType: true,
+      buttonColors: true,
+      buttonStyle: true,
+      textColors: true,
+      fonts: true,
+      headerLayout: true,
+      socialIcons: true,
+    },
   },
   {
     id: 'blocks',
@@ -233,6 +270,17 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         bodyFont: 'inter',
         pageTextColor: '#cbd5e1',
       },
+    },
+    // Free customizable theme - full customization allowed
+    customizableProperties: {
+      wallpaperColors: true,
+      wallpaperType: true,
+      buttonColors: true,
+      buttonStyle: true,
+      textColors: true,
+      fonts: true,
+      headerLayout: true,
+      socialIcons: true,
     },
   },
   {
@@ -259,6 +307,17 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'card',
     },
+    // Free customizable theme - full customization allowed
+    customizableProperties: {
+      wallpaperColors: true,
+      wallpaperType: true,
+      buttonColors: true,
+      buttonStyle: true,
+      textColors: true,
+      fonts: true,
+      headerLayout: true,
+      socialIcons: true,
+    },
   },
   {
     id: 'mineral',
@@ -284,6 +343,17 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'centered',
     },
+    // Free customizable theme - full customization allowed
+    customizableProperties: {
+      wallpaperColors: true,
+      wallpaperType: true,
+      buttonColors: true,
+      buttonStyle: true,
+      textColors: true,
+      fonts: true,
+      headerLayout: true,
+      socialIcons: true,
+    },
   },
   {
     id: 'agate',
@@ -307,6 +377,17 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         pageTextColor: '#e2e8f0',
       },
       layoutStyle: 'card',
+    },
+    // Curated theme - limited customization
+    customizableProperties: {
+      wallpaperColors: true, // Allow gradient color adjustments
+      wallpaperType: false, // Don't allow changing from gradient
+      buttonColors: true, // Allow button color changes
+      buttonStyle: false, // Don't allow changing button type/style
+      textColors: true, // Allow text color changes
+      fonts: false, // Don't allow font changes (preserve designer intent)
+      headerLayout: true, // Allow header layout
+      socialIcons: true, // Allow social icons
     },
   },
   {
@@ -333,6 +414,17 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'centered',
     },
+    // Curated theme - limited customization
+    customizableProperties: {
+      wallpaperColors: true, // Allow blur color/opacity adjustments
+      wallpaperType: false, // Don't allow changing from blur
+      buttonColors: true, // Allow button color changes
+      buttonStyle: false, // Don't allow changing button type/style
+      textColors: true, // Allow text color changes
+      fonts: false, // Don't allow font changes (preserve designer intent)
+      headerLayout: true, // Allow header layout
+      socialIcons: true, // Allow social icons
+    },
   },
   {
     id: 'aura',
@@ -358,6 +450,17 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'centered',
     },
+    // Curated theme - limited customization
+    customizableProperties: {
+      wallpaperColors: true, // Allow pattern color adjustments
+      wallpaperType: false, // Don't allow changing from pattern
+      buttonColors: true, // Allow button color changes
+      buttonStyle: false, // Don't allow changing button type/style
+      textColors: true, // Allow text color changes
+      fonts: false, // Don't allow font changes (preserve designer intent)
+      headerLayout: true, // Allow header layout
+      socialIcons: true, // Allow social icons
+    },
   },
   {
     id: 'bloom',
@@ -381,6 +484,17 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         pageTextColor: '#6a2137',
       },
       layoutStyle: 'centered',
+    },
+    // Curated theme - limited customization
+    customizableProperties: {
+      wallpaperColors: true, // Allow gradient color adjustments
+      wallpaperType: false, // Don't allow changing from gradient
+      buttonColors: true, // Allow button color changes
+      buttonStyle: false, // Don't allow changing button type/style
+      textColors: true, // Allow text color changes
+      fonts: false, // Don't allow font changes (preserve designer intent)
+      headerLayout: true, // Allow header layout
+      socialIcons: true, // Allow social icons
     },
   },
   {
@@ -407,6 +521,17 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'card',
     },
+    // Curated theme - limited customization
+    customizableProperties: {
+      wallpaperColors: true, // Allow pattern color adjustments
+      wallpaperType: false, // Don't allow changing from pattern
+      buttonColors: true, // Allow button color changes
+      buttonStyle: false, // Don't allow changing button type/style
+      textColors: true, // Allow text color changes
+      fonts: false, // Don't allow font changes (preserve designer intent)
+      headerLayout: true, // Allow header layout
+      socialIcons: true, // Allow social icons
+    },
   },
   {
     id: 'honeycomb',
@@ -415,6 +540,35 @@ export const THEME_PRESETS: AppearanceTheme[] = [
     isPro: true,
     appearance: {
       wallpaper: { type: 'pattern', patternType: 'honey', color: '#4E4E4E', patternColor: '#ECC94B' },
+      buttons: {
+        type: 'glass',
+        cornerRadius: 'pill',
+        shadow: 'subtle',
+        backgroundColor: '#FDDC9D',
+        textColor: '#000000',
+        borderColor: '#fcbf49',
+      },
+      text: {
+        titleFont: 'inter',
+        titleColor: '#000000',
+        titleSize: 'small',
+        bodyFont: 'inter',
+        pageTextColor: '#000000',
+      },
+      layoutStyle: 'centered',
+    },
+    // Curated theme - limited customization
+    customizableProperties: {
+      wallpaperColors: true, // Allow pattern color adjustments
+      wallpaperType: false, // Don't allow changing from pattern
+      buttonColors: true, // Allow button color changes
+      buttonStyle: false, // Don't allow changing button type/style
+      textColors: true, // Allow text color changes
+      fonts: false, // Don't allow font changes (preserve designer intent)
+      headerLayout: true, // Allow header layout
+      socialIcons: true, // Allow social icons
+    },
+  },
       buttons: {
         type: 'glass',
         cornerRadius: 'pill',
