@@ -15,6 +15,24 @@ export function getThemeById(themeId: string): AppearanceTheme | undefined {
 }
 
 /**
+ * Restore theme defaults for curated themes
+ * Returns the default appearance configuration for a given theme
+ */
+export function restoreThemeDefaults(themeId: string): Partial<AppearanceData> | null {
+  const theme = getThemeById(themeId);
+  
+  if (!theme || !theme.appearance) {
+    return null;
+  }
+  
+  return {
+    wallpaper: theme.appearance.wallpaper ? { ...theme.appearance.wallpaper } : undefined,
+    buttons: theme.appearance.buttons ? { ...theme.appearance.buttons } : undefined,
+    text: theme.appearance.text ? { ...theme.appearance.text } : undefined,
+  };
+}
+
+/**
  * Check if a specific property is customizable for a given theme
  * Returns true for themes without customization rules (backward compatibility)
  */

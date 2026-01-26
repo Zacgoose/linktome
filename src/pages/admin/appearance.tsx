@@ -82,6 +82,8 @@ import {
   canModifyButtonProperty,
   canModifyTextProperty,
   prepareAppearanceDataForApi,
+  restoreThemeDefaults,
+  getThemeById,
 } from '@/utils/themeHelpers';
 
 interface SectionProps {
@@ -618,6 +620,21 @@ export default function AppearancePage() {
     });
   };
 
+  const handleRestoreThemeDefaults = () => {
+    const defaults = restoreThemeDefaults(formData.theme);
+    
+    if (!defaults) {
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      wallpaper: defaults.wallpaper ? { ...defaults.wallpaper } : prev.wallpaper,
+      buttons: defaults.buttons ? { ...defaults.buttons } : prev.buttons,
+      text: defaults.text ? { ...defaults.text } : prev.text,
+    }));
+  };
+
   const previewAppearance = useMemo(() => {
     const { theme: _theme, customTheme: _customTheme, ...rest } = formData;
     return rest;
@@ -919,6 +936,24 @@ export default function AppearancePage() {
                             </Grid>
                           ))}
                       </Grid>
+                      
+                      {/* Restore Theme Defaults Button - Show only for curated themes */}
+                      {formData.theme && getThemeById(formData.theme)?.type === 'curated' && (
+                        <Box sx={{ mt: 3 }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={handleRestoreThemeDefaults}
+                            startIcon={<PaletteIcon />}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            Restore Theme Defaults
+                          </Button>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                            Reset colors to the original theme design
+                          </Typography>
+                        </Box>
+                      )}
                     </CollapsibleSection>
 
                     {/* Wallpaper Section */}
