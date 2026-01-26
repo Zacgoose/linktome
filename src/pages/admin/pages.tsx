@@ -53,10 +53,8 @@ interface PageCardProps {
 function PageCard({ page, onEdit, onDelete, onSetDefault, onCopyUrl, username }: PageCardProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  // Build URL - use relative path for SSR compatibility
-  const pageUrl = page.isDefault 
-    ? `/public/${username}`
-    : `/public/${username}/${page.slug}`;
+  // Build URL - use relative path
+  const pageUrl = `/public/${username}/${page.slug}`;
   
   const handleViewPage = () => {
     // Use window.location.origin only on client side
@@ -247,9 +245,7 @@ export default function PagesPage() {
   const handleCopyUrl = (page: Page) => {
     // Build full URL only on client side
     if (typeof window !== 'undefined') {
-      const pageUrl = page.isDefault 
-        ? `${window.location.origin}/public/${profileData?.username}`
-        : `${window.location.origin}/public/${profileData?.username}/${page.slug}`;
+      const pageUrl = `${window.location.origin}/public/${profileData?.username}/${page.slug}`;
       
       navigator.clipboard.writeText(pageUrl);
     }
