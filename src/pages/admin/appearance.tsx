@@ -66,7 +66,6 @@ import {
   PATTERN_OPTIONS,
   DEFAULT_APPEARANCE,
 } from '@/types/links';
-import { useToast } from '@/context/ToastContext';
 import { getBackgroundStyle, getButtonStyle } from '@/utils/appearanceUtils';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { usePremiumValidation } from '@/hooks/usePremiumValidation';
@@ -373,7 +372,6 @@ function ThemeCard({ theme, selected, onClick, userTier }: ThemeCardProps) {
 
 export default function AppearancePage() {
   const router = useRouter();
-  const { showToast } = useToast();
   const [themeTab, setThemeTab] = useState(0);
   const { canAccess, showUpgrade, upgradeInfo, closeUpgradePrompt, userTier, openUpgradePrompt } = useFeatureGate();
   const { validateFeatures } = usePremiumValidation({ userTier, openUpgradePrompt });
