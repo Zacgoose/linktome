@@ -172,7 +172,7 @@ function SortableLinkCard({ link, onEdit, onDelete, onToggle, onMoveToCollection
                 }}
               >
                 <LinkIcon sx={{ fontSize: 14 }} />
-                {link.url}
+                {link.url.length > 50 ? `${link.url.slice(0, 47)}...` : link.url}
               </Typography>
             </Box>
 
