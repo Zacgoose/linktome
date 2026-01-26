@@ -28,6 +28,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Tooltip,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -75,6 +76,15 @@ import UpgradePrompt from '@/components/UpgradePrompt';
 import NoPageDialog from '@/components/NoPageDialog';
 import { canUseFontFamily, canUseTheme } from '@/utils/tierValidation';
 import { useTierRestrictions, GlobalUpgradePrompt } from '@/components/TierRestrictionBadge';
+import {
+  getCustomizableProperties,
+  canModifyWallpaperProperty,
+  canModifyButtonProperty,
+  canModifyTextProperty,
+  prepareAppearanceDataForApi,
+  restoreThemeDefaults,
+  getThemeById,
+} from '@/utils/themeHelpers';
 
 interface SectionProps {
   title: string;
@@ -427,6 +437,12 @@ export default function AppearancePage() {
     appearance: data,
   });
 
+  // Get customization properties for current theme
+  const customizableProperties = useMemo(() => 
+    getCustomizableProperties(formData.theme), 
+    [formData.theme]
+  );
+
   // Profile Information states
   const [editingAvatar, setEditingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -522,11 +538,15 @@ export default function AppearancePage() {
       return;
     }
     
-    // Include profile image URL in the data to save
-    const dataToSave = {
+    // Prepare data for API based on theme type
+    // For curated themes: send only theme name + customizable properties
+    // For custom/customizable themes: send all configuration
+    const dataWithProfileImage = {
       ...formData,
       profileImageUrl: data?.profileImageUrl, // Preserve the current profile image
     };
+    
+    const dataToSave = prepareAppearanceDataForApi(dataWithProfileImage);
     
     updateAppearance.mutate({
       url: currentPage?.id ? `admin/UpdateAppearance?pageId=${currentPage.id}` : 'admin/UpdateAppearance',
@@ -598,6 +618,21 @@ export default function AppearancePage() {
         layoutStyle: theme.appearance.layoutStyle ?? next.layoutStyle,
       };
     });
+  };
+
+  const handleRestoreThemeDefaults = () => {
+    const defaults = restoreThemeDefaults(formData.theme);
+    
+    if (!defaults) {
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      wallpaper: defaults.wallpaper ? { ...defaults.wallpaper } : prev.wallpaper,
+      buttons: defaults.buttons ? { ...defaults.buttons } : prev.buttons,
+      text: defaults.text ? { ...defaults.text } : prev.text,
+    }));
   };
 
   const previewAppearance = useMemo(() => {
@@ -901,6 +936,24 @@ export default function AppearancePage() {
                             </Grid>
                           ))}
                       </Grid>
+                      
+                      {/* Restore Theme Defaults Button - Show only for curated themes */}
+                      {formData.theme && getThemeById(formData.theme)?.type === 'curated' && (
+                        <Box sx={{ mt: 3 }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={handleRestoreThemeDefaults}
+                            startIcon={<PaletteIcon />}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            Restore Theme Defaults
+                          </Button>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                            Reset colors to the original theme design
+                          </Typography>
+                        </Box>
+                      )}
                     </CollapsibleSection>
 
                     {/* Wallpaper Section */}
@@ -918,42 +971,65 @@ export default function AppearancePage() {
                               { type: 'pattern', icon: <PatternIcon />, label: 'Pattern' },
                               { type: 'image', icon: <ImageIcon />, label: 'Image', pro: true },
                               { type: 'video', icon: <VideoIcon />, label: 'Video', pro: true },
-                            ].map((item) => (
-                              <Grid item xs={4} sm={2} key={item.type}>
-                                <Paper
-                                  onClick={() => updateWallpaper({ type: item.type as WallpaperStyle['type'] })}
-                                  sx={{
-                                    p: 1.5,
-                                    cursor: 'pointer',
-                                    border: 2,
-                                    borderColor: formData.wallpaper.type === item.type ? 'primary.main' : 'transparent',
-                                    '&:hover': {
-                                      borderColor: 'primary.light',
-                                    },
-                                    textAlign: 'center',
-                                    position: 'relative',
-                                  }}
-                                >
-                                  <Box sx={{ color: 'grey.600', mb: 0.5 }}>{item.icon}</Box>
-                                  <Typography variant="caption">{item.label}</Typography>
-                                  {item.pro && (
-                                    <Chip
-                                      icon={<LockIcon sx={{ fontSize: 8 }} />}
-                                      label="Pro"
-                                      size="small"
-                                      sx={{
-                                        position: 'absolute',
-                                        top: 4,
-                                        right: 4,
-                                        fontSize: 8,
-                                        height: 16,
-                                        '& .MuiChip-label': { px: 0.5 },
-                                      }}
-                                    />
-                                  )}
-                                </Paper>
-                              </Grid>
-                            ))}
+                            ].map((item) => {
+                              const isDisabled = !canModifyWallpaperProperty(formData.theme, 'type');
+                              const tooltipText = isDisabled 
+                                ? 'Wallpaper type cannot be changed for this curated theme' 
+                                : '';
+                              
+                              return (
+                                <Grid item xs={4} sm={2} key={item.type}>
+                                  <Tooltip title={tooltipText} arrow>
+                                    <span>
+                                      <Paper
+                                        onClick={() => !isDisabled && updateWallpaper({ type: item.type as WallpaperStyle['type'] })}
+                                        sx={{
+                                          p: 1.5,
+                                          cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                          border: 2,
+                                          borderColor: formData.wallpaper.type === item.type ? 'primary.main' : 'transparent',
+                                          opacity: isDisabled ? 0.5 : 1,
+                                          '&:hover': {
+                                            borderColor: isDisabled ? 'transparent' : 'primary.light',
+                                          },
+                                          textAlign: 'center',
+                                          position: 'relative',
+                                        }}
+                                      >
+                                        <Box sx={{ color: 'grey.600', mb: 0.5 }}>{item.icon}</Box>
+                                        <Typography variant="caption">{item.label}</Typography>
+                                        {item.pro && (
+                                          <Chip
+                                            icon={<LockIcon sx={{ fontSize: 8 }} />}
+                                            label="Pro"
+                                            size="small"
+                                            sx={{
+                                              position: 'absolute',
+                                              top: 4,
+                                              right: 4,
+                                              fontSize: 8,
+                                              height: 16,
+                                              '& .MuiChip-label': { px: 0.5 },
+                                            }}
+                                          />
+                                        )}
+                                        {isDisabled && (
+                                          <LockOutlinedIcon
+                                            sx={{
+                                              position: 'absolute',
+                                              top: 4,
+                                              left: 4,
+                                              fontSize: 12,
+                                              color: 'text.secondary',
+                                            }}
+                                          />
+                                        )}
+                                      </Paper>
+                                    </span>
+                                  </Tooltip>
+                                </Grid>
+                              );
+                            })}
                           </Grid>
                         </Box>
 
@@ -1105,13 +1181,18 @@ export default function AppearancePage() {
                               options={FONT_OPTIONS}
                               getOptionLabel={(option) => option.label}
                               value={FONT_OPTIONS.find(f => f.value === formData.text.titleFont) || FONT_OPTIONS[0]}
+                              disabled={!canModifyTextProperty(formData.theme, 'font')}
                               onChange={(_, newValue) => {
-                                if (newValue) {
+                                if (newValue && canModifyTextProperty(formData.theme, 'font')) {
                                   updateText({ titleFont: newValue.value });
                                 }
                               }}
                               renderInput={(params) => (
-                                <TextField {...params} label="Title font" />
+                                <TextField 
+                                  {...params} 
+                                  label="Title font" 
+                                  helperText={!canModifyTextProperty(formData.theme, 'font') ? 'Locked for this theme' : ''}
+                                />
                               )}
                               renderOption={(props, option) => (
                                 <li {...props} style={{ fontFamily: option.fontFamily }}>
@@ -1153,13 +1234,18 @@ export default function AppearancePage() {
                               options={FONT_OPTIONS}
                               getOptionLabel={(option) => option.label}
                               value={FONT_OPTIONS.find(f => f.value === formData.text.bodyFont) || FONT_OPTIONS[0]}
+                              disabled={!canModifyTextProperty(formData.theme, 'font')}
                               onChange={(_, newValue) => {
-                                if (newValue) {
+                                if (newValue && canModifyTextProperty(formData.theme, 'font')) {
                                   updateText({ bodyFont: newValue.value });
                                 }
                               }}
                               renderInput={(params) => (
-                                <TextField {...params} label="Body font" />
+                                <TextField 
+                                  {...params} 
+                                  label="Body font"
+                                  helperText={!canModifyTextProperty(formData.theme, 'font') ? 'Locked for this theme' : ''}
+                                />
                               )}
                               renderOption={(props, option) => (
                                 <li {...props} style={{ fontFamily: option.fontFamily }}>
@@ -1306,73 +1392,100 @@ export default function AppearancePage() {
                           <Typography variant="body2" fontWeight={500} sx={{ mb: 2}} >
                             Button style
                           </Typography>
+                          {!canModifyButtonProperty(formData.theme, 'style') && (
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                              Button style is locked for this curated theme
+                            </Typography>
+                          )}
                           <Grid container spacing={2}>
                             {[
                               { type: 'solid', label: 'Solid' },
                               { type: 'glass', label: 'Glass', pro: false },
                               { type: 'outline', label: 'Outline' },
-                            ].map((style) => (
-                              <Grid item xs={4} key={style.type}>
-                                <Paper
-                                  onClick={() => !style.pro && updateButtons({ type: style.type as ButtonStyle['type'] })}
-                                  sx={{
-                                    p: 2,
-                                    cursor: style.pro ? 'not-allowed' : 'pointer',
-                                    border: 2,
-                                    borderColor: formData.buttons.type === style.type ? 'primary.main' : 'transparent',
-                                    opacity: style.pro ? 0.6 : 1,
-                                    textAlign: 'center',
-                                    position: 'relative',
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      height: 38,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
+                            ].map((style) => {
+                              const isDisabled = !canModifyButtonProperty(formData.theme, 'style');
+                              
+                              return (
+                                <Grid item xs={4} key={style.type}>
+                                  <Tooltip 
+                                    title={isDisabled ? 'Button style cannot be changed for this curated theme' : ''}
+                                    arrow
                                   >
-                                    <Box
-                                      sx={{
-                                        px: 2,
-                                        py: 0.5,
-                                        borderRadius: 0.5,
-                                        fontSize: 12,
-                                        ...(style.type === 'solid' && {
-                                          bgcolor: (theme) => theme.palette.background.paper,
-                                        }),
-                                        ...(style.type === 'glass' && {
-                                          bgcolor: (theme) => theme.palette.background.paper,
-                                          border: '1px solid rgba(255,255,255,0.3)',
-                                        }),
-                                        ...(style.type === 'outline' && {
-                                          bgcolor: (theme) => theme.palette.background.paper,
-                                          border: '2px solid',
-                                          borderColor: 'grey.400',
-                                        }),
-                                      }}
-                                    >
-                                      {style.label}
-                                    </Box>
-                                  </Box>
-                                  {style.pro && (
-                                    <Chip
-                                      icon={<LockIcon sx={{ fontSize: 10 }} />}
-                                      label="Pro"
-                                      size="small"
-                                      sx={{
-                                        position: 'absolute',
-                                        top: 4,
-                                        right: 4,
-                                        fontSize: 8,
-                                        height: 16,
-                                      }}
-                                    />
-                                  )}
-                                </Paper>
-                              </Grid>
-                            ))}
+                                    <span>
+                                      <Paper
+                                        onClick={() => !isDisabled && !style.pro && updateButtons({ type: style.type as ButtonStyle['type'] })}
+                                        sx={{
+                                          p: 2,
+                                          cursor: (isDisabled || style.pro) ? 'not-allowed' : 'pointer',
+                                          border: 2,
+                                          borderColor: formData.buttons.type === style.type ? 'primary.main' : 'transparent',
+                                          opacity: (isDisabled || style.pro) ? 0.6 : 1,
+                                          textAlign: 'center',
+                                          position: 'relative',
+                                        }}
+                                      >
+                                        <Box
+                                          sx={{
+                                            height: 38,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                          }}
+                                        >
+                                          <Box
+                                            sx={{
+                                              px: 2,
+                                              py: 0.5,
+                                              borderRadius: 0.5,
+                                              fontSize: 12,
+                                              ...(style.type === 'solid' && {
+                                                bgcolor: (theme) => theme.palette.background.paper,
+                                              }),
+                                              ...(style.type === 'glass' && {
+                                                bgcolor: (theme) => theme.palette.background.paper,
+                                                border: '1px solid rgba(255,255,255,0.3)',
+                                              }),
+                                              ...(style.type === 'outline' && {
+                                                bgcolor: (theme) => theme.palette.background.paper,
+                                                border: '2px solid',
+                                                borderColor: 'grey.400',
+                                              }),
+                                            }}
+                                          >
+                                            {style.label}
+                                          </Box>
+                                        </Box>
+                                        {style.pro && (
+                                          <Chip
+                                            icon={<LockIcon sx={{ fontSize: 10 }} />}
+                                            label="Pro"
+                                            size="small"
+                                            sx={{
+                                              position: 'absolute',
+                                              top: 4,
+                                              right: 4,
+                                              fontSize: 8,
+                                              height: 16,
+                                            }}
+                                          />
+                                        )}
+                                        {isDisabled && (
+                                          <LockOutlinedIcon
+                                            sx={{
+                                              position: 'absolute',
+                                              top: 4,
+                                              left: 4,
+                                              fontSize: 12,
+                                              color: 'text.secondary',
+                                            }}
+                                          />
+                                        )}
+                                      </Paper>
+                                    </span>
+                                  </Tooltip>
+                                </Grid>
+                              );
+                            })}
                           </Grid>
                         </Box>
 
@@ -1380,33 +1493,43 @@ export default function AppearancePage() {
 
                         <Box>
                           <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Corners</Typography>
+                          {!canModifyButtonProperty(formData.theme, 'style') && (
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                              Corner style is locked for this curated theme
+                            </Typography>
+                          )}
                           <Grid container spacing={2} sx={{ mb: 1 }}>
                             {[
                               { value: 'square', label: 'Square', borderRadius: 0 },
                               { value: 'rounded', label: 'Rounded', borderRadius: 1 },
                               { value: 'pill', label: 'Pill', borderRadius: 999 },
-                            ].map(opt => (
-                              <Grid item xs={4} key={opt.value}>
-                                <Button
-                                  fullWidth
-                                  variant={formData.buttons.cornerRadius === opt.value ? 'contained' : 'outlined'}
-                                  onClick={() => updateButtons({ cornerRadius: opt.value as any })}
-                                  sx={{
-                                    borderRadius: opt.borderRadius,
-                                    height: 44,
-                                    textTransform: 'none',
-                                    fontWeight: 500,
-                                    fontSize: 15,
-                                    bgcolor: formData.buttons.cornerRadius === opt.value ? 'primary.main' : 'background.paper',
-                                    color: formData.buttons.cornerRadius === opt.value ? 'primary.contrastText' : 'text.primary',
-                                    boxShadow: formData.buttons.cornerRadius === opt.value ? 2 : 0,
-                                    transition: 'all 0.2s',
-                                  }}
-                                >
-                                  {opt.label}
-                                </Button>
-                              </Grid>
-                            ))}
+                            ].map(opt => {
+                              const isDisabled = !canModifyButtonProperty(formData.theme, 'style');
+                              
+                              return (
+                                <Grid item xs={4} key={opt.value}>
+                                  <Button
+                                    fullWidth
+                                    variant={formData.buttons.cornerRadius === opt.value ? 'contained' : 'outlined'}
+                                    onClick={() => !isDisabled && updateButtons({ cornerRadius: opt.value as any })}
+                                    disabled={isDisabled}
+                                    sx={{
+                                      borderRadius: opt.borderRadius,
+                                      height: 44,
+                                      textTransform: 'none',
+                                      fontWeight: 500,
+                                      fontSize: 15,
+                                      bgcolor: formData.buttons.cornerRadius === opt.value ? 'primary.main' : 'background.paper',
+                                      color: formData.buttons.cornerRadius === opt.value ? 'primary.contrastText' : 'text.primary',
+                                      boxShadow: formData.buttons.cornerRadius === opt.value ? 2 : 0,
+                                      transition: 'all 0.2s',
+                                    }}
+                                  >
+                                    {opt.label}
+                                  </Button>
+                                </Grid>
+                              );
+                            })}
                           </Grid>
                         </Box>
 

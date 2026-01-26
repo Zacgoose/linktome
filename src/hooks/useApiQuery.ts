@@ -227,7 +227,7 @@ export function useApiGet<TData = unknown>(props: ApiGetCallProps) {
         );
         // Show success toast if response has a message
         if (data && typeof data === 'object' && 'message' in data && data.message) {
-          showToast(data.message, 'success');
+          showToast(String(data.message), 'success');
         }
         if (onSuccess) onSuccess(data);
         return data;
@@ -313,7 +313,7 @@ function createMutationHook(method: 'post' | 'put' | 'delete') {
         }
         // Show success toast if response has a message
         if (data && typeof data === 'object' && 'message' in data && data.message) {
-          showToast(data.message, 'success');
+          showToast(String(data.message), 'success');
         }
         if (onSuccess) {
           onSuccess(data);

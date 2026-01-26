@@ -56,6 +56,17 @@ export interface AppearanceTheme {
   preview?: string;
   isPro?: boolean;
   appearance?: Partial<AppearanceData>;
+  // Define which properties can be customized for this theme
+  customizableProperties?: {
+    wallpaperColors?: boolean; // Allow color adjustments for wallpaper
+    wallpaperType?: boolean; // Allow changing wallpaper type
+    buttonColors?: boolean; // Allow button color customization
+    buttonStyle?: boolean; // Allow button style changes (type, radius, shadow)
+    textColors?: boolean; // Allow text color changes
+    fonts?: boolean; // Allow font family changes
+    headerLayout?: boolean; // Allow header layout changes
+    socialIcons?: boolean; // Allow social icon customization
+  };
 }
 
 export interface WallpaperStyle {
@@ -171,6 +182,29 @@ export interface FontOption {
   isPro?: boolean;
 }
 
+// Theme permission constants
+export const CURATED_THEME_PERMISSIONS = {
+  wallpaperColors: true,
+  wallpaperType: false,
+  buttonColors: true,
+  buttonStyle: false,
+  textColors: true,
+  fonts: false,
+  headerLayout: true,
+  socialIcons: true,
+} as const;
+
+export const CUSTOMIZABLE_THEME_PERMISSIONS = {
+  wallpaperColors: true,
+  wallpaperType: true,
+  buttonColors: true,
+  buttonStyle: true,
+  textColors: true,
+  fonts: true,
+  headerLayout: true,
+  socialIcons: true,
+} as const;
+
 // Available fonts
 export const FONT_OPTIONS: FontOption[] = [
   { value: 'inter', label: 'Inter', fontFamily: 'Inter, sans-serif' },
@@ -187,7 +221,13 @@ export const FONT_OPTIONS: FontOption[] = [
 
 // Theme presets
 export const THEME_PRESETS: AppearanceTheme[] = [
-  { id: 'custom', name: 'Custom', type: 'customizable' },
+  { 
+    id: 'custom', 
+    name: 'Custom', 
+    type: 'customizable',
+    // Custom theme allows full customization
+    customizableProperties: { ...CUSTOMIZABLE_THEME_PERMISSIONS },
+  },
   {
     id: 'air',
     name: 'Air',
@@ -211,6 +251,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         pageTextColor: '#23335b',
       },
     },
+    // Free customizable theme - full customization allowed
+    customizableProperties: { ...CUSTOMIZABLE_THEME_PERMISSIONS },
   },
   {
     id: 'blocks',
@@ -234,6 +276,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
         pageTextColor: '#cbd5e1',
       },
     },
+    // Free customizable theme - full customization allowed
+    customizableProperties: { ...CUSTOMIZABLE_THEME_PERMISSIONS },
   },
   {
     id: 'lake',
@@ -259,6 +303,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'card',
     },
+    // Free customizable theme - full customization allowed
+    customizableProperties: { ...CUSTOMIZABLE_THEME_PERMISSIONS },
   },
   {
     id: 'mineral',
@@ -284,6 +330,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'centered',
     },
+    // Free customizable theme - full customization allowed
+    customizableProperties: { ...CUSTOMIZABLE_THEME_PERMISSIONS },
   },
   {
     id: 'agate',
@@ -308,6 +356,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'card',
     },
+    // Curated theme - limited customization
+    customizableProperties: { ...CURATED_THEME_PERMISSIONS },
   },
   {
     id: 'astrid',
@@ -333,6 +383,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'centered',
     },
+    // Curated theme - limited customization
+    customizableProperties: { ...CURATED_THEME_PERMISSIONS },
   },
   {
     id: 'aura',
@@ -358,6 +410,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'centered',
     },
+    // Curated theme - limited customization
+    customizableProperties: { ...CURATED_THEME_PERMISSIONS },
   },
   {
     id: 'bloom',
@@ -382,6 +436,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'centered',
     },
+    // Curated theme - limited customization
+    customizableProperties: { ...CURATED_THEME_PERMISSIONS },
   },
   {
     id: 'breeze',
@@ -407,6 +463,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'card',
     },
+    // Curated theme - limited customization
+    customizableProperties: { ...CURATED_THEME_PERMISSIONS },
   },
   {
     id: 'honeycomb',
@@ -432,6 +490,8 @@ export const THEME_PRESETS: AppearanceTheme[] = [
       },
       layoutStyle: 'centered',
     },
+    // Curated theme - limited customization
+    customizableProperties: { ...CURATED_THEME_PERMISSIONS },
   },
 ];
 
